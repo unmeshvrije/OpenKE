@@ -75,8 +75,12 @@ class Tester(object):
         else:
             type_constrain = 0
         training_range = tqdm(self.data_loader)
+        # unmesh : todo here
+        # data_head contains all heads
+        # data_tail contains all tails
         for index, [data_head, data_tail] in enumerate(training_range):
             score = self.test_one_step(data_head)
+            print("unm : len : " , len(score))
             self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
             score = self.test_one_step(data_tail)
             self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)

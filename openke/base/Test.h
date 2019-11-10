@@ -97,6 +97,7 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
                 }
             }
         }
+        // TODO: else we can break ?
     }
 
     if (l_filter_s < 10) l_filter_tot += 1;
