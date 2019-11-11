@@ -67,6 +67,21 @@ class Tester(object):
             'mode': data['mode']
         })
 
+    def run_ans_prediction(self):
+        self.lib.initTest()
+        self.data_loader.set_sampling_mode('link')
+        training_range = tqdm(self.data_loader)
+        for index, [data_head, data_tail] in enumerate(training_range):
+            score = self.test_one_step(data_head)
+            indexes = np.argsort(score)
+            print("unm : calling ansHead from c++ lib")
+            self.lib.ansHead(indexes.__array_interface__["data"][0], index, 50)
+
+            #print("unm : len : " , len(score))
+            #self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
+            #score = self.test_one_step(data_tail)
+            #self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)
+
     def run_link_prediction(self, type_constrain = False):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
@@ -80,7 +95,7 @@ class Tester(object):
         # data_tail contains all tails
         for index, [data_head, data_tail] in enumerate(training_range):
             score = self.test_one_step(data_head)
-            print("unm : len : " , len(score))
+            #print("unm : len : " , len(score))
             self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
             score = self.test_one_step(data_tail)
             self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)

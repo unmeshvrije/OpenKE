@@ -4,6 +4,7 @@
 #include "Reader.h"
 #include "Corrupt.h"
 
+#include <vector>
 /*=====================================================================================
 link prediction
 ======================================================================================*/
@@ -58,6 +59,29 @@ void getRelBatch(INT *ph, INT *pt, INT *pr) {
         ph[i] = testList[lastRel].h;
         pt[i] = testList[lastRel].t;
         pr[i] = i;
+    }
+}
+
+extern "C"
+void ansHead(INT *indexes, INT lastHead, INT topK) {
+    INT h = testList[lastHead].h;
+    INT t = testList[lastHead].t;
+    INT r = testList[lastHead].r;
+    std::vector<INT> answers;
+    int truths[topK];
+    for (INT i = 0; i < topK && i < entityTotal; ++i) {
+        answers.push_back(indexes[i]);
+        truths[i] = 0;
+    }
+
+    for (INT j = 0; j < answers.size(); ++j) {
+        if (_find(answers[j], t, r)) {
+            truths[j] = 1;
+        }
+    }
+
+    for (INT k = 0; k < topK; ++k) {
+        printf("%d) %d : %d\n", k+1, answers[k], truths[k]);
     }
 }
 
