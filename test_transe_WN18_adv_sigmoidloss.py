@@ -40,7 +40,7 @@ model = NegativeSampling(
 )
 
 is_gpu = sys.argv[1] == 'gpu'
-
+topk = int(sys.argv[2])
 # train the model
 #trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 30, alpha = 2e-5, use_gpu = is_gpu, opt_method = "adam")
 #trainer.run()
@@ -48,6 +48,7 @@ is_gpu = sys.argv[1] == 'gpu'
 
 # test the model
 transe.load_checkpoint('./checkpoint/transe_2.ckpt')
+transe.save_parameters('./result/WN18-transe.json')
 tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = is_gpu)
 #tester.run_link_prediction(type_constrain = False)
-tester.run_ans_prediction()
+tester.run_ans_prediction(topk)

@@ -63,15 +63,13 @@ void getRelBatch(INT *ph, INT *pt, INT *pr) {
 }
 
 extern "C"
-void ansHead(INT *indexes, INT lastHead, INT topK) {
+void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
     std::vector<INT> answers;
-    int truths[topK];
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
         answers.push_back(indexes[i]);
-        truths[i] = 0;
     }
 
     for (INT j = 0; j < answers.size(); ++j) {
@@ -80,9 +78,9 @@ void ansHead(INT *indexes, INT lastHead, INT topK) {
         }
     }
 
-    for (INT k = 0; k < topK; ++k) {
-        printf("%d) %d : %d\n", k+1, answers[k], truths[k]);
-    }
+    //for (INT k = 0; k < topK; ++k) {
+    //    printf("%d) %d : %d\n", k+1, answers[k], truths[k]);
+    //}
 }
 
 extern "C"

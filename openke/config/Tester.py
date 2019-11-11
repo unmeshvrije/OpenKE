@@ -67,15 +67,23 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_ans_prediction(self):
+    def run_ans_prediction(self, topk):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
         for index, [data_head, data_tail] in enumerate(training_range):
             score = self.test_one_step(data_head)
             indexes = np.argsort(score)
+            #print(self.model.ent_embeddings)
             print("unm : calling ansHead from c++ lib")
-            self.lib.ansHead(indexes.__array_interface__["data"][0], index, 50)
+            truths = np.zeros(topk)
+            self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+
+            for i in range(topk):
+                entity = indexes[i]
+                emb_index = torch.LongTensor([entity])
+                print(self.model.ent_embeddings(emb_index.cuda()))
+                print("{}) {} () -> {}".format(i, entity,  truths[i]))
 
             #print("unm : len : " , len(score))
             #self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
