@@ -63,24 +63,31 @@ void getRelBatch(INT *ph, INT *pt, INT *pr) {
 }
 
 extern "C"
-void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
+INT* ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
-    std::vector<INT> answers;
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
-        answers.push_back(indexes[i]);
-    }
-
-    for (INT j = 0; j < answers.size(); ++j) {
-        if (_find(answers[j], t, r)) {
-            truths[j] = 1;
+        if (_find(indexes[i], t, r)) {
+            truths[i] = 1;
         }
     }
+    return truths;
+}
 
-    //for (INT k = 0; k < topK; ++k) {
-    //    printf("%d) %d : %d\n", k+1, answers[k], truths[k]);
-    //}
+extern "C"
+INT* ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
+    INT h = testList[lastHead].h;
+    INT t = testList[lastHead].t;
+    INT r = testList[lastHead].r;
+    for (INT i = 0; i < topK && i < entityTotal; ++i) {
+        if (_find(h, indexes[i], r)) {
+            truths[i] = 1;
+            printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
+            printf("FOUND at %ld\n", i);
+        }
+    }
+    return truths;
 }
 
 extern "C"

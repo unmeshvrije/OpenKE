@@ -14,6 +14,8 @@ from sklearn.metrics import roc_auc_score
 import copy
 from tqdm import tqdm
 
+from numpy.ctypeslib import ndpointer
+
 class Tester(object):
 
     def __init__(self, model = None, data_loader = None, use_gpu = True):
@@ -21,6 +23,10 @@ class Tester(object):
         self.lib = ctypes.cdll.LoadLibrary(base_file)
         self.lib.testHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
         self.lib.testTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
+        self.lib.ansHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
+        self.lib.ansTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
+        self.lib.ansHead.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
+        self.lib.ansTail.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
         self.lib.test_link_prediction.argtypes = [ctypes.c_int64]
 
         self.lib.getTestLinkMRR.argtypes = [ctypes.c_int64]
@@ -72,23 +78,33 @@ class Tester(object):
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
         for index, [data_head, data_tail] in enumerate(training_range):
+            # Head answers
             score = self.test_one_step(data_head)
             indexes = np.argsort(score)
-            #print(self.model.ent_embeddings)
-            print("unm : calling ansHead from c++ lib")
+            #print("Scores :" , score)
+            #print("indexes : ", indexes)
+            #print(len(score))
             truths = np.zeros(topk)
             self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
 
             for i in range(topk):
                 entity = indexes[i]
                 emb_index = torch.LongTensor([entity])
-                print(self.model.ent_embeddings(emb_index.cuda()))
-                print("{}) {} () -> {}".format(i, entity,  truths[i]))
+                #print(self.model.ent_embeddings(emb_index.cuda()))
+                if truths[i] == 1:
+                    print("{}) {} () -> {}".format(i, entity,  truths[i]))
 
-            #print("unm : len : " , len(score))
-            #self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
-            #score = self.test_one_step(data_tail)
-            #self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)
+            # Tail answers
+            score = self.test_one_step(data_tail)
+            indexes = np.argsort(score)
+            truths = np.zeros(topk)
+            truths = self.lib.ansTail(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            for i in range(topk):
+                entity = indexes[i]
+                emb_index = torch.LongTensor([entity])
+                #print(self.model.ent_embeddings(emb_index.cuda()))
+                if truths[i] == 1:
+                    print("{}) {} () -> {}".format(i, entity,  truths[i]))
 
     def run_link_prediction(self, type_constrain = False):
         self.lib.initTest()
