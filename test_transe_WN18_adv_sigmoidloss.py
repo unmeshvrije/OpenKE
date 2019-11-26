@@ -1,9 +1,11 @@
 import openke
+from openke.utils import DeepDict
 from openke.config import Trainer, Tester
 from openke.module.model import TransE
 from openke.module.loss import SigmoidLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader
+import json
 
 import sys
 # dataloader for training
@@ -48,7 +50,10 @@ topk = int(sys.argv[2])
 
 # test the model
 transe.load_checkpoint('./checkpoint/transe_2.ckpt')
-transe.save_parameters('./result/WN18-transe.json')
+#transe.save_parameters('./result/WN18-transe.json')
 tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = is_gpu)
 #tester.run_link_prediction(type_constrain = False)
-tester.run_ans_prediction(topk)
+transe.load_parameters('./result/WN18-transe.json')
+with open('./result/WN18-transe.json', 'r') as fin:
+    params = json.loads(fin.read())
+tester.run_ans_prediction(params['ent_embeddings.weight'], topk)

@@ -14,6 +14,7 @@ from sklearn.metrics import roc_auc_score
 import copy
 from tqdm import tqdm
 
+from openke.utils import DeepDict
 from numpy.ctypeslib import ndpointer
 
 class Tester(object):
@@ -73,38 +74,53 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_ans_prediction(self, topk):
+    def run_ans_prediction(self, ent_embeddings, topk):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
+        test_data = []
         for index, [data_head, data_tail] in enumerate(training_range):
             # Head answers
+            #print("tail : ", data_head['batch_t'][0])
+            #print("head : ", data_tail['batch_h'][0])
+            #print("data rel  : ", data_tail['batch_r'][0])
+            #print(type(data_tail['batch_h'][0]))
+            record = DeepDict()
+            record['head'] = int(data_tail['batch_h'][0])
+            record['tail'] = int(data_head['batch_t'][0])
+            record['rel']  = int(data_head['batch_r'][0])
+
             score = self.test_one_step(data_head)
             indexes = np.argsort(score)
             #print("Scores :" , score)
             #print("indexes : ", indexes)
             #print(len(score))
             truths = np.zeros(topk)
-            self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            truths = self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
 
-            for i in range(topk):
-                entity = indexes[i]
-                emb_index = torch.LongTensor([entity])
-                #print(self.model.ent_embeddings(emb_index.cuda()))
-                if truths[i] == 1:
-                    print("{}) {} () -> {}".format(i, entity,  truths[i]))
+            record['head_predictions'] = DeepDict()
+            record['head_predictions']['entity'] = indexes[:topk].astype(int).tolist()
+            record['head_predictions']['score' ] = score[:topk].astype(float).tolist()
+            record['head_predictions']['correctness'] = truths[:topk].astype(int).tolist()
+
 
             # Tail answers
             score = self.test_one_step(data_tail)
             indexes = np.argsort(score)
             truths = np.zeros(topk)
             truths = self.lib.ansTail(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
-            for i in range(topk):
-                entity = indexes[i]
-                emb_index = torch.LongTensor([entity])
+            record['tail_predictions'] = DeepDict()
+            record['tail_predictions']['entity'] = indexes[:topk].astype(int).tolist()
+            record['tail_predictions']['score' ] = score[:topk].astype(float).tolist()
+            record['tail_predictions']['correctness'] = truths[:topk].astype(int).tolist()
+
                 #print(self.model.ent_embeddings(emb_index.cuda()))
-                if truths[i] == 1:
-                    print("{}) {} () -> {}".format(i, entity,  truths[i]))
+                #if truths[i] == 1:
+                    #print("{}) {} () -> {}".format(i, entity,  truths[i]))
+            # append the record to test_data
+            test_data.append(record)
+            with open("./results-scores.json", "w") as fout:
+                fout.write(json.dumps(test_data))
 
     def run_link_prediction(self, type_constrain = False):
         self.lib.initTest()
@@ -114,9 +130,6 @@ class Tester(object):
         else:
             type_constrain = 0
         training_range = tqdm(self.data_loader)
-        # unmesh : todo here
-        # data_head contains all heads
-        # data_tail contains all tails
         for index, [data_head, data_tail] in enumerate(training_range):
             score = self.test_one_step(data_head)
             #print("unm : len : " , len(score))

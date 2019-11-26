@@ -4,6 +4,8 @@ from openke.module.model import TransE
 from openke.module.loss import MarginLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader
+import sys
+import json
 
 # dataloader for training
 train_dataloader = TrainDataLoader(
@@ -35,12 +37,23 @@ model = NegativeSampling(
 	batch_size = train_dataloader.get_batch_size()
 )
 
-# train the model
-trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = True)
-trainer.run()
-transe.save_checkpoint('./checkpoint/transe-fb.ckpt')
+is_gpu = sys.argv[1] == 'gpu'
+topk = int(sys.argv[2])
+option = sys.argv[3]
 
-# test the model
-transe.load_checkpoint('./checkpoint/transe-fb.ckpt')
-tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = True)
-tester.run_link_prediction(type_constrain = False)
+if option == "train":
+    # train the model
+    trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = True)
+    trainer.run()
+    transe.save_checkpoint('./checkpoint/transe-fb.ckpt')
+    transe.save_parameters('./result/fb15k237-transe.json')
+elif option == "test":
+    # test the model
+    transe.load_checkpoint('./checkpoint/transe-fb.ckpt')
+    transe.load_parameters('./result/fb15k237-transe.json')
+    tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = True)
+    with open ('./result/fb15k237-transe.json', 'r') as fin:
+        params = json.loads(fin.read())
+    tester.run_ans_prediction(params['ent_embeddings.weight'], topk)
+else:
+    print("Invalid option")

@@ -3,6 +3,7 @@ import torch.nn as nn
 import os
 import json
 import numpy as np
+import copy
 
 class BaseModule(nn.Module):
 
@@ -12,6 +13,9 @@ class BaseModule(nn.Module):
 		self.zero_const.requires_grad = False
 		self.pi_const = nn.Parameter(torch.Tensor([3.14159265358979323846]))
 		self.pi_const.requires_grad = False
+		#self.params= None
+		#self.ent_embeddings= None
+		#self.rel_embeddings= None
 
 	def load_checkpoint(self, path):
 		self.load_state_dict(torch.load(os.path.join(path)))
@@ -24,6 +28,9 @@ class BaseModule(nn.Module):
 		f = open(path, "r")
 		parameters = json.loads(f.read())
 		f.close()
+		#self.params = copy.deepcopy(parameters)
+		#self.ent_embeddings = parameters['ent_embeddings.weight']
+		#self.rel_embeddings = parameters['ent_embeddings.weight']
 		for i in parameters:
 			parameters[i] = torch.Tensor(parameters[i])
 		self.load_state_dict(parameters, strict = False)

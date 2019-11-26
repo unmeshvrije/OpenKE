@@ -83,8 +83,8 @@ INT* ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
         if (_find(h, indexes[i], r)) {
             truths[i] = 1;
-            printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
-            printf("FOUND at %ld\n", i);
+            //printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
+            //printf("FOUND at %ld\n", i);
         }
     }
     return truths;
