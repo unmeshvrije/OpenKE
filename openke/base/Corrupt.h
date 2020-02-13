@@ -176,6 +176,19 @@ bool _find(INT h, INT t, INT r) {
     return false;
 }
 
+bool _find_in_test(INT h, INT t, INT r) {
+    INT lef = 0;
+    INT rig = testTotal - 1;
+    INT mid;
+    while (lef + 1 < rig) {
+        INT mid = (lef + rig) >> 1;
+        if ((testList[mid]. h < h) || (testList[mid]. h == h && testList[mid]. r < r) || (testList[mid]. h == h && testList[mid]. r == r && testList[mid]. t < t)) lef = mid; else rig = mid;
+    }
+    if (testList[lef].h == h && testList[lef].r == r && testList[lef].t == t) return true;
+    if (testList[rig].h == h && testList[rig].r == r && testList[rig].t == t) return true;
+    return false;
+}
+
 INT corrupt(INT h, INT r){
 	INT ll = tail_lef[r];
 	INT rr = tail_rig[r];

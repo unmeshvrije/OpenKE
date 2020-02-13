@@ -63,20 +63,39 @@ void getRelBatch(INT *ph, INT *pt, INT *pr) {
 }
 
 extern "C"
-INT* ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
+void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
         if (_find(indexes[i], t, r)) {
             truths[i] = 1;
+            //printf("Looking for (%ld, %ld, %ld) : ", indexes[i], t, r);
+            //printf("FOUND at %ld\n", i);
+        } else {
+            truths[i] = 0;
         }
     }
-    return truths;
 }
 
 extern "C"
-INT* ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
+void ansHeadInTest(INT *indexes, INT lastHead, INT topK, INT *truths) {
+    INT h = testList[lastHead].h;
+    INT t = testList[lastHead].t;
+    INT r = testList[lastHead].r;
+    for (INT i = 0; i < topK && i < entityTotal; ++i) {
+        if (_find_in_test(indexes[i], t, r)) {
+            truths[i] = 1;
+            printf("Looking for (%ld, %ld, %ld) : ", indexes[i], t, r);
+            printf("FOUND at %ld\n", i);
+        } else {
+            truths[i] = 0;
+        }
+    }
+}
+
+extern "C"
+void ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
@@ -85,9 +104,26 @@ INT* ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
             truths[i] = 1;
             //printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
             //printf("FOUND at %ld\n", i);
+        } else {
+            truths[i] = 0;
         }
     }
-    return truths;
+}
+
+extern "C"
+void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths) {
+    INT h = testList[lastHead].h;
+    INT t = testList[lastHead].t;
+    INT r = testList[lastHead].r;
+    for (INT i = 0; i < topK && i < entityTotal; ++i) {
+        if (_find_in_test(h, indexes[i], r)) {
+            truths[i] = 1;
+            printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
+            printf("FOUND at %ld\n", i);
+        } else {
+            truths[i] = 0;
+        }
+    }
 }
 
 extern "C"

@@ -14,7 +14,7 @@ class TestDataSampler(object):
 		return self
 
 	def __next__(self):
-		self.total += 1 
+		self.total += 1
 		if self.total > self.data_total:
 			raise StopIteration()
 		return self.data_sampler()

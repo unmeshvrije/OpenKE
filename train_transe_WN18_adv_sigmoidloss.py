@@ -48,5 +48,5 @@ transe.save_checkpoint('./checkpoint/transe_2.ckpt')
 
 # test the model
 transe.load_checkpoint('./checkpoint/transe_2.ckpt')
-tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = is_gpu)
+tester = Tester(model = transe, "WN18", data_loader = test_dataloader, use_gpu = is_gpu)
 tester.run_link_prediction(type_constrain = False)

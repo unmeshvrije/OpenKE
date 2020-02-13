@@ -231,6 +231,84 @@ void importTestFiles() {
     validRig[validList[validTotal - 1].r] = validTotal - 1;
 }
 
+extern "C"
+void importTrainAsTestFiles() {
+    FILE *fin;
+    INT tmp;
+    
+    fin = fopen((inPath + "relation2id.txt").c_str(), "r");
+    tmp = fscanf(fin, "%ld", &relationTotal);
+    fclose(fin);
+
+    fin = fopen((inPath + "entity2id.txt").c_str(), "r");
+    tmp = fscanf(fin, "%ld", &entityTotal);
+    fclose(fin);
+
+    FILE* f_kb1 = fopen((inPath + "test2id.txt").c_str(), "r");
+    FILE* f_kb2 = fopen((inPath + "train2id.txt").c_str(), "r");
+    FILE* f_kb3 = fopen((inPath + "valid2id.txt").c_str(), "r");
+    //tmp = fscanf(f_kb1, "%ld", &testTotal);
+    tmp = fscanf(f_kb2, "%ld", &trainTotal);
+    testTotal = trainTotal;
+    tmp = fscanf(f_kb3, "%ld", &validTotal);
+    tripleTotal = testTotal  + validTotal;
+    testList = (Triple *)calloc(testTotal, sizeof(Triple));
+    validList = (Triple *)calloc(validTotal, sizeof(Triple));
+    tripleList = (Triple *)calloc(tripleTotal, sizeof(Triple));
+    for (INT i = 0; i < testTotal; i++) {
+        tmp = fscanf(f_kb2, "%ld", &testList[i].h);
+        tmp = fscanf(f_kb2, "%ld", &testList[i].t);
+        tmp = fscanf(f_kb2, "%ld", &testList[i].r);
+        tripleList[i] = testList[i];
+    }
+    /*for (INT i = 0; i < trainTotal; i++) {
+        tmp = fscanf(f_kb2, "%ld", &tripleList[i + testTotal].h);
+        tmp = fscanf(f_kb2, "%ld", &tripleList[i + testTotal].t);
+        tmp = fscanf(f_kb2, "%ld", &tripleList[i + testTotal].r);
+    }*/
+    for (INT i = 0; i < validTotal; i++) {
+        tmp = fscanf(f_kb3, "%ld", &tripleList[i + testTotal ].h);
+        tmp = fscanf(f_kb3, "%ld", &tripleList[i + testTotal ].t);
+        tmp = fscanf(f_kb3, "%ld", &tripleList[i + testTotal ].r);
+        validList[i] = tripleList[i + testTotal];
+    }
+    fclose(f_kb1);
+    fclose(f_kb2);
+    fclose(f_kb3);
+
+    std::sort(tripleList, tripleList + tripleTotal, Triple::cmp_head);
+    std::sort(testList, testList + testTotal, Triple::cmp_rel2);
+    std::sort(validList, validList + validTotal, Triple::cmp_rel2);
+    printf("The total of test triples is %ld.\n", testTotal);
+    printf("The total of valid triples is %ld.\n", validTotal);
+
+    testLef = (INT *)calloc(relationTotal, sizeof(INT));
+    testRig = (INT *)calloc(relationTotal, sizeof(INT));
+    memset(testLef, -1, sizeof(INT) * relationTotal);
+    memset(testRig, -1, sizeof(INT) * relationTotal);
+    for (INT i = 1; i < testTotal; i++) {
+	if (testList[i].r != testList[i-1].r) {
+	    testRig[testList[i-1].r] = i - 1;
+	    testLef[testList[i].r] = i;
+	}
+    }
+    testLef[testList[0].r] = 0;
+    testRig[testList[testTotal - 1].r] = testTotal - 1;
+
+    validLef = (INT *)calloc(relationTotal, sizeof(INT));
+    validRig = (INT *)calloc(relationTotal, sizeof(INT));
+    memset(validLef, -1, sizeof(INT)*relationTotal);
+    memset(validRig, -1, sizeof(INT)*relationTotal);
+    for (INT i = 1; i < validTotal; i++) {
+        if (validList[i].r != validList[i-1].r) {
+            validRig[validList[i-1].r] = i - 1;
+            validLef[validList[i].r] = i;
+        }
+    }
+    validLef[validList[0].r] = 0;
+    validRig[validList[validTotal - 1].r] = validTotal - 1;
+}
+
 INT* head_lef;
 INT* head_rig;
 INT* tail_lef;

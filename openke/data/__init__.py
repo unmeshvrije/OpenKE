@@ -4,8 +4,10 @@ from __future__ import print_function
 
 from .TrainDataLoader import TrainDataLoader
 from .TestDataLoader import TestDataLoader
+from .TrainingAsTestDataLoader import TrainingAsTestDataLoader
 
 __all__ = [
 	'TrainDataLoader',
-	'TestDataLoader'
+	'TestDataLoader',
+    'TrainingAsTestDataLoader'
 ]

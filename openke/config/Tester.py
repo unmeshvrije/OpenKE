@@ -19,15 +19,15 @@ from numpy.ctypeslib import ndpointer
 
 class Tester(object):
 
-    def __init__(self, model = None, data_loader = None, use_gpu = True):
+    def __init__(self, db, model = None, data_loader = None, use_gpu = True):
         base_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../release/Base.so"))
         self.lib = ctypes.cdll.LoadLibrary(base_file)
         self.lib.testHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
         self.lib.testTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
         self.lib.ansHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
         self.lib.ansTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
-        self.lib.ansHead.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
-        self.lib.ansTail.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
+        #self.lib.ansHead.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
+        #self.lib.ansTail.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
         self.lib.test_link_prediction.argtypes = [ctypes.c_int64]
 
         self.lib.getTestLinkMRR.argtypes = [ctypes.c_int64]
@@ -42,6 +42,7 @@ class Tester(object):
         self.lib.getTestLinkHit3.restype = ctypes.c_float
         self.lib.getTestLinkHit1.restype = ctypes.c_float
 
+        self.db = db
         self.model = model
         self.data_loader = data_loader
         self.use_gpu = use_gpu
@@ -74,12 +75,14 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_ans_prediction(self, ent_embeddings, topk):
+    def run_ans_prediction(self, ent_embeddings, topk, filtered = False):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
         test_data = []
+        len_training = len(training_range)
         for index, [data_head, data_tail] in enumerate(training_range):
+            print(index, " / ", len_training)
             # Head answers
             #print("tail : ", data_head['batch_t'][0])
             #print("head : ", data_tail['batch_h'][0])
@@ -92,35 +95,49 @@ class Tester(object):
 
             score = self.test_one_step(data_head)
             indexes = np.argsort(score)
+            sorted_scores = np.sort(score)
             #print("Scores :" , score)
             #print("indexes : ", indexes)
             #print(len(score))
-            truths = np.zeros(topk)
-            truths = self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            truths = np.zeros(topk, dtype=int)
+            if filtered:
+                self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            else:
+                self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
 
             record['head_predictions'] = DeepDict()
             record['head_predictions']['entity'] = indexes[:topk].astype(int).tolist()
-            record['head_predictions']['score' ] = score[:topk].astype(float).tolist()
+            record['head_predictions']['score' ] = sorted_scores[:topk].astype(float).tolist()
             record['head_predictions']['correctness'] = truths[:topk].astype(int).tolist()
+            test_unm_head = truths[:topk].astype(int).tolist()
+            #print(test_unm_head)
+            #print("just printing the list")
+            #print(truths.tolist())
 
 
             # Tail answers
-            score = self.test_one_step(data_tail)
-            indexes = np.argsort(score)
-            truths = np.zeros(topk)
-            truths = self.lib.ansTail(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
-            record['tail_predictions'] = DeepDict()
-            record['tail_predictions']['entity'] = indexes[:topk].astype(int).tolist()
-            record['tail_predictions']['score' ] = score[:topk].astype(float).tolist()
-            record['tail_predictions']['correctness'] = truths[:topk].astype(int).tolist()
+            score_tail = self.test_one_step(data_tail)
+            indexes_tail = np.argsort(score_tail)
+            sorted_score_tail = np.sort(score_tail)
+            truths_tail = np.zeros(topk, dtype=int)
 
-                #print(self.model.ent_embeddings(emb_index.cuda()))
-                #if truths[i] == 1:
-                    #print("{}) {} () -> {}".format(i, entity,  truths[i]))
-            # append the record to test_data
+            if filtered:
+                self.lib.ansTailInTest(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
+            else:
+                self.lib.ansTail(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
+            record['tail_predictions'] = DeepDict()
+            record['tail_predictions']['entity'] = indexes_tail[:topk].astype(int).tolist()
+            record['tail_predictions']['score' ] = sorted_score_tail[:topk].astype(float).tolist()
+            record['tail_predictions']['correctness'] = truths_tail[:topk].astype(int).tolist()
             test_data.append(record)
-            with open("./results-scores.json", "w") as fout:
-                fout.write(json.dumps(test_data))
+        # Write all the records to the scores file
+        if filtered:
+            fil = "filtered"
+        else:
+            fil = "unfiltered"
+        answer_file_name = self.db + "-results-scores-"+str(topk)+"-"+fil+".json"
+        with open(answer_file_name, "w") as fout:
+            fout.write(json.dumps(test_data))
 
     def run_link_prediction(self, type_constrain = False):
         self.lib.initTest()

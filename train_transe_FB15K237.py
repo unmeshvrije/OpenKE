@@ -3,7 +3,7 @@ from openke.config import Trainer, Tester
 from openke.module.model import TransE
 from openke.module.loss import MarginLoss
 from openke.module.strategy import NegativeSampling
-from openke.data import TrainDataLoader, TestDataLoader
+from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
 import sys
 import json
 
@@ -18,6 +18,7 @@ train_dataloader = TrainDataLoader(
 	neg_ent = 25,
 	neg_rel = 0)
 
+new_train_dataloader = TrainingAsTestDataLoader("./benchmarks/FB15K237/", "link")
 # dataloader for test
 test_dataloader = TestDataLoader("./benchmarks/FB15K237/", "link")
 
@@ -25,8 +26,8 @@ test_dataloader = TestDataLoader("./benchmarks/FB15K237/", "link")
 transe = TransE(
 	ent_tot = train_dataloader.get_ent_tot(),
 	rel_tot = train_dataloader.get_rel_tot(),
-	dim = 200, 
-	p_norm = 1, 
+	dim = 200,
+	p_norm = 1,
 	norm_flag = True)
 
 
@@ -51,9 +52,12 @@ elif option == "test":
     # test the model
     transe.load_checkpoint('./checkpoint/transe-fb.ckpt')
     transe.load_parameters('./result/fb15k237-transe.json')
-    tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = True)
+    tester = Tester("FB15K237", model = transe,data_loader = test_dataloader, use_gpu = True)
+    #tester = Tester("FB15K237", model = transe, data_loader = new_train_dataloader, use_gpu = True)
     with open ('./result/fb15k237-transe.json', 'r') as fin:
         params = json.loads(fin.read())
-    tester.run_ans_prediction(params['ent_embeddings.weight'], topk)
+    tester.run_ans_prediction(params['ent_embeddings.weight'], topk, filtered=True)
+    #trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = True)
+    #tester.run_ans_prediction(params['ent_embeddings.weight'], topk)
 else:
     print("Invalid option")
