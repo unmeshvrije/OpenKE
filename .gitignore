@@ -135,3 +135,7 @@ venv.bak/
 
 #Backup files
 *.py.bak
+
+# Other storage files
+**/*.json
+**/*.ckpt
