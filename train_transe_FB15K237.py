@@ -9,14 +9,15 @@ import json
 
 # dataloader for training
 train_dataloader = TrainDataLoader(
-	in_path = "./benchmarks/FB15K237/", 
+	in_path = "./benchmarks/FB15K237/",
 	nbatches = 100,
-	threads = 8, 
-	sampling_mode = "normal", 
-	bern_flag = 1, 
-	filter_flag = 1, 
+	threads = 8,
+	sampling_mode = "normal",
+	bern_flag = 1,
+	filter_flag = 1,
 	neg_ent = 25,
-	neg_rel = 0)
+	neg_rel = 0
+    )
 
 new_train_dataloader = TrainingAsTestDataLoader("./benchmarks/FB15K237/", "link")
 # dataloader for test
@@ -28,15 +29,15 @@ transe = TransE(
 	rel_tot = train_dataloader.get_rel_tot(),
 	dim = 200,
 	p_norm = 1,
-	norm_flag = True)
-
+	norm_flag = True
+    )
 
 # define the loss function
 model = NegativeSampling(
-	model = transe, 
+	model = transe,
 	loss = MarginLoss(margin = 5.0),
 	batch_size = train_dataloader.get_batch_size()
-)
+    )
 
 is_gpu = sys.argv[1] == 'gpu'
 topk = int(sys.argv[2])
@@ -44,7 +45,7 @@ option = sys.argv[3]
 
 if option == "train":
     # train the model
-    trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = True)
+    trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = is_gpu)
     trainer.run()
     transe.save_checkpoint('./checkpoint/transe-fb.ckpt')
     transe.save_parameters('./result/fb15k237-transe.json')
@@ -52,12 +53,11 @@ elif option == "test":
     # test the model
     transe.load_checkpoint('./checkpoint/transe-fb.ckpt')
     transe.load_parameters('./result/fb15k237-transe.json')
-    tester = Tester("FB15K237", model = transe,data_loader = test_dataloader, use_gpu = True)
+    tester = Tester("FB15K237", model = transe,data_loader = test_dataloader, use_gpu = is_gpu)
     #tester = Tester("FB15K237", model = transe, data_loader = new_train_dataloader, use_gpu = True)
     with open ('./result/fb15k237-transe.json', 'r') as fin:
         params = json.loads(fin.read())
     tester.run_ans_prediction(params['ent_embeddings.weight'], topk, filtered=True)
-    #trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = True)
     #tester.run_ans_prediction(params['ent_embeddings.weight'], topk)
 else:
     print("Invalid option")

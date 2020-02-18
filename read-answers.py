@@ -1,30 +1,41 @@
+import os
 import sys
 import json
 from random import shuffle
 
-print("Reading embeddings file...", end=" ")
+def parse_args():
+    parser = argparse.ArgumentParser(description = 'Read answer embeddings based on topk and prepare training for LSTM/other RNN models.')
+    parser.add_argument('--embfile', dest ='embfile', type = str, help = 'File containing embeddings.')
+    parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
+    parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
+    parser.add_argument('--ansfile', dest ='ansfile', type = str, help = 'File containing answers as predicted by the model.')
+    return parser.parse_args()
+
+args = parse_args()
+
+
+topk = args.topk
+db = args.db
+result_dir      = "/var/scratch2/uji300/OpenKE-results/" + db + "/"
+
 # Read embedding file
-with open("/home/uji300/OpenKE/result/fb15k237-transe.json", "r") as fin:
+print("Reading embeddings file...", end=" ")
+with open(args.embfile, "r") as fin:
     params = json.loads(fin.read())
 embeddings = params['ent_embeddings.weight']
 rel_embeddings = params['rel_embeddings.weight']
-
 print("DONE")
-print("Reading answers file...", end=" ")
 
-topk = sys.argv[1]
-db = "FB15K237"
 # Read the answers file (generated from the test option of the model)
-answer_file = sys.argv[2] #db+"-results-scores-"+str(topk)+".json"
-with open(answer_file, "r") as fin:
+print("Reading answers file...", end=" ")
+with open(args.ansfile, "r") as fin:
     res = json.loads(fin.read())
+print("DONE")
 
 # It is very important to shuffle otherwise all triples with same relations are together
 shuffle(res)
 
-print("DONE")
-print("Converting the answers into head predictions training...", end = " ")
-
+print("Converting the answers into head predictions training...")
 training = {}
 x_train_head = []
 y_train_head = []
@@ -36,9 +47,6 @@ for i,r in enumerate(res):
         unique_pairs.add((r['rel'],r['tail']))
         for rank, (e,s,c) in enumerate(zip(r['head_predictions']['entity'], r['head_predictions']['score'], r['head_predictions']['correctness'])):
             features = []
-            #features.append(r['head'])
-            #features.append(r['rel'])
-            #features.append(r['tail'])
             #features.append(s)
             #features.append(rank)
             features.extend(embeddings[r['rel']])
@@ -50,18 +58,17 @@ for i,r in enumerate(res):
     else:
         dup_count += 1
 
-print("For head prediction training data...")
-print("duplicate count : ", dup_count)
-print("# of records : ", len(x_train_head))
+print("# records (head predictions)    : ", len(x_train_head))
+print("# duplicates (head predictions) : ", dup_count)
+print("DONE")
 
-dup_count = 0
-unique_pairs.clear()
 training['x_head'] = x_train_head
 training['y_head'] = y_train_head
 
-print("DONE")
 print("Converting the answers into tail predictions training...", end = " ")
 
+dup_count = 0
+unique_pairs.clear()
 x_train_tail = []
 y_train_tail = []
 
@@ -84,13 +91,14 @@ for i,r in enumerate(res):
 
 training['x_tail'] = x_train_tail
 training['y_tail'] = y_train_tail
-print("# of records = ", len(x_train_tail))
+
+print("# records (tail predictions)    : ", len(x_train_tail))
+print("# duplicates (tail predictions) : ", dup_count)
 print("DONE")
 
-print("for tail prediction training: ")
-print("duplication count : ", dup_count)
-
-lstm_training_file = "/var/scratch2/uji300/OpenKE-results/fb15k237-test-topk-"+str(topk)+"-filtered"+".json"
+ans_file = os.path.basename(args.ansfile)
+lstm_training_file = result_dir + "lstm-" + ans_file.split('.')[0] + ".json"
+#"/var/scratch2/uji300/OpenKE-results/fb15k237-test-topk-"+str(topk)+"-filtered"+".json"
 with open(lstm_training_file, "w") as fout:
     fout.write(json.dumps(training))
 

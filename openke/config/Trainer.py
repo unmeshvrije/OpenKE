@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 class Trainer(object):
 
-    def __init__(self, 
+    def __init__(self,
                  model = None,
                  data_loader = None,
                  train_times = 1000,
@@ -50,7 +50,7 @@ class Trainer(object):
             'mode': data['mode']
         })
         loss.backward()
-        self.optimizer.step()        
+        self.optimizer.step()
         return loss.item()
 
     def run(self):
@@ -85,7 +85,6 @@ class Trainer(object):
                 weight_decay=self.weight_decay,
             )
         print("Finish initializing...")
-        
         training_range = tqdm(range(self.train_times))
         for epoch in training_range:
             res = 0.0
@@ -93,7 +92,6 @@ class Trainer(object):
                 loss = self.train_one_step(data)
                 res += loss
             training_range.set_description("Epoch %d | loss: %f" % (epoch, res))
-            
             if self.save_steps and self.checkpoint_dir and (epoch + 1) % self.save_steps == 0:
                 print("Epoch %d has finished, saving..." % (epoch))
                 self.model.save_checkpoint(os.path.join(self.checkpoint_dir + "-" + str(epoch) + ".ckpt"))

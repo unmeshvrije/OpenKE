@@ -75,7 +75,7 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_ans_prediction(self, ent_embeddings, topk, filtered = False):
+    def run_ans_prediction(self, ent_embeddings, topk, outfile_name, filtered = False):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
@@ -131,12 +131,7 @@ class Tester(object):
             record['tail_predictions']['correctness'] = truths_tail[:topk].astype(int).tolist()
             test_data.append(record)
         # Write all the records to the scores file
-        if filtered:
-            fil = "filtered"
-        else:
-            fil = "unfiltered"
-        answer_file_name = self.db + "-results-scores-"+str(topk)+"-"+fil+".json"
-        with open(answer_file_name, "w") as fout:
+        with open(outfile_name, "w") as fout:
             fout.write(json.dumps(test_data))
 
     def run_link_prediction(self, type_constrain = False):

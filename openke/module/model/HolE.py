@@ -1,6 +1,7 @@
 #coding:utf-8
 import numpy as np
 import tensorflow as tf
+import torch.nn as nn
 from .Model import Model
 
 class HolE(Model):
@@ -58,8 +59,8 @@ class HolE(Model):
 
 
 
-	r'''
-	HolE employs circular correlations to create compositional representations. 
+	'''
+	HolE employs circular correlations to create compositional representations.
 	HolE can capture rich interactions but simultaneously remains efficient to compute.
 	'''
 	def _calc(self, head, tail, rel):
