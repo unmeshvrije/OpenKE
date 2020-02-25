@@ -2,6 +2,8 @@ import os
 import sys
 import json
 from random import shuffle
+import random
+import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read answer embeddings based on topk and prepare training for LSTM/other RNN models.')
@@ -16,7 +18,7 @@ args = parse_args()
 
 topk = args.topk
 db = args.db
-result_dir      = "/var/scratch2/uji300/OpenKE-results/" + db + "/"
+result_dir = "/var/scratch2/uji300/OpenKE-results/" + db + "/"
 
 # Read embedding file
 print("Reading embeddings file...", end=" ")
@@ -33,6 +35,7 @@ with open(args.ansfile, "r") as fin:
 print("DONE")
 
 # It is very important to shuffle otherwise all triples with same relations are together
+random.seed(42)
 shuffle(res)
 
 print("Converting the answers into head predictions training...")
