@@ -98,7 +98,7 @@ if mode == "train":
     print("Saved model to disk")
 elif mode == "test":
     print("Loading test data...", end = " ")
-    with open(input_test_file, "r") as fin:
+    with open(input_file, "r") as fin:
         data = json.loads(fin.read())
     print("DONE")
     print(type(data))
