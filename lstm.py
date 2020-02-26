@@ -13,6 +13,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--infile', dest ='infile', required = True, type = str, help = 'File containing training/test data with labels.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
+    parser.add_argument('--units', dest = 'units', type = int, default = 100)
+    parser.add_argument('--dropout', dest = 'dropout', type = float, default = 0.5)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--mode', required = True, dest = 'mode', type = str, default = "test")
     parser.add_argument('--pred', dest ='pred', type = str, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
@@ -28,6 +30,9 @@ input_file = args.infile
 mode = args.mode
 topk = args.topk
 type_prediction = args.pred
+
+def percentify(num):
+    return round(float(num)*100, 2)
 
 if mode == "train":
     '''
@@ -78,18 +83,21 @@ if mode == "train":
     y_valid = np.reshape(y_valid, (N_VALID//topk, topk, 1))
 
     # Model
+    lstm_units = args.units
+    dropout = args.dropout
     model = Sequential();
-    model.add(LSTM(100, input_shape=(topk, N_FEATURES), return_sequences = True));
-    model.add(Dropout(0.1))
+    model.add(LSTM(lstm_units, input_shape=(topk, N_FEATURES), return_sequences = True));
+    model.add(Dropout(dropout))
     model.add(Dense(1, activation = 'sigmoid'))
-    model.add(Dropout(0.1))
+    model.add(Dropout(dropout))
     model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
     print(model.summary())
     model.fit(x_train, y_train, epochs = 100, batch_size = 10, verbose = 2, validation_data=(x_valid, y_valid))
 
     #Saving of model and weights
     json_model = model.to_json()
-    model_file_name = result_dir + args.db + "-lstm-model-"+str(topk)+"-"+type_prediction+".json"
+    model_file_name = result_dir + args.db + "-lstm-model-"+str(topk)+"-"+type_prediction+str(lstm_units) + \
+    "-units"+ "dropout" + str(dropout) +".json"
     with open(model_file_name, 'w') as fout:
         fout.write(json_model)
 
@@ -97,6 +105,7 @@ if mode == "train":
     model.save_weights(model_weights_file_name)
     print("Saved model to disk")
 elif mode == "test":
+    lstm_units = args.units
     print("Loading test data...", end = " ")
     with open(input_file, "r") as fin:
         data = json.loads(fin.read())
@@ -109,12 +118,15 @@ elif mode == "test":
     all_data_y = data['y_' + type_prediction][:SAMPLE_SIZE]
     N_TEST = len(all_data_x)
 
-    model_file_name = result_dir + args.db + "-lstm-model-"+str(topk)+"-"+type_prediction+".json"
+    model_file_name = result_dir + args.db + "-lstm-model-"+str(topk)+"-"+type_prediction+str(lstm_units) + \
+    "-units"+ "dropout" + str(dropout) +".json"
     with open(model_file_name, 'r') as fin:
         file_model = fin.read()
 
     loaded_model = model_from_json(file_model)
     model_weights_file_name = result_dir + args.db + "-lstm-weights-"+str(topk)+"-"+type_prediction+".h5"
+    result_file_name = result_dir + args.db + "-lstm-results-topk-"+str(topk)+"-"+type_prediction+".out"
+    result_file = open(result_file_name, "w")
     loaded_model.load_weights(model_weights_file_name)
     loaded_model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])
     x_test = np.array(all_data_x)
@@ -131,13 +143,13 @@ elif mode == "test":
     print(fp_predicted)
     fpy = y_test.flatten().astype(np.int32)
     a = (fp_predicted[np.array(fpy) == 1] == 1).sum()
-    print("# of 1s guessed : ", list(fp_predicted).count(1))
-    print("# of 0s guessed : ", list(fp_predicted).count(0))
+    print("# of 1s guessed : ", list(fp_predicted).count(1), file = result_file)
+    print("# of 0s guessed : ", list(fp_predicted).count(0), file = result_file)
     b = (np.array(fpy) == 1).sum()
     c = (fp_predicted[np.array(fpy) == 0] == 0).sum()
     d = (np.array(fpy) == 0).sum()
-    print("Predicting 1s   : ", a, " / ", b, a/b)
-    print("Predicting 0s   : ", c, " / ", d, c/d)
-    print("Predicting both : ", a+c, b+d, (a+c)/(b+d))
+    print("Predicting 1s   : ", a, " / ", b, percentify(a/b), file = result_file)
+    print("Predicting 0s   : ", c, " / ", d, percentify(c/d), file = result_file)
+    print("Predicting both : ", a+c, " / ", b+d, percentify((a+c)/(b+d)))
 else:
     print("Options are \"train\" and \"test\"")
