@@ -3,7 +3,7 @@ from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout
 from keras.models import model_from_json
-
+import os
 import numpy as np
 import sys
 import json
@@ -24,12 +24,16 @@ args = parse_args()
 
 # Paths
 db_path = "./benchmarks/" + args.db + "/"
+
+# Change result_dir to a parameter
 result_dir      = "/var/scratch2/uji300/OpenKE-results/" + args.db + "/"
 
 input_file = args.infile
 mode = args.mode
 topk = args.topk
 type_prediction = args.pred
+lstm_units = args.units
+dropout = args.dropout
 
 def percentify(num):
     return round(float(num)*100, 2)
@@ -83,16 +87,16 @@ if mode == "train":
     y_valid = np.reshape(y_valid, (N_VALID//topk, topk, 1))
 
     # Model
-    lstm_units = args.units
-    dropout = args.dropout
     model = Sequential();
     model.add(LSTM(lstm_units, input_shape=(topk, N_FEATURES), return_sequences = True));
     model.add(Dropout(dropout))
     model.add(Dense(1, activation = 'sigmoid'))
-    model.add(Dropout(dropout))
+    #model.add(Dropout(dropout))
     model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
     print(model.summary())
     model.fit(x_train, y_train, epochs = 100, batch_size = 10, verbose = 2, validation_data=(x_valid, y_valid))
+    score = model.evaluate(x_valid, y_valid, verbose=1)
+    print("Validation set : %s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
     #Saving of model and weights
     json_model = model.to_json()
@@ -105,7 +109,6 @@ if mode == "train":
     model.save_weights(model_weights_file_name)
     print("Saved model to disk")
 elif mode == "test":
-    lstm_units = args.units
     print("Loading test data...", end = " ")
     with open(input_file, "r") as fin:
         data = json.loads(fin.read())
@@ -125,7 +128,8 @@ elif mode == "test":
 
     loaded_model = model_from_json(file_model)
     model_weights_file_name = result_dir + args.db + "-lstm-weights-"+str(topk)+"-"+type_prediction+".h5"
-    result_file_name = result_dir + args.db + "-lstm-results-topk-"+str(topk)+"-"+type_prediction+".out"
+    base_file_name = os.path.basename(input_file).split('.')[0]
+    result_file_name = result_dir + base_file_name + "-" + type_prediction + "-units-"+str(lstm_units)+"-dropout-"+str(dropout)+".out"
     result_file = open(result_file_name, "w")
     loaded_model.load_weights(model_weights_file_name)
     loaded_model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])
@@ -150,6 +154,6 @@ elif mode == "test":
     d = (np.array(fpy) == 0).sum()
     print("Predicting 1s   : ", a, " / ", b, percentify(a/b), file = result_file)
     print("Predicting 0s   : ", c, " / ", d, percentify(c/d), file = result_file)
-    print("Predicting both : ", a+c, " / ", b+d, percentify((a+c)/(b+d)))
+    print("Predicting both : ", a+c, " / ", b+d, percentify((a+c)/(b+d)), file = result_file)
 else:
     print("Options are \"train\" and \"test\"")

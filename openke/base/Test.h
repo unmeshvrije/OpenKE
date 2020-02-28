@@ -131,24 +131,40 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
+
+    printf("lasthead = %ld / %ld\n", lastHead, testTotal);
+    printf("(h, r, t) = (%ld, %ld, %ld)\n", h, r, t);
     INT lef, rig;
     if (type_constrain) {
         lef = head_lef[r];
         rig = head_rig[r];
     }
     REAL minimal = con[h];
+    printf("minimal = %f\n", minimal);
     INT l_s = 0;
     INT l_filter_s = 0;
     INT l_s_constrain = 0;
     INT l_filter_s_constrain = 0;
 
+    printf("Going to loop over %ld entities\n", entityTotal);
     for (INT j = 0; j < entityTotal; j++) {
         if (j != h) {
             REAL value = con[j];
             if (value < minimal) {
                 l_s += 1;
-                if (not _find(j, t, r))
+                if (lastHead == 11) {
+                    printf("j = %ld , value(score) = %f\n", j, value);
+                }
+                //printf("Increasing l_s\n");
+                if (not _find(j, t, r)){
                     l_filter_s += 1;
+                    if (lastHead == 11)
+                    printf("(j, t, r) = (%ld, %ld, %ld) not found\n", j, t, r);
+                    //printf("Increasing l_filter_s\n");
+                } else {
+                    if (lastHead == 11)
+                    printf("(j, t, r) = (%ld, %ld, %ld) FOUND\n", j, t, r);
+                }
             }
             if (type_constrain) {
                 while (lef < rig && head_type[lef] < j) lef ++;
@@ -158,11 +174,17 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
                         if (not _find(j, t, r)) {
                             l_filter_s_constrain += 1;
                         }
-                    }  
+                    }
                 }
             }
         }
         // TODO: else we can break ?
+    }
+
+    if (l_s < 10 || l_filter_s < 10) {
+        printf("lastHead = %ld\n", lastHead);
+        printf("left_s   = %ld\n", l_s);
+        printf("left_fs  = %ld\n", l_filter_s);
     }
 
     if (l_filter_s < 10) l_filter_tot += 1;

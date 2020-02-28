@@ -146,8 +146,8 @@ class Tester(object):
             score = self.test_one_step(data_head)
             #print("unm : len : " , len(score))
             self.lib.testHead(score.__array_interface__["data"][0], index, type_constrain)
-            score = self.test_one_step(data_tail)
-            self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)
+            #score = self.test_one_step(data_tail)
+            #self.lib.testTail(score.__array_interface__["data"][0], index, type_constrain)
         self.lib.test_link_prediction(type_constrain)
 
         mrr = self.lib.getTestLinkMRR(type_constrain)
