@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
     parser.add_argument('--gpu', dest ='gpu', help = 'Whether to use gpu or not', action = 'store_true')
     parser.add_argument('--filtered', dest ='filtered', help = 'Whether to use filtered setting or not', action = 'store_true')
+    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest'], \
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
@@ -27,7 +28,7 @@ N_DIM = 200 # Number of dimensions for embeddings
 
 # Paths
 db_path = "./benchmarks/" + args.db + "/"
-result_dir      = "/var/scratch2/uji300/OpenKE-results/" + args.db + "/"
+result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(result_dir + "./checkpoint", exist_ok = True)
 os.makedirs(result_dir + "./result", exist_ok = True)
