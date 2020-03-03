@@ -41,7 +41,7 @@ topk = int(args.topk)
 type_prediction = args.pred
 n_units = int(args.units)
 dropout = float(args.dropout)
-model_str = args.model
+model_str = args.model_str
 n_epochs = args.epochs
 if args.batch_size == None:
     batch_size = int(args.topk) * 10
@@ -136,7 +136,7 @@ elif mode == "test":
     loaded_model = model_from_json(file_model)
     model_weights_file_name = result_dir + args.db + "-" + model_str + "-weights-"+str(topk)+"-"+type_prediction+".h5"
     base_file_name = os.path.basename(input_file).split('.')[0]
-    result_file_name = result_dir + base_file_name + "-" + type_prediction + "-units-"+str(n_units)+"-dropout-"+str(dropout)+".out"
+    result_file_name = result_dir + base_file_name + "-" + type_prediction + "-units-"+str(n_units)+"-dropout-"+str(dropout) + "-model-"+model_str+".out"
     result_file = open(result_file_name, "w")
     loaded_model.load_weights(model_weights_file_name)
     # Compiling a model is mandatory before training/testing (Runtime error otherwise)
