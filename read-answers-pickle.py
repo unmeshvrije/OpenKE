@@ -101,7 +101,7 @@ print("# duplicates (tail predictions) : ", dup_count)
 print("DONE")
 
 ans_file = os.path.basename(args.ansfile)
-lstm_training_file = result_dir + "lstm-" + ans_file.split('.')[0] + ".pkl"
-with open(lstm_training_file, "wb") as fout:
+answers_training_file = result_dir + "ans-" + ans_file.split('.')[0] + ".pkl"
+with open(answers_training_file, "wb") as fout:
     pickle.dump(training, fout, protocol = pickle.HIGHEST_PROTOCOL)
 
