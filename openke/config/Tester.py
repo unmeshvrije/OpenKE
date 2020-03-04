@@ -75,7 +75,18 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_sub_prediction(self, ent_embeddings, topk, outfile_name, filtered = False):
+    def get_subgraph_scores(self, S, e, r, pred_type):
+        S = np.array(S, dtype=float)
+        e = np.array(e, dtype=float)
+        r = np.array(r, dtype=float)
+        if pred_type == "tail":
+            score = (e + r) - S
+        else:
+            score = S + (r - e)
+
+        return score.sum()/2 #torch.norm(score, 1, -1).flatten()
+
+    def run_sub_prediction(self, E, R, topk, outfile_name, spo_subgraphs, pos_subgraphs, spo_avg_embeddings, pos_avg_embeddings, filtered = False):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
@@ -93,10 +104,7 @@ class Tester(object):
             record['tail'] = int(data_head['batch_t'][0])
             record['rel']  = int(data_head['batch_r'][0])
 
-            #score = self.test_one_step(data_head)
-            t = record['tail']
-            r = record['rel']
-            score = self.test_subgraphs(pos_subgraphs, pos_subgraphs_embeddings, )
+            score = self.test_one_step(data_head)
             indexes = np.argsort(score)
             sorted_scores = np.sort(score)
             #print("Scores :" , score)
@@ -104,17 +112,28 @@ class Tester(object):
             #print(len(score))
             truths = np.zeros(topk, dtype=int)
 
-            #if filtered:
-            #    self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
-            #else:
-            #    self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            if filtered:
+                self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            else:
+                self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+
+            #''' New code
+            t = record['tail']
+            r = record['rel']
+            subgraph_scores = []
+            print("t, r => ", t, r)
+            for pae in pos_avg_embeddings:
+                subgraph_scores.append(self.get_subgraph_scores(pae, E.weight.data[t], R.weight.data[r], "head"))
+            #print("# of scores ", len(subgraph_scores))
+            sub_indexes = np.argsort(subgraph_scores)
+            print("type of subgraph : ", pos_subgraphs[0].data)
+            print(sub_indexes[:topk])
+            #''' New code ends
 
             record['head_predictions'] = DeepDict()
             record['head_predictions']['entity'] = indexes[:topk].astype(int).tolist()
             record['head_predictions']['score' ] = sorted_scores[:topk].astype(float).tolist()
             record['head_predictions']['correctness'] = truths[:topk].astype(int).tolist()
-            test_unm_head = truths[:topk].astype(int).tolist()
-            #print(test_unm_head)
             #print("just printing the list")
             #print(truths.tolist())
 

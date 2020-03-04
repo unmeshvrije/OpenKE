@@ -9,9 +9,10 @@ import sys
 import json
 import argparse
 import pickle
+import torch
+import torch.nn as nn
 
 from subgraphs import Subgraph
-#from subgraphs import SubgraphFactory
 from subgraphs import SUBTYPE
 
 def parse_args():
@@ -152,8 +153,17 @@ elif args.mode == "subtest":
 
     print(len(spo_avg_embeddings))
     print(len(pos_avg_embeddings))
-    #tester.run_sub_prediction(params['ent_embeddings.weight'], params['rel_embeddings.weight'], args.topk, outfile_name, filtered = args.filtered,
-    #spo_subgraphs, pos_subgraphs, spo_avg_embeddings, pos_avg_embeddings)
+
+    spo_avg_embeddings_tensor = torch.FloatTensor(spo_avg_embeddings)
+    pos_avg_embeddings_tensor = torch.FloatTensor(pos_avg_embeddings)
+
+    spo_nn_embeddings = nn.Embedding.from_pretrained(spo_avg_embeddings_tensor)
+    pos_nn_embeddings = nn.Embedding.from_pretrained(pos_avg_embeddings_tensor)
+
+    ent_nn_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(params['ent_embeddings.weight']))
+    rel_nn_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(params['rel_embeddings.weight']))
+    tester.run_sub_prediction(ent_nn_embeddings, rel_nn_embeddings, args.topk, outfile_name, \
+    spo_subgraphs, pos_subgraphs, spo_avg_embeddings, pos_avg_embeddings, filtered = args.filtered)
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss = choose_model()
