@@ -8,16 +8,25 @@ import os
 import sys
 import json
 import argparse
+import pickle
+
+from subgraphs import Subgraph
+#from subgraphs import SubgraphFactory
+from subgraphs import SUBTYPE
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
     parser.add_argument('--gpu', dest ='gpu', help = 'Whether to use gpu or not', action = 'store_true')
     parser.add_argument('--filtered', dest ='filtered', help = 'Whether to use filtered setting or not', action = 'store_true')
     parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
-    parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest'], \
+    parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest', 'subtest'], \
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
+    parser.add_argument('--subfile-pos', dest = 'subfile_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-pos-subgraphs-tau-10.pkl")
+    parser.add_argument('--avgembfile-pos', dest = 'avgemb_file_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-pos-avgemb-tau-10.pkl")
+    parser.add_argument('--subfile-spo', dest = 'subfile_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-spo-subgraphs-tau-10.pkl")
+    parser.add_argument('--avgembfile-spo', dest = 'avgemb_file_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-spo-avgemb-tau-10.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10)
     return parser.parse_args()
 
@@ -90,6 +99,11 @@ def choose_model():
 
     return model, model_with_loss
 
+def load_pickle(filename):
+    with open(filename, 'rb') as fin:
+        data = pickle.load(fin)
+    return data
+
 if args.mode == "train":
 
     model, model_with_loss = choose_model()
@@ -112,6 +126,34 @@ elif args.mode == "test":
         fil = "unfiltered"
     outfile_name = result_dir + args.db + "-"+ args.model +"-results-scores-"+args.mode+"-topk-"+str(args.topk)+"-"+fil+".json"
     tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, filtered = args.filtered)
+elif args.mode == "subtest":
+    test_dataloader = TestDataLoader(db_path, "link")
+    model, model_with_loss = choose_model()
+    model.load_checkpoint(checkpoint_path)
+    model.load_parameters(result_path)
+    tester = Tester(args.db, model = model, data_loader = test_dataloader, use_gpu = args.gpu)
+    with open (result_path, 'r') as fin:
+        params = json.loads(fin.read())
+    if args.filtered:
+        fil = "filtered"
+    else:
+        fil = "unfiltered"
+    outfile_name = result_dir + args.db + "-"+ args.model +"-results-scores-"+args.mode+"-topk-"+str(args.topk)+"-"+fil+".json"
+
+    subfile_spo = args.subfile_spo
+    subfile_pos = args.subfile_pos
+    avgemb_file_spo = args.avgemb_file_spo
+    avgemb_file_pos = args.avgemb_file_pos
+
+    spo_subgraphs = load_pickle(subfile_spo)
+    pos_subgraphs = load_pickle(subfile_pos)
+    spo_avg_embeddings = load_pickle(avgemb_file_spo)
+    pos_avg_embeddings = load_pickle(avgemb_file_pos)
+
+    print(len(spo_avg_embeddings))
+    print(len(pos_avg_embeddings))
+    #tester.run_sub_prediction(params['ent_embeddings.weight'], params['rel_embeddings.weight'], args.topk, outfile_name, filtered = args.filtered,
+    #spo_subgraphs, pos_subgraphs, spo_avg_embeddings, pos_avg_embeddings)
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss = choose_model()

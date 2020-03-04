@@ -75,6 +75,69 @@ class Tester(object):
             'mode': data['mode']
         })
 
+    def run_sub_prediction(self, ent_embeddings, topk, outfile_name, filtered = False):
+        self.lib.initTest()
+        self.data_loader.set_sampling_mode('link')
+        training_range = tqdm(self.data_loader)
+        test_data = []
+        len_training = len(training_range)
+        for index, [data_head, data_tail] in enumerate(training_range):
+            print(index, " / ", len_training)
+            # Head answers
+            #print("tail : ", data_head['batch_t'][0])
+            #print("head : ", data_tail['batch_h'][0])
+            #print("data rel  : ", data_tail['batch_r'][0])
+            #print(type(data_tail['batch_h'][0]))
+            record = DeepDict()
+            record['head'] = int(data_tail['batch_h'][0])
+            record['tail'] = int(data_head['batch_t'][0])
+            record['rel']  = int(data_head['batch_r'][0])
+
+            #score = self.test_one_step(data_head)
+            t = record['tail']
+            r = record['rel']
+            score = self.test_subgraphs(pos_subgraphs, pos_subgraphs_embeddings, )
+            indexes = np.argsort(score)
+            sorted_scores = np.sort(score)
+            #print("Scores :" , score)
+            #print("indexes : ", indexes)
+            #print(len(score))
+            truths = np.zeros(topk, dtype=int)
+
+            #if filtered:
+            #    self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            #else:
+            #    self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+
+            record['head_predictions'] = DeepDict()
+            record['head_predictions']['entity'] = indexes[:topk].astype(int).tolist()
+            record['head_predictions']['score' ] = sorted_scores[:topk].astype(float).tolist()
+            record['head_predictions']['correctness'] = truths[:topk].astype(int).tolist()
+            test_unm_head = truths[:topk].astype(int).tolist()
+            #print(test_unm_head)
+            #print("just printing the list")
+            #print(truths.tolist())
+
+
+            # Tail answers
+            score_tail = self.test_one_step(data_tail)
+            indexes_tail = np.argsort(score_tail)
+            sorted_score_tail = np.sort(score_tail)
+            truths_tail = np.zeros(topk, dtype=int)
+
+            if filtered:
+                self.lib.ansTailInTest(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
+            else:
+                self.lib.ansTail(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
+            record['tail_predictions'] = DeepDict()
+            record['tail_predictions']['entity'] = indexes_tail[:topk].astype(int).tolist()
+            record['tail_predictions']['score' ] = sorted_score_tail[:topk].astype(float).tolist()
+            record['tail_predictions']['correctness'] = truths_tail[:topk].astype(int).tolist()
+            test_data.append(record)
+        # Write all the records to the scores file
+        with open(outfile_name, "w") as fout:
+            fout.write(json.dumps(test_data))
+
     def run_ans_prediction(self, ent_embeddings, topk, outfile_name, filtered = False):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')

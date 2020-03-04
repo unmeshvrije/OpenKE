@@ -1,67 +1,19 @@
-import copy
-import os
-import sys
-import json
-from random import shuffle
-import random
-import argparse
 import pickle
-import numpy as np
-from collections import defaultdict
 from enum import Enum
 SUBTYPE = Enum('SUBTYPE', 'SPO POS')
-sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos"}
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description = 'Read embeddings and prepare subgraphs.')
-    parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
-    parser.add_argument('--embfile', required = True, dest ='embfile', type = str, help = 'File containing embeddings.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
-    parser.add_argument('--infile', dest ='infile', type = str, help = 'File containing training triples.', default = "/home/uji300/OpenKE/benchmarks/fb15k237/train2id.txt")
-    parser.add_argument('--ms', dest = 'ms', type = int, default = 10, help = 'Minimum subgraph Size')
-    return parser.parse_args()
-
-args = parse_args()
-
-ms = args.ms
-db = args.db
-result_dir = args.result_dir + db + "/"
-os.makedirs(result_dir, exist_ok = True)
-
-def read_embeddings(filename):
-    with open(filename, "r") as fin:
-        params = json.loads(fin.read())
-    E = params['ent_embeddings.weight']
-    R = params['rel_embeddings.weight']
-    return E, R
-
-def read_triples(filename):
-    triples = []
-    with open (filename, "r") as fin:
-        lines = fin.readlines()
-    for line in lines[1:]:
-        h = int(line.split()[0])
-        t = int(line.split()[1])
-        r = int(line.split()[2])
-        triples.append((h,t,r))
-
-    return triples
 
 class Subgraph():
     def __init__(self, sid, st, sent, srel, ssize, entities):
-        self.subType = st
-        self.subId   = sid
-        self.ent     = sent
-        self.rel     = srel
-        self.size    = ssize
-        self.entities= copy.deepcopy(entities)
-
-
+        self.data = {}
+        self.data['subType'] = st
+        self.data['subId']   = sid
+        self.data['ent']     = sent
+        self.data['rel']     = srel
+        self.data['size']    = ssize
+        self.data['entities']= copy.deepcopy(entities)
 
 class SubgraphFactory():
     def __init__(self, db, min_subgraph_size, triples, ent_embeddings, sub_type):
-
         self.db = db
         self.min_subgraph_size = min_subgraph_size
         self.E = ent_embeddings
@@ -79,10 +31,19 @@ class SubgraphFactory():
 
     def get_Nsubgraphs(self):
         return len(self.subgraphs)
+
     def save(self, outdir, emb_model_str, protocol=pickle.HIGHEST_PROTOCOL):
         filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
-            pickle.dump(self, fout, protocol=protocol)
+            pickle.dump(self.subgraphs, fout, protocol=protocol)
+
+        filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-avgemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        with open(filename, 'wb') as fout:
+            pickle.dump(self.avg_embeddings, fout, protocol=protocol)
+
+        filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-varemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        with open(filename, 'wb') as fout:
+            pickle.dump(self.var_embeddings, fout, protocol=protocol)
 
     @staticmethod
     def load(fname):
@@ -163,13 +124,3 @@ class SubgraphFactory():
         file_data +=  "# of subgraphs : " + str(self.get_Nsubgraphs())
         with open(subgraph_logfile, "w") as fout:
             fout.write(file_data)
-
-
-triples = read_triples(args.infile)
-E, R = read_embeddings(args.embfile)
-sub_factory_spo = SubgraphFactory(args.db, int(args.ms), triples, E, SUBTYPE.SPO)
-sub_factory_spo.make_subgraphs()
-sub_factory_spo.save(result_dir, "transe")
-sub_factory_pos = SubgraphFactory(args.db, int(args.ms), triples, E, SUBTYPE.POS)
-sub_factory_pos.make_subgraphs()
-sub_factory_pos.save(result_dir, "transe")
