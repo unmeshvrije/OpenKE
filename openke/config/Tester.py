@@ -126,8 +126,13 @@ class Tester(object):
                 subgraph_scores.append(self.get_subgraph_scores(pae, E.weight.data[t], R.weight.data[r], "head"))
             #print("# of scores ", len(subgraph_scores))
             sub_indexes = np.argsort(subgraph_scores)
-            print("type of subgraph : ", pos_subgraphs[0].data)
+            topk_entities = indexes[:topk].astype(int).tolist()
+            correctness   = truths[:topk].astype(int).tolist()
             print(sub_indexes[:topk])
+            for i, answer in enumerate(topk_entities):
+                for j, sub_index in enumerate(sub_indexes):
+                    if answer in pos_subgraphs[sub_index].data['entities']:
+                        print("{} FOUND in subgraph # {}". format(answer, j))
             #''' New code ends
 
             record['head_predictions'] = DeepDict()
