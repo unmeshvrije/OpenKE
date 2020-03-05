@@ -6,8 +6,6 @@ import torch.optim as optim
 import os
 import time
 import sys
-import random
-from random import shuffle
 import datetime
 import ctypes
 import json
@@ -191,17 +189,15 @@ class Tester(object):
             #print("indexes : ", indexes)
             #print(len(score))
             truths = np.zeros(topk, dtype=int)
-            if filtered:
-                self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
-            else:
-                self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
+            truths_fil = np.zeros(topk, dtype=int)
+            self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk, truths_fil.__array_interface__["data"][0])
+            self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk, truths.__array_interface__["data"][0])
 
             record['head_predictions'] = DeepDict()
             record['head_predictions']['entity'] = indexes[:topk].astype(int).tolist()
             record['head_predictions']['score' ] = sorted_scores[:topk].astype(float).tolist()
             record['head_predictions']['correctness'] = truths[:topk].astype(int).tolist()
-            test_unm_head = truths[:topk].astype(int).tolist()
-            #print(test_unm_head)
+            record['head_predictions']['correctness_filtered'] = truths_fil[:topk].astype(int).tolist()
             #print("just printing the list")
             #print(truths.tolist())
 
@@ -211,19 +207,17 @@ class Tester(object):
             indexes_tail = np.argsort(score_tail)
             sorted_score_tail = np.sort(score_tail)
             truths_tail = np.zeros(topk, dtype=int)
+            truths_tail_fil = np.zeros(topk, dtype=int)
 
-            if filtered:
-                self.lib.ansTailInTest(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
-            else:
-                self.lib.ansTail(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
+            self.lib.ansTailInTest(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail_fil.__array_interface__["data"][0])
+            self.lib.ansTail(indexes_tail.__array_interface__["data"][0], index, topk, truths_tail.__array_interface__["data"][0])
             record['tail_predictions'] = DeepDict()
             record['tail_predictions']['entity'] = indexes_tail[:topk].astype(int).tolist()
             record['tail_predictions']['score' ] = sorted_score_tail[:topk].astype(float).tolist()
             record['tail_predictions']['correctness'] = truths_tail[:topk].astype(int).tolist()
+            record['tail_predictions']['correctness_filtered'] = truths_tail_fil[:topk].astype(int).tolist()
             test_data.append(record)
         # Write all the records to the scores file
-        random.seed(42)
-        shuffle(test_data)
         with open(outfile_name, "w") as fout:
             fout.write(json.dumps(test_data))
 

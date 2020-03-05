@@ -121,11 +121,7 @@ elif args.mode == "test":
     tester = Tester(args.db, model = model, data_loader = test_dataloader, use_gpu = args.gpu)
     with open (result_path, 'r') as fin:
         params = json.loads(fin.read())
-    if args.filtered:
-        fil = "filtered"
-    else:
-        fil = "unfiltered"
-    outfile_name = result_dir + args.db + "-"+ args.model +"-results-scores-"+args.mode+"-topk-"+str(args.topk)+"-"+fil+".json"
+    outfile_name = result_dir + args.db + "-"+ args.model +"-results-scores-"+args.mode+"-topk-"+str(args.topk)+".json"
     tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, filtered = args.filtered)
 elif args.mode == "subtest":
     test_dataloader = TestDataLoader(db_path, "link")
