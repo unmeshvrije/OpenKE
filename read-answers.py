@@ -1,8 +1,6 @@
 import os
 import sys
 import json
-from random import shuffle
-import random
 import argparse
 
 def parse_args():
@@ -33,10 +31,6 @@ print("Reading answers file...", end=" ")
 with open(args.ansfile, "r") as fin:
     res = json.loads(fin.read())
 print("DONE")
-
-# It is very important to shuffle otherwise all triples with same relations are together
-random.seed(42)
-shuffle(res)
 
 print("Converting the answers into head predictions training...")
 training = {}

@@ -6,6 +6,8 @@ import torch.optim as optim
 import os
 import time
 import sys
+import random
+from random import shuffle
 import datetime
 import ctypes
 import json
@@ -220,6 +222,8 @@ class Tester(object):
             record['tail_predictions']['correctness'] = truths_tail[:topk].astype(int).tolist()
             test_data.append(record)
         # Write all the records to the scores file
+        random.seed(42)
+        shuffle(test_data)
         with open(outfile_name, "w") as fout:
             fout.write(json.dumps(test_data))
 
