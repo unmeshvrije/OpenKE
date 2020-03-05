@@ -14,6 +14,8 @@ from sklearn.metrics import roc_auc_score
 import copy
 from tqdm import tqdm
 
+from numpy import linalg as LA
+
 from openke.utils import DeepDict
 from numpy.ctypeslib import ndpointer
 
@@ -84,7 +86,7 @@ class Tester(object):
         else:
             score = S + (r - e)
 
-        return score.sum()/2 #torch.norm(score, 1, -1).flatten()
+        return LA.norm(score, 2) #torch.norm(score, 1, -1).flatten()
 
     def run_sub_prediction(self, E, R, topk, outfile_name, spo_subgraphs, pos_subgraphs, spo_avg_embeddings, pos_avg_embeddings, filtered = False):
         self.lib.initTest()
