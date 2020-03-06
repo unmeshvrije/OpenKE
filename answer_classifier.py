@@ -10,16 +10,10 @@ class AnswerClassifier(ABC):
         self.x_test = None
         self.y_test = None
         self.y_test_filtered = None
-        self.y_predicted = None
+        self.y_predicted = []
         self.type_prediction = type_prediction
         self.init_test_triples(test_triples_file)
 
-    # Use for subgraphs only => move to subgraphs classifier
-    def init_embeddings(embeddings_pickle_file):
-        # Process pickle file and initialize
-        #self.E
-        #self.R
-        pass
 
     def init_test_triples(self, test_triples_file):
         # Read the test file
