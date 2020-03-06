@@ -8,6 +8,7 @@ import numpy as np
 import sys
 import json
 import argparse
+import pickle
 
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -53,8 +54,8 @@ def percentify(num):
 
 if mode == "train":
     print("Loading training data...", end = " ")
-    with open(input_file, "r") as fin:
-        training_data = json.loads(fin.read())
+    with open(input_file, "rb") as fin:
+        training_data = pickle.load(fin)
     print("DONE")
 
     SAMPLE_SIZE = len(training_data['x_' + type_prediction])
@@ -117,8 +118,8 @@ if mode == "train":
     print("Saved model to disk")
 elif mode == "test":
     print("Loading test data...", end = " ")
-    with open(input_file, "r") as fin:
-        data = json.loads(fin.read())
+    with open(input_file, "rb") as fin:
+        data = pickle.load(fin)
     print("DONE")
     print(type(data))
     print(data.keys())
@@ -126,6 +127,7 @@ elif mode == "test":
     print("Size of all test triples = ", len(data['x_'+ type_prediction]))
     all_data_x = data['x_' + type_prediction][:SAMPLE_SIZE]
     all_data_y = data['y_' + type_prediction][:SAMPLE_SIZE]
+    all_data_y_filtered = data['y_' + type_prediction + '_filtered'][:SAMPLE_SIZE]
     N_TEST = len(all_data_x)
 
     model_file_name = result_dir + args.db + "-" + model_str + "-model-"+str(topk)+"-"+type_prediction+str(n_units) + \
@@ -144,25 +146,38 @@ elif mode == "test":
 
     x_test = np.array(all_data_x)
     y_test = np.array(all_data_y, dtype=np.int32)
+    y_test_filtered = np.array(all_data_y_filtered, dtype=np.int32)
     N_FEATURES = len(x_test[0])
     x_test = np.reshape(x_test, (N_TEST//topk, topk, N_FEATURES))
     y_test = np.reshape(y_test, (N_TEST//topk, topk, 1))
+    y_test_filtered = np.reshape(y_test_filtered, (N_TEST//topk, topk, 1))
 
     predicted = loaded_model.predict_classes(x_test)
     fp_predicted = predicted.flatten().astype(np.int32)
     fpy = y_test.flatten().astype(np.int32)
+    fpy_filtered = y_test_filtered.flatten().astype(np.int32)
 
     a = (fp_predicted[np.array(fpy) == 1] == 1).sum()
     b = (np.array(fpy) == 1).sum()
+
+    af = (fp_predicted[np.array(fpy_filtered) == 1] == 1).sum()
+    bf = (np.array(fpy_filtered) == 1). sum()
+
     c = (fp_predicted[np.array(fpy) == 0] == 0).sum()
     d = (np.array(fpy) == 0).sum()
 
     print("# of 1s predicted by the model : ", list(fp_predicted).count(1), file = result_file)
     print("# of 0s predicted by the model : ", list(fp_predicted).count(0), file = result_file)
-    print("Predicting 1s   : ", a, " / ", b, " ( ", percentify(a/b), " ) ", file = result_file)
-    print("Predicting 0s   : ", c, " / ", d, " ( ", percentify(c/d), " ) ", file = result_file)
-    print("Predicting both : ", a+c, " / ", b+d, " ( ", percentify((a+c)/(b+d)), " ) ", file = result_file)
+    print("Predicting 1s (raw)  : ", a, " / ", b, " ( ", percentify(a/b), " ) ", file = result_file)
+    print("Predicting 1s (fil)  : ", af, " / ", bf, " ( ", percentify(af/bf), " ) ", file = result_file)
+    print("Predicting 0s        : ", c, " / ", d, " ( ", percentify(c/d), " ) ", file = result_file)
+    print("Predicting both (raw): ", a+c, " / ", b+d, " ( ", percentify((a+c)/(b+d)), " ) ", file = result_file)
+    print("Predicting both (fil): ", af+c, " / ", bf+d, " ( ", percentify((af+c)/(bf+d)), " ) ", file = result_file)
     print(confusion_matrix(fpy, fp_predicted), file = result_file)
     print(classification_report(fpy, fp_predicted), file = result_file)
+    print("*" * 80, file = result_file)
+    print("For Filtered Setting: ", file = result_file)
+    print(confusion_matrix(fpy_filtered, fp_predicted), file = result_file)
+    print(classification_report(fpy_filtered, fp_predicted), file = result_file)
 else:
     print("Options are \"train\" and \"test\"")

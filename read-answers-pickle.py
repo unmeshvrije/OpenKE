@@ -37,9 +37,7 @@ with open(args.ansfile, "r") as fin:
     res = json.loads(fin.read())
 print("DONE")
 
-triples_features = {}
-triples_labels_raw = {}
-triples_labels_filtered = {}
+triples= {}
 x_head = []
 y_head = []
 y_head_filtered = []
@@ -72,9 +70,9 @@ print("# records (head predictions)    : ", len(x_head))
 print("# duplicates (head predictions) : ", dup_count)
 print("DONE")
 
-triples_features['x_head'] = x_head
-triples_labels_raw['y_head'] = y_head
-triples_labels_filtered['y_head_filtered'] = y_head_filtered
+triples['x_head'] = x_head
+triples['y_head'] = y_head
+triples['y_head_filtered'] = y_head_filtered
 
 print("Converting the answers into tail predictions triples...", end = " ")
 
@@ -106,9 +104,9 @@ for i,r in enumerate(res):
     else:
         dup_count += 1
 
-triples_features['x_tail'] = x_tail
-triples_labels_raw['y_tail'] = y_tail
-triples_labels_filtered['y_tail_filtered'] = y_tail_filtered
+triples['x_tail'] = x_tail
+triples['y_tail'] = y_tail
+triples['y_tail_filtered'] = y_tail_filtered
 print("# records (tail predictions)    : ", len(x_tail))
 print("# duplicates (tail predictions) : ", dup_count)
 print("DONE")
@@ -117,14 +115,4 @@ ans_file = os.path.basename(args.ansfile)
 
 answers_features_file = result_dir + "ans-features-" + ans_file.split('.')[0] + ".pkl"
 with open(answers_features_file, "wb") as fout:
-    pickle.dump(triples_features, fout, protocol = pickle.HIGHEST_PROTOCOL)
-
-answers_labels_raw_file = result_dir + "ans-labels-raw-" + ans_file.split('.')[0] + ".pkl"
-with open(answers_labels_raw_file, "wb") as fout:
-    pickle.dump(triples_labels_raw, fout, protocol = pickle.HIGHEST_PROTOCOL)
-
-if len(triples_labels_filtered['y_head_filtered']) != 0:
-    answers_labels_filtered_file = result_dir + "ans-labels-filtered-" + ans_file.split('.')[0] + ".pkl"
-    with open(answers_labels_filtered_file, "wb") as fout:
-        pickle.dump(triples_labels_filtered, fout, protocol = pickle.HIGHEST_PROTOCOL)
-
+    pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)
