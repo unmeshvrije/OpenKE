@@ -47,7 +47,7 @@ class SubgraphClassifier(AnswerClassifier):
     def predict(self):
         # Go over all test triples
         print(type(self.x_test))
-        for index in range(len(self.x_test)):
+        for index in range(0, len(self.x_test), self.topk):
             print(index , " : ")
             features = np.array(self.x_test[index: index + self.topk])
             ent = int(features[0][0])
@@ -73,6 +73,4 @@ class SubgraphClassifier(AnswerClassifier):
                     self.y_predicted.append(1)
                 else:
                     self.y_predicted.append(0)
-
-            index += self.topk
 

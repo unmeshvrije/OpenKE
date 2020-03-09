@@ -46,6 +46,8 @@ class AnswerClassifier(ABC):
         pass
 
     def results(self):
+        print("ytest = ", len(self.y_test))
+        print("ypred = ", len(self.y_predicted))
         print(confusion_matrix(self.y_test, self.y_predicted))
         print(classification_report(self.y_test, self.y_predicted))
         print("*" * 80)
