@@ -28,8 +28,8 @@ class Tester(object):
         self.lib.testTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
         self.lib.ansHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
         self.lib.ansTail.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p]
-        #self.lib.ansHead.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
-        #self.lib.ansTail.restype = ndpointer(dtype=ctypes.c_int64, shape=(1000,))
+        self.lib.ansHeadInTest.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_void_p]
+        self.lib.ansTailInTest.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64, ctypes.c_void_p, ctypes.c_void_p]
         self.lib.test_link_prediction.argtypes = [ctypes.c_int64]
 
         self.lib.getTestLinkMRR.argtypes = [ctypes.c_int64]
@@ -85,72 +85,79 @@ class Tester(object):
         len_training = len(training_range)
         for index, [data_head, data_tail] in enumerate(training_range):
             print(index, " / ", len_training)
-            # Head answers
-            #print("tail : ", data_head['batch_t'][0])
-            #print("head : ", data_tail['batch_h'][0])
-            #print("data rel  : ", data_tail['batch_r'][0])
-            #print(type(data_tail['batch_h'][0]))
             record = DeepDict()
             record['head'] = int(data_tail['batch_h'][0])
             record['tail'] = int(data_head['batch_t'][0])
             record['rel']  = int(data_head['batch_r'][0])
+            '''
+            # Head Predictions
+            '''
+            scores_head = self.test_one_step(data_head)
 
-            score = self.test_one_step(data_head)
-            indexes = np.argsort(score)
-            sorted_scores = np.sort(score)
-            #print("Scores :" , score)
-            #print("indexes : ", indexes)
-            #print(len(score))
             if topk == 9999:
                 topk_head = dyntop.get_dyn_topk(record['tail'], record['rel'], "head")
-                print("HEAD ({}, {}) => topk = {}, len(indexes) = {} ".format(record['tail'], record['rel'], topk_head, len(indexes)) )
             else:
                 topk_head = topk
 
-            truths = np.zeros(topk_head, dtype=int)
-            truths_fil = np.zeros(topk_head, dtype=int)
-            self.lib.ansHeadInTest(indexes.__array_interface__["data"][0], index, topk_head, truths_fil.__array_interface__["data"][0])
-            if (record['rel'] == 17):
-                print("1")
-            self.lib.ansHead(indexes.__array_interface__["data"][0], index, topk_head, truths.__array_interface__["data"][0])
-            if (record['rel'] == 17):
-                print("2")
+            # Head answers raw
+            answers_head = np.argsort(scores_head)
+            sorted_scores_head = np.sort(scores_head)
+            truths_head = np.zeros(topk_head, dtype=int)
+            self.lib.ansHead(answers_head.__array_interface__["data"][0], index, topk_head, truths_head.__array_interface__["data"][0])
+            record['head_predictions_raw'] = DeepDict()
+            record['head_predictions_raw']['entities'] = answers_head[:topk_head].astype(int).tolist()
+            record['head_predictions_raw']['scores' ] = sorted_scores_head[:topk_head].astype(float).tolist()
+            record['head_predictions_raw']['correctness'] = truths_head[:topk_head].astype(int).tolist()
 
-            record['head_predictions'] = DeepDict()
-            record['head_predictions']['entity'] = indexes[:topk_head].astype(int).tolist()
-            record['head_predictions']['score' ] = sorted_scores[:topk_head].astype(float).tolist()
-            record['head_predictions']['correctness'] = truths[:topk_head].astype(int).tolist()
-            record['head_predictions']['correctness_filtered'] = truths_fil[:topk_head].astype(int).tolist()
-            #print("just printing the list")
-            #print(truths.tolist())
+            # Head answers filtered
+            answers_head_fil = np.full(topk_head, -1, dtype = int)
+            truths_head_fil = np.zeros(topk_head, dtype = int)
+            # Filter answers from raw answers
+            self.lib.ansHeadInTest(answers_head.__array_interface__["data"][0], index, topk_head, truths_head_fil.__array_interface__["data"][0], answers_head_fil.__array_interface__["data"][0])
+            # Slice the corresponding scores of the filtered answers from the sorted_scores_head
+            scores_head_fil = sorted_scores_head[answers_head_fil]
+
+            assert(len(answers_head_fil) == len(scores_head_fil) == len(truths_head_fil) == topk_head)
+            record['head_predictions_fil'] = DeepDict()
+            record['head_predictions_fil']['entities'] = answers_head_fil.astype(int).tolist()
+            record['head_predictions_fil']['scores' ] = scores_head_fil.astype(float).tolist()
+            record['head_predictions_fil']['correctness'] = truths_head_fil.astype(int).tolist()
 
 
-            # Tail answers
-            score_tail = self.test_one_step(data_tail)
-            indexes_tail = np.argsort(score_tail)
-            sorted_score_tail = np.sort(score_tail)
+            '''
+            Tail answers
+            '''
+            scores_tail = self.test_one_step(data_tail)
 
             if topk == 9999:
                 topk_tail = dyntop.get_dyn_topk(record['head'], record['rel'], "tail")
-                print("TAIL ({}, {}) => topk = {}, indexes_tail = {}".format(record['head'], record['rel'], topk_tail, len(indexes_tail)) )
             else:
                 topk_tail = topk
 
+            # Tail answers raw
+            answers_tail = np.argsort(scores_tail)
+            sorted_scores_tail = np.sort(scores_tail)
             truths_tail = np.zeros(topk_tail, dtype=int)
-            truths_tail_fil = np.zeros(topk_tail, dtype=int)
+            self.lib.ansTail(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail.__array_interface__["data"][0])
+            record['tail_predictions_raw'] = DeepDict()
+            record['tail_predictions_raw']['entities'] = answers_tail[:topk_tail].astype(int).tolist()
+            record['tail_predictions_raw']['scores' ] = sorted_scores_tail[:topk_tail].astype(float).tolist()
+            record['tail_predictions_raw']['correctness'] = truths_tail[:topk_tail].astype(int).tolist()
 
-            self.lib.ansTailInTest(indexes_tail.__array_interface__["data"][0], index, topk_tail, truths_tail_fil.__array_interface__["data"][0])
-            if (record['rel'] == 17):
-                print("3")
-            self.lib.ansTail(indexes_tail.__array_interface__["data"][0], index, topk_tail, truths_tail.__array_interface__["data"][0])
-            if (record['rel'] == 17):
-                print("4")
-            record['tail_predictions'] = DeepDict()
-            record['tail_predictions']['entity'] = indexes_tail[:topk_tail].astype(int).tolist()
-            record['tail_predictions']['score' ] = sorted_score_tail[:topk_tail].astype(float).tolist()
-            record['tail_predictions']['correctness'] = truths_tail[:topk_tail].astype(int).tolist()
-            record['tail_predictions']['correctness_filtered'] = truths_tail_fil[:topk_tail].astype(int).tolist()
+            # Tail answers filtered
+            answers_tail_fil = np.full(topk_tail, -1, dtype = int)
+            truths_tail_fil = np.zeros(topk_tail, dtype = int)
+            # Filter answers from raw answers
+            self.lib.ansTailInTest(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail_fil.__array_interface__["data"][0], answers_tail_fil.__array_interface__["data"][0])
+            # Slice the corresponding scores of the filtered answers from the sorted_scores_tail
+            scores_tail_fil = sorted_scores_tail[answers_tail_fil]
+            assert(len(answers_tail_fil) == len(scores_tail_fil) == len(truths_tail_fil) == topk_tail)
+            record['tail_predictions_fil'] = DeepDict()
+            record['tail_predictions_fil']['entities'] = answers_tail_fil.astype(int).tolist()
+            record['tail_predictions_fil']['scores'] = scores_tail_fil.astype(float).tolist()
+            record['tail_predictions_fil']['correctness'] = truths_tail_fil[:topk_tail].astype(int).tolist()
             test_data.append(record)
+
         # Write all the records to the scores file
         with open(outfile_name, "w") as fout:
             fout.write(json.dumps(test_data))

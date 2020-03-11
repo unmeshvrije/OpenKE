@@ -70,8 +70,6 @@ void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
         if (_find(indexes[i], t, r)) {
             truths[i] = 1;
-            //printf("Looking for (%ld, %ld, %ld) : ", indexes[i], t, r);
-            //printf("FOUND at %ld\n", i);
         } else {
             truths[i] = 0;
         }
@@ -79,17 +77,19 @@ void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
 }
 
 extern "C"
-void ansHeadInTest(INT *indexes, INT lastHead, INT topK, INT *truths) {
+void ansHeadInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT *filtered_indexes) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
-    for (INT i = 0; i < topK && i < entityTotal; ++i) {
-        if (_find_in_test(indexes[i], t, r)) {
-            truths[i] = 1;
-            printf("Looking for (%ld, %ld, %ld) : ", indexes[i], t, r);
-            printf("FOUND at %ld\n", i);
-        } else {
-            truths[i] = 0;
+    for (INT i = 0, j = 0; i < entityTotal && j < topK; ++i) {
+        if (not _find(indexes[i], t, r)) {
+            filtered_indexes[j] = indexes[i];
+            if (_find_in_test(indexes[i], t, r)) {
+                truths[j] = 1;
+            } else {
+                truths[j] = 0;
+            }
+            ++j;
         }
     }
 }
@@ -102,8 +102,6 @@ void ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
         if (_find(h, indexes[i], r)) {
             truths[i] = 1;
-            //printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
-            //printf("FOUND at %ld\n", i);
         } else {
             truths[i] = 0;
         }
@@ -111,17 +109,20 @@ void ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
 }
 
 extern "C"
-void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths) {
+void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT* filtered_indexes) {
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
-    for (INT i = 0; i < topK && i < entityTotal; ++i) {
-        if (_find_in_test(h, indexes[i], r)) {
-            truths[i] = 1;
-            printf("Looking for (%ld, %ld, %ld) : ", h, indexes[i], r);
-            printf("FOUND at %ld\n", i);
-        } else {
-            truths[i] = 0;
+
+    for (INT i = 0, j = 0; j < topK && i < entityTotal; ++i) {
+        if (not _find(h, indexes[i], r)) {
+            filtered_indexes[j] = indexes[i];
+            if (_find_in_test(h, indexes[i], r)) {
+                truths[j] = 1;
+            } else {
+                truths[j] = 0;
+            }
+            ++j;
         }
     }
 }
@@ -132,8 +133,6 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
 
-    printf("lasthead = %ld / %ld\n", lastHead, testTotal);
-    printf("(h, r, t) = (%ld, %ld, %ld)\n", h, r, t);
     INT lef, rig;
     if (type_constrain) {
         lef = head_lef[r];
@@ -146,24 +145,13 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
     INT l_s_constrain = 0;
     INT l_filter_s_constrain = 0;
 
-    printf("Going to loop over %ld entities\n", entityTotal);
     for (INT j = 0; j < entityTotal; j++) {
         if (j != h) {
             REAL value = con[j];
             if (value < minimal) {
                 l_s += 1;
-                if (lastHead == 11) {
-                    printf("j = %ld , value(score) = %f\n", j, value);
-                }
-                //printf("Increasing l_s\n");
                 if (not _find(j, t, r)){
                     l_filter_s += 1;
-                    if (lastHead == 11)
-                    printf("(j, t, r) = (%ld, %ld, %ld) not found\n", j, t, r);
-                    //printf("Increasing l_filter_s\n");
-                } else {
-                    if (lastHead == 11)
-                    printf("(j, t, r) = (%ld, %ld, %ld) FOUND\n", j, t, r);
                 }
             }
             if (type_constrain) {
@@ -178,7 +166,6 @@ void testHead(REAL *con, INT lastHead, bool type_constrain = false) {
                 }
             }
         }
-        // TODO: else we can break ?
     }
 
     if (l_s < 10 || l_filter_s < 10) {
