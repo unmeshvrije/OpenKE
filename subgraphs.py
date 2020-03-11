@@ -1,6 +1,9 @@
 import pickle
+import copy
+import numpy as np
 from enum import Enum
 SUBTYPE = Enum('SUBTYPE', 'SPO POS')
+sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos"}
 
 def read_triples(filename):
     triples = []
@@ -25,12 +28,11 @@ class Subgraph():
         self.data['entities']= copy.deepcopy(entities)
 
 class SubgraphFactory():
-    def __init__(self, db, min_subgraph_size, triples, ent_embeddings, sub_type):
+    def __init__(self, db, min_subgraph_size, triples, ent_embeddings):
         self.db = db
         self.min_subgraph_size = min_subgraph_size
         self.E = ent_embeddings
         self.triples = triples
-        self.sub_type = sub_type
 
         self.subgraphs = []
         self.avg_embeddings = []
@@ -45,15 +47,15 @@ class SubgraphFactory():
         return len(self.subgraphs)
 
     def save(self, outdir, emb_model_str, protocol=pickle.HIGHEST_PROTOCOL):
-        filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
+        filename = outdir + self.db + "-" + emb_model_str + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
             pickle.dump(self.subgraphs, fout, protocol=protocol)
 
-        filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-avgemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        filename = outdir + self.db + "-" + emb_model_str + "-avgemb-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
             pickle.dump(self.avg_embeddings, fout, protocol=protocol)
 
-        filename = outdir + db + "-" + emb_model_str + "-" + sub_type_to_string[self.sub_type] + "-varemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        filename = outdir + self.db + "-" + emb_model_str + "-varemb-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
             pickle.dump(self.var_embeddings, fout, protocol=protocol)
 
@@ -63,26 +65,23 @@ class SubgraphFactory():
             subgraphs = pickle.load(fin)
         return subgraphs
 
-    def make_subgraphs(self):
+    # sub_type can be SPO or POS
+    def make_subgraphs_per_type(self,sub_type):
 
         E = self.E
         min_subgraph_size = self.min_subgraph_size
-        sub_type = self.sub_type
-
-        similar_entities = []
-        current = np.zeros(len(E[0]), dtype=np.float64)
-        count = 0
-        prevo = -1
-        prevp = -1
-        subgraph_logfile="subgraphs-test.log"
-        file_data = ""
-
         if sub_type == SUBTYPE.SPO:
             sorted_triples = sorted(self.triples, key = lambda l : (l[2], l[0]))
         elif sub_type == SUBTYPE.POS:
             sorted_triples = sorted(self.triples, key = lambda l : (l[2], l[1]))
 
+        similar_entities = []
+        current = np.zeros(len(E[0]), dtype = np.float64)
+        count = 0
+        prevo = -1
+        prevp = -1
         cntTriples = len(sorted_triples)
+
         for i, triple in enumerate(sorted_triples):
             sub = triple[0]
             obj = triple[1]
@@ -110,7 +109,6 @@ class SubgraphFactory():
                         columnsSquareDiff = mean
                     self.var_embeddings.append(columnsSquareDiff)
                     self.add_subgraphs(sub_type, prevo, prevp, count, similar_entities)
-                    file_data += str(count) + " entities in the subgraph"
                 count = 0
                 prevo = ent
                 prevp = rel
@@ -132,7 +130,10 @@ class SubgraphFactory():
                 columnsSquareDiff = mean
             self.var_embeddings.append(columnsSquareDiff)
             self.add_subgraphs(subType, prevo, prevp, count, similar_entities)
-        print ("# of subgraphs : " , self.get_Nsubgraphs())
-        file_data +=  "# of subgraphs : " + str(self.get_Nsubgraphs())
-        with open(subgraph_logfile, "w") as fout:
-            fout.write(file_data)
+
+        print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], self.get_Nsubgraphs()))
+
+    def make_subgraphs(self):
+
+        self.make_subgraphs_per_type(SUBTYPE.SPO)
+        self.make_subgraphs_per_type(SUBTYPE.POS)

@@ -13,7 +13,6 @@ from subgraphs import Subgraph
 from subgraphs import SubgraphFactory
 from subgraphs import SUBTYPE
 from subgraphs import read_triples
-sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos"}
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read embeddings and prepare subgraphs.')
@@ -38,14 +37,8 @@ def read_embeddings(filename):
     R = params['rel_embeddings.weight']
     return E, R
 
-
-
-
 triples = read_triples(args.infile)
 E, R = read_embeddings(args.embfile)
-sub_factory_spo = SubgraphFactory(args.db, int(args.ms), triples, E, SUBTYPE.SPO)
-sub_factory_spo.make_subgraphs()
-sub_factory_spo.save(result_dir, "transe")
-sub_factory_pos = SubgraphFactory(args.db, int(args.ms), triples, E, SUBTYPE.POS)
-sub_factory_pos.make_subgraphs()
-sub_factory_pos.save(result_dir, "transe")
+sub_factory = SubgraphFactory(args.db, int(args.ms), triples, E)
+sub_factory.make_subgraphs()
+sub_factory.save(result_dir, "transe")
