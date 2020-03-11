@@ -38,78 +38,44 @@ with open(args.ansfile, "r") as fin:
 print("DONE")
 
 triples= {}
-x_head = []
-y_head = []
-y_head_filtered = []
-unique_pairs = set()
-dup_count = 0
-for i,r in enumerate(res):
-#    print(i, " :")
-    if (r['rel'], r['tail']) not in unique_pairs:
-        unique_pairs.add((r['rel'],r['tail']))
-        for rank, (e,s,c) in enumerate(zip(r['head_predictions']['entity'], r['head_predictions']['score'], r['head_predictions']['correctness'])):
-            features = []
-            #features.append(s)
-            #features.append(rank)
-            features.append(r['tail'])
-            features.append(r['rel'])
-            features.append(e)
-            features.extend(embeddings[r['rel']])
-            features.extend(embeddings[r['tail']])
-            features.extend(embeddings[e])
 
-            x_head.append(features)
-            y_head.append(c)
-        if 'correctness_filtered' in r['head_predictions']:
-            for cf in r['head_predictions']['correctness_filtered']:
-                y_head_filtered.append(cf)
-    else:
-        dup_count += 1
+ht = ["head", "tail"]
+for index in range(len(ht)):
+    for rf in ["raw", "fil"]:
+        x_head = []
+        y_head = []
+        unique_pairs = set()
+        dup_count = 0
+        for i,r in enumerate(res):
+            #print(i, " :")
+            if (r['rel'], r[ht[(index+1)%2]]) not in unique_pairs:
+                unique_pairs.add((r['rel'],r[ht[(index+1)%2]]))
+                for rank, (e,s,c) in enumerate(zip(\
+                r[ht[index]+'_predictions_'+rf]['entities'],\
+                r[ht[index]+'_predictions_'+rf]['scores'], \
+                r[ht[index]+'_predictions_'+rf]['correctness'])):
+                    features = []
+                    features.append(r[ht[(index+1)%2]])
+                    features.append(r['rel'])
+                    features.append(e)
+                    features.append(s)
+                    features.append(rank)
+                    features.extend(embeddings[r['rel']])
+                    features.extend(embeddings[r[ht[(index+1)%2]]])
+                    features.extend(embeddings[e])
 
-print("# records (head predictions)    : ", len(x_head))
-print("# duplicates (head predictions) : ", dup_count)
-print("DONE")
+                    x_head.append(features)
+                    y_head.append(c)
+            else:
+                dup_count += 1
+        # add the x_head and y_head to dictionary
+        triples['x_' + ht[index] + rf] = x_head
+        triples['y_' + ht[index] + rf] = y_head
 
-triples['x_head'] = x_head
-triples['y_head'] = y_head
-triples['y_head_filtered'] = y_head_filtered
-
-print("Converting the answers into tail predictions triples...", end = " ")
-
-dup_count = 0
-unique_pairs.clear()
-x_tail = []
-y_tail = []
-y_tail_filtered = []
-for i,r in enumerate(res):
-#    print(i, " :")
-    if (r['rel'], r['head']) not in unique_pairs:
-        unique_pairs.add((r['rel'],r['head']))
-        for rank, (e,s,c) in enumerate(zip(r['tail_predictions']['entity'], r['tail_predictions']['score'], r['tail_predictions']['correctness'])):
-            features = []
-            #features.append(s)
-            #features.append(rank)
-            features.append(r['head'])
-            features.append(r['rel'])
-            features.append(e)
-            features.extend(embeddings[r['rel']])
-            features.extend(embeddings[r['head']])
-            features.extend(embeddings[e])
-
-            x_tail.append(features)
-            y_tail.append(c)
-        if 'correctness_filtered' in r['tail_predictions']:
-            for cf in r['tail_predictions']['correctness_filtered']:
-                y_tail_filtered.append(cf)
-    else:
-        dup_count += 1
-
-triples['x_tail'] = x_tail
-triples['y_tail'] = y_tail
-triples['y_tail_filtered'] = y_tail_filtered
-print("# records (tail predictions)    : ", len(x_tail))
-print("# duplicates (tail predictions) : ", dup_count)
-print("DONE")
+        print(ht[index] + " : " + rf)
+        print("# records    : ", len(x_head))
+        print("# duplicates : ", dup_count)
+        print("DONE")
 
 ans_file = os.path.basename(args.ansfile)
 
