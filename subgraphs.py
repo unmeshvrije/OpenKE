@@ -2,6 +2,18 @@ import pickle
 from enum import Enum
 SUBTYPE = Enum('SUBTYPE', 'SPO POS')
 
+def read_triples(filename):
+    triples = []
+    with open (filename, "r") as fin:
+        lines = fin.readlines()
+    for line in lines[1:]:
+        h = int(line.split()[0])
+        t = int(line.split()[1])
+        r = int(line.split()[2])
+        triples.append((h,t,r))
+
+    return triples
+
 class Subgraph():
     def __init__(self, sid, st, sent, srel, ssize, entities):
         self.data = {}

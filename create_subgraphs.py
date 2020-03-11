@@ -8,11 +8,12 @@ import argparse
 import pickle
 import numpy as np
 from collections import defaultdict
-sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos"}
 
 from subgraphs import Subgraph
 from subgraphs import SubgraphFactory
 from subgraphs import SUBTYPE
+from subgraphs import read_triples
+sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos"}
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read embeddings and prepare subgraphs.')
@@ -37,17 +38,6 @@ def read_embeddings(filename):
     R = params['rel_embeddings.weight']
     return E, R
 
-def read_triples(filename):
-    triples = []
-    with open (filename, "r") as fin:
-        lines = fin.readlines()
-    for line in lines[1:]:
-        h = int(line.split()[0])
-        t = int(line.split()[1])
-        r = int(line.split()[2])
-        triples.append((h,t,r))
-
-    return triples
 
 
 

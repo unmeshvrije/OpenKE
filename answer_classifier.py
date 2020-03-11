@@ -49,7 +49,10 @@ class AnswerClassifier(ABC):
         print("ytest = ", len(self.y_test))
         print("ypred = ", len(self.y_predicted))
         print(confusion_matrix(self.y_test, self.y_predicted))
-        print(classification_report(self.y_test, self.y_predicted))
+        raw_result = classification_report(self.y_test, self.y_predicted, output_dict = True)
+        print(str(raw_result))
         print("*" * 80)
         print(confusion_matrix(self.y_test_filtered, self.y_predicted))
-        print(classification_report(self.y_test_filtered, self.y_predicted))
+        filtered_result = classification_report(self.y_test_filtered, self.y_predicted, output_dict = True)
+        print(str(filtered_result))
+        return raw_result, filtered_result

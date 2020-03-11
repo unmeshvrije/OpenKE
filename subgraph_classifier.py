@@ -9,8 +9,8 @@ from numpy import linalg as LA
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, topk, triples_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path):
-        super(SubgraphClassifier, self).__init__(type_prediction, triples_file_path)
+    def __init__(self, type_prediction, topk, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path):
+        super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path)
         self.topk = topk
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
@@ -39,13 +39,13 @@ class SubgraphClassifier(AnswerClassifier):
         else:
             score = sub_emb + (rel_emb - ent_emb)
 
-        return LA.norm(score, 2) #torch.norm(score, 1, -1).flatten()
+        return LA.norm(score, 2)
 
     def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
         return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
 
     def predict(self):
-        # Go over all test triples
+        # Go over all test queries
         print(type(self.x_test))
         for index in range(0, len(self.x_test), self.topk):
             print(index , " : ")
@@ -59,7 +59,7 @@ class SubgraphClassifier(AnswerClassifier):
                 subgraph_scores.append(self.get_subgraph_scores(se, self.E[ent], self.R[rel],  self.type_prediction, self.transe_score))
             sub_indexes = np.argsort(subgraph_scores)
 
-            # Computer dynamic topk for query (ent, rel, ?)
+            # TODO: Computer dynamic topk for query (ent, rel, ?)
             # and only check the answer in those subgraphs (sub_indexes)
             topk_subgraphs = int(0.1 * len(sub_indexes))
             for i, answer in enumerate(topk_ans_entities):
