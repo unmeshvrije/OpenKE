@@ -46,13 +46,13 @@ class AnswerClassifier(ABC):
         pass
 
     def results(self):
-        print("ytest = ", len(self.y_test))
-        print("ypred = ", len(self.y_predicted))
+        print("#" * 20 + "RAW" + "#" * 20)
         print(confusion_matrix(self.y_test, self.y_predicted))
         raw_result = classification_report(self.y_test, self.y_predicted, output_dict = True)
-        print(str(raw_result))
-        print("*" * 80)
+        print(classification_report(self.y_test, self.y_predicted))
+        print("#" * 20 + "FILTERED" + "#" * 20)
         print(confusion_matrix(self.y_test_filtered, self.y_predicted))
         filtered_result = classification_report(self.y_test_filtered, self.y_predicted, output_dict = True)
-        print(str(filtered_result))
+        print(classification_report(self.y_test_filtered, self.y_predicted))
+        print("*" * 80)
         return raw_result, filtered_result
