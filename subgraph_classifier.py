@@ -9,7 +9,7 @@ from numpy import linalg as LA
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, topk, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path):
+    def __init__(self, type_prediction, topk, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str):
         super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path)
         self.topk = topk
         self.emb_file_path = embeddings_file_path
@@ -18,6 +18,11 @@ class SubgraphClassifier(AnswerClassifier):
         self.init_embeddings()
         self.init_subgraphs()
         self.init_sub_embeddings()
+        self.init_model_score_function(model_str)
+
+    def init_model_score_function(model_str):
+        if model_str == "transe":
+            self.model_score = self.transe_score
 
     def init_embeddings(self):
         with open (self.emb_file_path, 'r') as fin:
@@ -56,7 +61,7 @@ class SubgraphClassifier(AnswerClassifier):
 
             subgraph_scores = []
             for se in self.S:
-                subgraph_scores.append(self.get_subgraph_scores(se, self.E[ent], self.R[rel],  self.type_prediction, self.transe_score))
+                subgraph_scores.append(self.get_subgraph_scores(se, self.E[ent], self.R[rel],  self.type_prediction, self.model_score))
             sub_indexes = np.argsort(subgraph_scores)
 
             # TODO: Computer dynamic topk for query (ent, rel, ?)

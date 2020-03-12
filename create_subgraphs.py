@@ -21,6 +21,7 @@ def parse_args():
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--infile', dest ='infile', type = str, help = 'File containing training triples.', default = "/home/uji300/OpenKE/benchmarks/fb15k237/train2id.txt")
     parser.add_argument('--ms', dest = 'ms', type = int, default = 10, help = 'Minimum subgraph Size')
+    parser.add_argument('--model', dest = 'model', type = str, default = "transe", help = 'Embedding model')
     return parser.parse_args()
 
 args = parse_args()
@@ -41,4 +42,4 @@ triples = read_triples(args.infile)
 E, R = read_embeddings(args.embfile)
 sub_factory = SubgraphFactory(args.db, int(args.ms), triples, E)
 sub_factory.make_subgraphs()
-sub_factory.save(result_dir, "transe")
+sub_factory.save(result_dir, args.model)

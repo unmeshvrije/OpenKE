@@ -34,7 +34,7 @@ myc.results()
 emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_file = args.subemb_file
-mys = SubgraphClassifier("head", 10, queries_file_path, emb_file, sub_file, subemb_file)
+mys = SubgraphClassifier("head", 10, queries_file_path, emb_file, sub_file, subemb_file, "transe")
 mys.predict()
 mys.results()
 '''
