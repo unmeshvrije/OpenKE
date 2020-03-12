@@ -189,6 +189,19 @@ bool _find_in_test(INT h, INT t, INT r) {
     return false;
 }
 
+bool _find_in_train(INT h, INT t, INT r) {
+    INT lef = 0;
+    INT rig = trainTotal - 1;
+    INT mid;
+    while (lef + 1 < rig) {
+        INT mid = (lef + rig) >> 1;
+        if ((trainList[mid]. h < h) || (trainList[mid]. h == h && trainList[mid]. r < r) || (trainList[mid]. h == h && trainList[mid]. r == r && trainList[mid]. t < t)) lef = mid; else rig = mid;
+    }
+    if (trainList[lef].h == h && trainList[lef].r == r && trainList[lef].t == t) return true;
+    if (trainList[rig].h == h && trainList[rig].r == r && trainList[rig].t == t) return true;
+    return false;
+}
+
 INT corrupt(INT h, INT r){
 	INT ll = tail_lef[r];
 	INT rr = tail_rig[r];

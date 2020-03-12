@@ -114,14 +114,16 @@ class Tester(object):
             truths_head_fil = np.zeros(topk_head, dtype = int)
             # Filter answers from raw answers
             self.lib.ansHeadInTest(answers_head.__array_interface__["data"][0], index, topk_head, truths_head_fil.__array_interface__["data"][0], answers_head_fil.__array_interface__["data"][0])
-            # Slice the corresponding scores of the filtered answers from the sorted_scores_head
-            scores_head_fil = sorted_scores_head[answers_head_fil]
+            # Slice the corresponding scores of the filtered answers from the scores_head
+            # Because answers_head was argsort'ed on scores_head
+            scores_head_fil = scores_head[answers_head_fil]
 
             assert(len(answers_head_fil) == len(scores_head_fil) == len(truths_head_fil) == topk_head)
             record['head_predictions_fil'] = DeepDict()
-            record['head_predictions_fil']['entities'] = answers_head_fil.astype(int).tolist()
-            record['head_predictions_fil']['scores' ] = scores_head_fil.astype(float).tolist()
-            record['head_predictions_fil']['correctness'] = truths_head_fil.astype(int).tolist()
+            if 1 in truths_head_fil.astype(int).tolist():
+                record['head_predictions_fil']['entities'] = answers_head_fil.astype(int).tolist()
+                record['head_predictions_fil']['scores' ] = scores_head_fil.astype(float).tolist()
+                record['head_predictions_fil']['correctness'] = truths_head_fil.astype(int).tolist()
 
 
             '''
@@ -149,13 +151,15 @@ class Tester(object):
             truths_tail_fil = np.zeros(topk_tail, dtype = int)
             # Filter answers from raw answers
             self.lib.ansTailInTest(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail_fil.__array_interface__["data"][0], answers_tail_fil.__array_interface__["data"][0])
-            # Slice the corresponding scores of the filtered answers from the sorted_scores_tail
-            scores_tail_fil = sorted_scores_tail[answers_tail_fil]
+            # Slice the corresponding scores of the filtered answers from the scores_tail
+            # Because answers_tail was argsort'ed on scores_tail
+            scores_tail_fil = scores_tail[answers_tail_fil]
             assert(len(answers_tail_fil) == len(scores_tail_fil) == len(truths_tail_fil) == topk_tail)
             record['tail_predictions_fil'] = DeepDict()
-            record['tail_predictions_fil']['entities'] = answers_tail_fil.astype(int).tolist()
-            record['tail_predictions_fil']['scores'] = scores_tail_fil.astype(float).tolist()
-            record['tail_predictions_fil']['correctness'] = truths_tail_fil[:topk_tail].astype(int).tolist()
+            if 1 in truths_tail_fil.astype(int).tolist():
+                record['tail_predictions_fil']['entities'] = answers_tail_fil.astype(int).tolist()
+                record['tail_predictions_fil']['scores'] = scores_tail_fil.astype(float).tolist()
+                record['tail_predictions_fil']['correctness'] = truths_tail_fil.astype(int).tolist()
             test_data.append(record)
 
         # Write all the records to the scores file
