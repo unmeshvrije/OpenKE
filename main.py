@@ -20,12 +20,12 @@ def parse_args():
 
 args = parse_args()
 
-triples_file_path = args.test_file
+queries_file_path = args.test_file
 
 model_file_path = args.model_file
 model_weights_path = args.weights_file
-# For this to work, triples_file_path must contain 10 (topk) answers present for each triple
-myc = MLPClassifier("head", 10, triples_file_path, model_file_path, model_weights_path)
+# For this to work, queries_file_path must contain 10 (topk) answers present for each triple
+myc = MLPClassifier("head", 10, queries_file_path, model_file_path, model_weights_path)
 myc.predict()
 myc.results()
 
@@ -34,7 +34,7 @@ myc.results()
 emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_file = args.subemb_file
-mys = SubgraphClassifier("head", 10, triples_file_path, emb_file, sub_file, subemb_file)
+mys = SubgraphClassifier("head", 10, queries_file_path, emb_file, sub_file, subemb_file)
 mys.predict()
 mys.results()
 '''

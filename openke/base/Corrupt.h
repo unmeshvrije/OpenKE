@@ -202,6 +202,19 @@ bool _find_in_train(INT h, INT t, INT r) {
     return false;
 }
 
+bool _find_in_valid(INT h, INT t, INT r) {
+    INT lef = 0;
+    INT rig = validTotal - 1;
+    INT mid;
+    while (lef + 1 < rig) {
+        INT mid = (lef + rig) >> 1;
+        if ((validList[mid]. h < h) || (validList[mid]. h == h && validList[mid]. r < r) || (validList[mid]. h == h && validList[mid]. r == r && validList[mid]. t < t)) lef = mid; else rig = mid;
+    }
+    if (validList[lef].h == h && validList[lef].r == r && validList[lef].t == t) return true;
+    if (validList[rig].h == h && validList[rig].r == r && validList[rig].t == t) return true;
+    return false;
+}
+
 INT corrupt(INT h, INT r){
 	INT ll = tail_lef[r];
 	INT rr = tail_rig[r];

@@ -68,7 +68,7 @@ void ansHead(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
-        if (_find(indexes[i], t, r)) {
+        if (_find_in_train(indexes[i], t, r) || _find_in_valid(indexes[i], t, r)) {
             truths[i] = 1;
         } else {
             truths[i] = 0;
@@ -82,7 +82,7 @@ void ansHeadInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT *filte
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
     for (INT i = 0, j = 0; i < entityTotal && j < topK; ++i) {
-        if (not _find_in_train(indexes[i], t, r)) {
+        if (not _find_in_train(indexes[i], t, r) && not _find_in_valid(indexes[i], t, r)) {
             filtered_indexes[j] = indexes[i];
             if (_find_in_test(indexes[i], t, r)) {
                 truths[j] = 1;
@@ -101,7 +101,7 @@ void ansTail(INT *indexes, INT lastHead, INT topK, INT *truths) {
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
     for (INT i = 0; i < topK && i < entityTotal; ++i) {
-        if (_find(h, indexes[i], r)) {
+        if (_find_in_train(h, indexes[i], r) || _find_in_valid(h, indexes[i], r)) {
             truths[i] = 1;
         } else {
             truths[i] = 0;
@@ -116,7 +116,7 @@ void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT* filte
     INT r = testList[lastHead].r;
 
     for (INT i = 0, j = 0; j < topK && i < entityTotal; ++i) {
-        if (not _find_in_train(h, indexes[i], r)) {
+        if (not _find_in_train(h, indexes[i], r) && not _find_in_valid(h, indexes[i], r)) {
             filtered_indexes[j] = indexes[i];
             if (_find_in_test(h, indexes[i], r)) {
                 truths[j] = 1;

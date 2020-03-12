@@ -129,7 +129,7 @@ elif args.mode == "test":
     if args.topk == 9999:
         dyntopk = DynamicTopk()
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
-    tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk)
+    tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss = choose_model()
@@ -143,4 +143,4 @@ elif args.mode == "trainAsTest":
     if args.topk == 9999:
         dyntopk = DynamicTopk()
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
-    tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk)
+    tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)

@@ -12,6 +12,7 @@ def parse_args():
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
+    parser.add_argument('--mode', required = True, dest = 'mode', type = str, default = None, help = "train or test")
     parser.add_argument('--ansfile', dest ='ansfile', type = str, help = 'File containing answers as predicted by the model.')
     return parser.parse_args()
 
@@ -39,9 +40,14 @@ print("DONE")
 
 triples= {}
 
+if args.mode == "train":
+    rf_arr = [""]
+else:
+    rf_arr = ["_raw", "_fil"]
+
 ht = ["head", "tail"]
 for index in range(len(ht)):
-    for rf in ["raw", "fil"]:
+    for rf in rf_arr:
         x_head = []
         y_head = []
         unique_pairs = set()
@@ -51,9 +57,9 @@ for index in range(len(ht)):
             if (r['rel'], r[ht[(index+1)%2]]) not in unique_pairs:
                 unique_pairs.add((r['rel'],r[ht[(index+1)%2]]))
                 for rank, (e,s,c) in enumerate(zip(\
-                r[ht[index]+'_predictions_'+rf]['entities'],\
-                r[ht[index]+'_predictions_'+rf]['scores'], \
-                r[ht[index]+'_predictions_'+rf]['correctness'])):
+                r[ht[index]+'_predictions'+rf]['entities'],\
+                r[ht[index]+'_predictions'+rf]['scores'], \
+                r[ht[index]+'_predictions'+rf]['correctness'])):
                     features = []
                     features.append(r[ht[(index+1)%2]])
                     features.append(r['rel'])
