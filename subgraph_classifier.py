@@ -45,11 +45,14 @@ class SubgraphClassifier(AnswerClassifier):
         return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
 
     def predict(self):
+        self.predict_internal(self.x_test_raw, self.y_predicted_raw)
+        self.predict_internal(self.x_test_fil, self.y_predicted_fil)
+
+    def predict_internal(self, x_test, y_predicted):
         # Go over all test queries
-        print(type(self.x_test))
-        for index in range(0, len(self.x_test), self.topk):
-            print(index , " : ")
-            features = np.array(self.x_test[index: index + self.topk])
+        for index in range(0, len(x_test), self.topk):
+            #print(index , " : ")
+            features = np.array(x_test[index: index + self.topk])
             ent = int(features[0][0])
             rel = int(features[0][1])
             topk_ans_entities = features[:, 2].astype(int)
@@ -70,7 +73,7 @@ class SubgraphClassifier(AnswerClassifier):
                         cnt_presence_in_sub += 1
                         #print("{} FOUND in subgraph # {}". format(answer, j))
                 if cnt_presence_in_sub != 0:
-                    self.y_predicted.append(1)
+                    y_predicted.append(1)
                 else:
-                    self.y_predicted.append(0)
+                    y_predicted.append(0)
 

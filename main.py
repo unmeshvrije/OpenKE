@@ -8,6 +8,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', required = True, type = str, help = 'File containing test data.')
     parser.add_argument('--modelfile', dest ='model_file',type = str, help = 'File containing test data.')
+    parser.add_argument('--classifier', dest ='classifier',type = str, help = 'Classifier.')
     parser.add_argument('--weightsfile', dest ='weights_file', type = str, help = 'File containing test data.')
     parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
     parser.add_argument('--subembfile', dest ='subemb_file', type = str, help = 'File containing subgraphs embeddings.')
@@ -22,19 +23,17 @@ args = parse_args()
 
 queries_file_path = args.test_file
 
-model_file_path = args.model_file
-model_weights_path = args.weights_file
-# For this to work, queries_file_path must contain 10 (topk) answers present for each triple
-myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path)
-myc.predict()
-myc.results()
-
-'''
-
-emb_file = args.emb_file
-sub_file = args.sub_file
-subemb_file = args.subemb_file
-mys = SubgraphClassifier("head", 10, queries_file_path, emb_file, sub_file, subemb_file)
-mys.predict()
-mys.results()
-'''
+if args.classifier == "mlp":
+    model_file_path = args.model_file
+    model_weights_path = args.weights_file
+    # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
+    myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path)
+    myc.predict()
+    myc.results()
+elif args.classifier == "sub":
+    emb_file = args.emb_file
+    sub_file = args.sub_file
+    subemb_file = args.subemb_file
+    mys = SubgraphClassifier(args.pred, args.topk, queries_file_path, emb_file, sub_file, subemb_file)
+    mys.predict()
+    mys.results()
