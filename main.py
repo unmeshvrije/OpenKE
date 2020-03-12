@@ -25,7 +25,7 @@ queries_file_path = args.test_file
 model_file_path = args.model_file
 model_weights_path = args.weights_file
 # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
-myc = MLPClassifier("head", 10, queries_file_path, model_file_path, model_weights_path)
+myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path)
 myc.predict()
 myc.results()
 
