@@ -10,13 +10,14 @@ from subgraphs import read_triples
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, topk, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str, training_file_path):
+    def __init__(self, type_prediction, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str, training_file_path, subgraph_threshold_percentage = 0.2):
         super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path)
-        self.topk = topk
+        self.topk_answers_per_query = topk_answers_per_query
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
         self.sub_emb_file_path = sub_emb_file_path
         self.training_file_path = training_file_path
+        self.subgraph_threshold_percentage = subgraph_threshold_percentage
         self.init_embeddings()
         self.init_subgraphs()
         self.init_sub_embeddings()
@@ -86,7 +87,6 @@ class SubgraphClassifier(AnswerClassifier):
                 if triple[0] == ent:
                     answers.append(triple[1])
 
-        print(answers)
         if len(answers) == 0:
             return int(0.1 * len(sub_indexes))
 
@@ -105,9 +105,9 @@ class SubgraphClassifier(AnswerClassifier):
 
     def predict_internal(self, x_test, y_predicted):
         # Go over all test queries
-        for index in tqdm(range(0, len(x_test), self.topk)):
+        for index in tqdm(range(0, len(x_test), self.topk_answers_per_query)):
             #print(index , " : ")
-            features = np.array(x_test[index: index + self.topk])
+            features = np.array(x_test[index: index + self.topk_answers_per_query])
             ent = int(features[0][0])
             rel = int(features[0][1])
             topk_ans_entities = features[:, 2].astype(int)
@@ -125,6 +125,9 @@ class SubgraphClassifier(AnswerClassifier):
             #topk_subgraphs = int(0.1 * len(sub_indexes))
             topk_subgraphs = self.get_dynamic_topk(ent, rel, sub_indexes)
 
+            # Check topk_subgraphs and if it is > 10
+            threshold_subgraphs = int(self.subgraph_threshold_percentage * topk_subgraphs)
+
             for i, answer in enumerate(topk_ans_entities):
                 cnt_presence_in_sub = 0;
                 # Check in only topK subgraphs
@@ -133,7 +136,7 @@ class SubgraphClassifier(AnswerClassifier):
                         cnt_presence_in_sub += 1
                         #print("{} FOUND in subgraph # {}". format(answer, j))
                 #if cnt_presence_in_sub != 0:
-                if cnt_presence_in_sub > 10: #topk_subgraphs/2:
+                if cnt_presence_in_sub > threshold_subgraphs: #topk_subgraphs/2:
                     y_predicted.append(1)
                 else:
                     y_predicted.append(0)

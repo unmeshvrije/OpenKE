@@ -1,6 +1,6 @@
 import openke
 from openke.config import Trainer, Tester
-from openke.module.model import TransE, HolE, ComplEx
+from openke.module.model import TransE, ComplEx
 from openke.module.loss import MarginLoss, SigmoidLoss, SoftplusLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
@@ -24,10 +24,6 @@ def parse_args():
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
-    parser.add_argument('--subfile-pos', dest = 'subfile_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-pos-subgraphs-tau-10.pkl")
-    parser.add_argument('--avgembfile-pos', dest = 'avgemb_file_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-pos-avgemb-tau-10.pkl")
-    parser.add_argument('--subfile-spo', dest = 'subfile_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-spo-subgraphs-tau-10.pkl")
-    parser.add_argument('--avgembfile-spo', dest = 'avgemb_file_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-transe-spo-avgemb-tau-10.pkl")
     parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-dynamic-topk-tail.pkl")
     parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-dynamic-topk-head.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10, help = "-1 means dynamic topk")
@@ -42,10 +38,8 @@ N_DIM = 200 # Number of dimensions for embeddings
 db_path = "./benchmarks/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
-os.makedirs(result_dir + "./checkpoint", exist_ok = True)
-os.makedirs(result_dir + "./result", exist_ok = True)
-checkpoint_path = result_dir + "./checkpoint/" + args.db + "-" + args.model + ".ckpt"
-result_path     = result_dir + "./result/"+ args.db + "-" + args.model + ".json"
+checkpoint_path = result_dir + args.db + "-" + args.model + ".ckpt"
+result_path     = result_dir + args.db + "-" + args.model + ".json"
 
 train_dataloader = TrainDataLoader(
     in_path = db_path,
@@ -72,19 +66,7 @@ def choose_model():
         # define the loss function
         model_with_loss = NegativeSampling(
             model = model,
-            loss = MarginLoss(margin = 5.0),
-            batch_size = train_dataloader.get_batch_size()
-            )
-    elif args.model == "hole":
-        model = HolE(
-                ent_tot = train_dataloader.get_ent_tot(),
-                rel_tot = train_dataloader.get_rel_tot(),
-                dim = N_DIM
-                );
-        # define the loss function
-        model_with_loss = NegativeSampling(
-            model = model,
-            loss = SigmoidLoss(),
+            loss = MarginLoss(margin = 1.0),
             batch_size = train_dataloader.get_batch_size()
             )
     elif args.model == "complex":

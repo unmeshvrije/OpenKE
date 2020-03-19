@@ -50,11 +50,13 @@ class AnswerClassifier(ABC):
         pass
 
     def results(self):
-        print("#" * 20 + "RAW" + "#" * 20)
+        print("#" * 20 + "   RAW   " + "#" * 20)
+        print("# of 1's predicted : ", np.unique(self.y_predicted_raw, return_counts = True))
         print(confusion_matrix(self.y_test_raw, self.y_predicted_raw))
         raw_result = classification_report(self.y_test_raw, self.y_predicted_raw, output_dict = True)
         print(classification_report(self.y_test_raw, self.y_predicted_raw))
-        print("#" * 20 + "FILTERED" + "#" * 20)
+        print("#" * 20 + "   FILTERED   " + "#" * 20)
+        print("# of 1's predicted : ", np.unique(self.y_predicted_fil, return_counts = True))
         print(confusion_matrix(self.y_test_fil, self.y_predicted_fil))
         filtered_result = classification_report(self.y_test_fil, self.y_predicted_fil, output_dict = True)
         print(classification_report(self.y_test_fil, self.y_predicted_fil))

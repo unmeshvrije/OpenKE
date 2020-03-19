@@ -5,11 +5,13 @@ from random import shuffle
 import random
 import argparse
 import pickle
+import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read answer embeddings based on topk and prepare triples(training/test) for LSTM/other RNN models.')
     parser.add_argument('--embfile', dest ='embfile', type = str, help = 'File containing embeddings.')
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('--combemb', dest ='combine_emb', help = 'Whether to combine embeddings of ent and rel in input', action = 'store_true')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--mode', required = True, dest = 'mode', type = str, default = None, help = "train or test")
@@ -23,6 +25,7 @@ topk = args.topk
 db = args.db
 result_dir =  args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
+combine_embeddings = args.combine_emb
 
 # Read embedding file
 print("Reading embeddings file...", end=" ")
@@ -66,8 +69,16 @@ for index in range(len(ht)):
                     features.append(e)
                     features.append(s)
                     features.append(rank)
-                    features.extend(embeddings[r['rel']])
-                    features.extend(embeddings[r[ht[(index+1)%2]]])
+                    if combine_embeddings:
+                        if ht[index] == "tail":
+                            temp = np.array(rel_embeddings[r['rel']], dtype=np.float64) + np.array(embeddings[r[ht[(index+1)%2]]], dtype=np.float64)
+                            features.extend(temp)
+                        else:
+                            temp = np.array(embeddings[r[ht[(index+1)%2]]], dtype=np.float64) - np.array(rel_embeddings[r['rel']], dtype=np.float64)
+                            features.extend(temp)
+                    else:
+                        features.extend(rel_embeddings[r['rel']])
+                        features.extend(embeddings[r[ht[(index+1)%2]]])
                     features.extend(embeddings[e])
 
                     x_head.append(features)
@@ -85,6 +96,10 @@ for index in range(len(ht)):
 
 ans_file = os.path.basename(args.ansfile)
 
-answers_features_file = result_dir + "ans-features-" + ans_file.split('.')[0] + ".pkl"
+query_features_combined = ""
+if combine_embeddings:
+    query_features_combined += "-combined"
+
+answers_features_file = result_dir + "ans-features-" + ans_file.split('.')[0] + query_features_combined + ".pkl"
 with open(answers_features_file, "wb") as fout:
     pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)
