@@ -24,8 +24,8 @@ def parse_args():
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
-    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-dynamic-topk-tail.pkl")
-    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/fb15k237-dynamic-topk-head.pkl")
+    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
+    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10, help = "-1 means dynamic topk")
     return parser.parse_args()
 
@@ -38,8 +38,8 @@ N_DIM = 200 # Number of dimensions for embeddings
 db_path = "./benchmarks/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
-checkpoint_path = result_dir + args.db + "-" + args.model + ".ckpt"
-result_path     = result_dir + args.db + "-" + args.model + ".json"
+checkpoint_path = result_dir + "embeddings/" + args.db + "-" + args.model + ".ckpt"
+result_path     = result_dir + "embeddings/" + args.db + "-" + args.model + ".json"
 
 train_dataloader = TrainDataLoader(
     in_path = db_path,
@@ -66,9 +66,11 @@ def choose_model():
         # define the loss function
         model_with_loss = NegativeSampling(
             model = model,
-            loss = MarginLoss(margin = 1.0),
+            loss = MarginLoss(margin = 5.0),
             batch_size = train_dataloader.get_batch_size()
             )
+        epochs = 1000
+        alpha = 1.0
     elif args.model == "complex":
         model = ComplEx(
                 ent_tot = train_dataloader.get_ent_tot(),
@@ -78,11 +80,14 @@ def choose_model():
         # define the loss function
         model_with_loss = NegativeSampling(
             model = model,
-            loss = MarginLoss(margin = 5.0),
-            batch_size = train_dataloader.get_batch_size()
+            loss = SoftplusLoss(),
+            batch_size = train_dataloader.get_batch_size(),
+            regul_rate = 1.0
             )
+        epochs = 2000
+        alpha = 0.5
 
-    return model, model_with_loss
+    return model, model_with_loss, epochs, alpha
 
 def load_pickle(filename):
     with open(filename, 'rb') as fin:
@@ -91,21 +96,21 @@ def load_pickle(filename):
 
 if args.mode == "train":
 
-    model, model_with_loss = choose_model()
-    trainer = Trainer(model = model_with_loss, data_loader = train_dataloader, train_times = 1000, alpha = 1.0, use_gpu = args.gpu)
+    model, model_with_loss, epochs, alpha  = choose_model()
+    trainer = Trainer(model = model_with_loss, data_loader = train_dataloader, train_times = epochs, alpha = alpha, use_gpu = args.gpu)
     trainer.run()
 
     model.save_checkpoint(checkpoint_path)
     model.save_parameters(result_path)
 elif args.mode == "test":
     test_dataloader = TestDataLoader(db_path, "link")
-    model, model_with_loss = choose_model()
+    model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
     model.load_parameters(result_path)
     tester = Tester(args.db, model = model, data_loader = test_dataloader, use_gpu = args.gpu)
     with open (result_path, 'r') as fin:
         params = json.loads(fin.read())
-    outfile_name = result_dir + args.db + "-"+ args.model +"-results-scores-"+args.mode+"-topk-"+str(args.topk)+".json"
+    outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
 
     dyntopk = None
     if args.topk == 9999:
@@ -114,13 +119,13 @@ elif args.mode == "test":
     tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
-    model, model_with_loss = choose_model()
+    model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
     model.load_parameters(result_path)
     tester = Tester(args.db, model = model, data_loader = new_train_dataloader, use_gpu = args.gpu)
     with open (result_path, 'r') as fin:
         params = json.loads(fin.read())
-    outfile_name = result_dir + args.db + "-" + args.model + "-results-scores-"+args.mode+"-topk-"+str(args.topk)+".json"
+    outfile_name = result_dir + "data/"+ args.db + "-" + args.model + "-training-topk-"+str(args.topk)+".json"
     dyntopk = None
     if args.topk == 9999:
         dyntopk = DynamicTopk()

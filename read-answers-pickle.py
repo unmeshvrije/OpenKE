@@ -100,6 +100,6 @@ query_features_combined = ""
 if combine_embeddings:
     query_features_combined += "-combined"
 
-answers_features_file = result_dir + "ans-features-" + ans_file.split('.')[0] + query_features_combined + ".pkl"
+answers_features_file = result_dir + "data/" + ans_file.split('.')[0] + query_features_combined + ".pkl"
 with open(answers_features_file, "wb") as fout:
     pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)

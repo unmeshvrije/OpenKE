@@ -105,12 +105,14 @@ print("Validation set : %s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
 #Saving of model and weights
 json_model = model.to_json()
-model_file_name = result_dir + args.db + "-" + model_str + "-model-topk-"+str(topk)+"-"+type_prediction+"-units-"+str(n_units) + \
+
+base_name = os.path.basename(input_file).split('.')[0]
+model_file_name = result_dir + "models/" + base_name + "-" + type_prediction + "-model-"+ model_str + "-units-"+str(n_units) + \
 "-dropout-" + str(dropout) +".json"
 with open(model_file_name, 'w') as fout:
     fout.write(json_model)
 
-model_weights_file_name = result_dir + args.db + "-" + model_str + "-weights-topk-"+str(topk)+"-"+type_prediction+ "-units-"+str(n_units) + \
+model_weights_file_name = result_dir + "models/" + base_name + "-" + type_prediction + "-weights-"+ model_str + "-units-"+str(n_units) + \
 "-dropout-" + str(dropout) +".h5"
 
 model.save_weights(model_weights_file_name)
