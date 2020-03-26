@@ -50,7 +50,7 @@ else:
 def percentify(num):
     return str(round(float(num)*100, 2)) + "%"
 
-print("Loading training data...", end = " ")
+print("Loading training data...", input_file, end = " ")
 with open(input_file, "rb") as fin:
     training_data = pickle.load(fin)
 print("DONE")

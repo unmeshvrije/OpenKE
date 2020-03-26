@@ -6,6 +6,7 @@ import random
 import argparse
 import pickle
 import numpy as np
+from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read answer embeddings based on topk and prepare triples(training/test) for LSTM/other RNN models.')
@@ -55,8 +56,7 @@ for index in range(len(ht)):
         y_head = []
         unique_pairs = set()
         dup_count = 0
-        for i,r in enumerate(res):
-            #print(i, " :")
+        for i,r in enumerate(tqdm(res)):
             if (r['rel'], r[ht[(index+1)%2]]) not in unique_pairs:
                 unique_pairs.add((r['rel'],r[ht[(index+1)%2]]))
                 for rank, (e,s,c) in enumerate(zip(\
