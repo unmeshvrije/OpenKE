@@ -31,6 +31,7 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     model_weights_path = args.weights_file
     # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
     myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path)
+    myc.init_entity_dict('/var/scratch2/uji300/kbs/fb15k237-id-to-entity.pkl', '/var/scratch2/uji300/kbs/fb15k237-id-to-relation.pkl')
     myc.predict()
     myc.results()
 elif args.classifier == "sub":

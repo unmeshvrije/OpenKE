@@ -33,6 +33,22 @@ class AnswerClassifier(ABC):
         self.cnt_test_triples = len(self.x_test_raw)
         self.emb_dim = len(self.x_test_raw[0])
 
+    def init_entity_dict(self, entity_dict_file, rel_dict_file):
+        self.entity_dict = None
+        with open(entity_dict_file, 'rb') as fin:
+            self.entity_dict = pickle.load(fin)
+
+        self.relation_dict = None
+        with open(rel_dict_file, 'rb') as fin:
+            self.relation_dict = pickle.load(fin)
+
+    def print_answer_entities(self):
+        for x in self.x_test_fil:
+            e = int(x[0])
+            r = int(x[1])
+            a = int(x[2])
+            print(self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a])
+
     @abstractmethod
     def predict(self):
         '''
@@ -61,4 +77,6 @@ class AnswerClassifier(ABC):
         filtered_result = classification_report(self.y_test_fil, self.y_predicted_fil, output_dict = True)
         print(classification_report(self.y_test_fil, self.y_predicted_fil))
         print("*" * 80)
+        if self.entity_dict is not None:
+            self.print_answer_entities()
         return raw_result, filtered_result
