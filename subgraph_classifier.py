@@ -122,7 +122,6 @@ class SubgraphClassifier(AnswerClassifier):
 
             # TODO: Computer dynamic topk for query (ent, rel, ?)
             # and only check the answer in those subgraphs (sub_indexes)
-            #topk_subgraphs = int(0.1 * len(sub_indexes))
             topk_subgraphs = self.get_dynamic_topk(ent, rel, sub_indexes)
 
             # Check topk_subgraphs and if it is > 10

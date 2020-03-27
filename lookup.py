@@ -32,7 +32,7 @@ with open(efile, "r")as fin:
             cnt += 1
             id_to_entity[int(eid)] = "_"
         else:
-            id_to_entity[int(eid)] = fbdict[fid]
+            id_to_entity[int(eid)] = fbdict[fid].rstrip()
 
 id_to_relation = {}
 with open(rfile, "r") as fin:
@@ -41,7 +41,7 @@ with open(rfile, "r") as fin:
         cols = line.split(maxsplit=1)
         val = cols[0]
         key = cols[1]
-        id_to_relation[int(key)] = val
+        id_to_relation[int(key)] = val.rstrip()
 
 with open('/var/scratch2/uji300/kbs/fb15k237-id-to-entity.pkl', 'wb') as fout:
     pickle.dump(id_to_entity, fout, protocol = pickle.HIGHEST_PROTOCOL)
