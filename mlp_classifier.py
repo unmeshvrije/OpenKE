@@ -10,6 +10,23 @@ class MLPClassifier(AnswerClassifier):
         self.topk = topk
         self.threshold = threshold
 
+    def print_answer_entities(self):
+        log = open("./delme.log", "w")
+        for index, x in enumerate(self.x_test_fil):
+            e = int(x[0])
+            r = int(x[1])
+            a = int(x[2])
+            if self.y_test_fil[index] == 1 and self.y_predicted_fil[index] == 0:
+                print("$$Expected (1) Predicted (0): $", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a], "$$$", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 0:
+                print("**Expected (0) Predicted (1): * ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ***", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 1:
+                print("##Expected (1) Predicted (1): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ###", file=log)
+            if self.y_predicted_fil[index] == 0 and self.y_test_fil[index] == 0:
+                print("##Expected (0) Predicted (0): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ###", file=log)
+            if (index+1) % self.topk == 0:
+                print("*" * 80, file = log)
+
     def predict(self):
         with open(self.model_file_path, 'r') as fin:
             file_model = fin.read()

@@ -42,18 +42,12 @@ class AnswerClassifier(ABC):
         with open(rel_dict_file, 'rb') as fin:
             self.relation_dict = pickle.load(fin)
 
+    @abstractmethod
     def print_answer_entities(self):
-        log = open("./delme.log", "w")
-        for index, x in enumerate(self.x_test_fil):
-            e = int(x[0])
-            r = int(x[1])
-            a = int(x[2])
-            if self.y_test_fil[index] == 1 and self.y_predicted_fil[index] != 1:
-                print("!!MISSED: !", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a], "!!!", file=log)
-            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] != 1:
-                print("**FALSELY MARKED 1:* ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ***", file=log)
-            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 1:
-                print("##FOUND: # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ###", file=log)
+        '''
+            print stringized entities from ids in the log
+        '''
+        pass
 
     @abstractmethod
     def predict(self):
@@ -73,15 +67,35 @@ class AnswerClassifier(ABC):
 
     def results(self):
         print("#" * 20 + "   RAW   " + "#" * 20)
-        print("# of predicted : ", np.unique(self.y_predicted_raw, return_counts = True))
-        print(confusion_matrix(self.y_test_raw, self.y_predicted_raw))
+        raw_cnt_tuple = np.unique(self.y_predicted_raw, return_counts = True)
+        print("# of predicted : ", raw_cnt_tuple)
+        raw_conf_mat = confusion_matrix(self.y_test_raw, self.y_predicted_raw)
+        print(raw_conf_mat)
         raw_result = classification_report(self.y_test_raw, self.y_predicted_raw, output_dict = True)
+        raw_result['predicted_cnt'] = {}
+        raw_result['predicted_cnt']['0'] = raw_cnt_tuple[1][0]
+        raw_result['predicted_cnt']['1'] = raw_cnt_tuple[1][1]
+        raw_result['TP'] = raw_conf_mat[0][0]
+        raw_result['FP'] = raw_conf_mat[0][1]
+        raw_result['FN'] = raw_conf_mat[1][0]
+        raw_result['TN'] = raw_conf_mat[1][1]
         print(classification_report(self.y_test_raw, self.y_predicted_raw))
+
         print("#" * 20 + "   FILTERED   " + "#" * 20)
-        print("# of predicted : ", np.unique(self.y_predicted_fil, return_counts = True))
-        print(confusion_matrix(self.y_test_fil, self.y_predicted_fil))
+        fil_cnt_tuple = np.unique(self.y_predicted_fil, return_counts = True)
+        print("# of predicted : ", fil_cnt_tuple)
+        fil_conf_mat = confusion_matrix(self.y_test_fil, self.y_predicted_fil)
+        print(fil_conf_mat)
         filtered_result = classification_report(self.y_test_fil, self.y_predicted_fil, output_dict = True)
+        filtered_result['predicted_cnt'] = {}
+        filtered_result['predicted_cnt']['0'] = fil_cnt_tuple[1][0]
+        filtered_result['predicted_cnt']['1'] = fil_cnt_tuple[1][1]
+        filtered_result['TP'] = fil_conf_mat[0][0]
+        filtered_result['FP'] = fil_conf_mat[0][1]
+        filtered_result['FN'] = fil_conf_mat[1][0]
+        filtered_result['TN'] = fil_conf_mat[1][1]
         print(classification_report(self.y_test_fil, self.y_predicted_fil))
+
         print("*" * 80)
         if self.entity_dict is not None and self.relation_dict is not None:
             self.print_answer_entities()
