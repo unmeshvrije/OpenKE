@@ -13,6 +13,7 @@ class AnswerClassifier(ABC):
         self.y_test_fil = None
         self.entity_dict = None
         self.relation_dict = None
+        self.logfile = None
 
         self.y_predicted_raw = []
         self.y_predicted_fil = []
@@ -41,6 +42,11 @@ class AnswerClassifier(ABC):
 
         with open(rel_dict_file, 'rb') as fin:
             self.relation_dict = pickle.load(fin)
+
+
+    @abstractmethod
+    def set_logfile(self, logfile):
+        pass
 
     @abstractmethod
     def print_answer_entities(self):

@@ -23,6 +23,37 @@ class SubgraphClassifier(AnswerClassifier):
         self.init_sub_embeddings()
         self.init_training_triples()
         self.init_model_score_function(model_str)
+        self.cnt_subgraphs_dict = {}
+        # This is the list of Counts of subgraphs / % Threshold
+        # Count of subgraphs in which the answer was found.
+        # % Threshold for this query (dynamically computed, hence different for every query)
+        self.cnt_subgraphs_dict["raw"] = []
+        self.cnt_subgraphs_dict["fil"] = []
+
+    def set_logfile(self, logfile):
+        self.logfile = logfile
+
+    def print_answer_entities(self):
+        if self.logfile == None:
+            return
+        log = open(self.logfile, "w")
+        for index, x in enumerate(self.x_test_fil):
+            e = int(x[0])
+            r = int(x[1])
+            a = int(x[2])
+            sub = "{" + self.cnt_subgraphs_dict["fil"][index] + "}"
+            if self.y_test_fil[index] == 1 and self.y_predicted_fil[index] == 0:
+                print("$$Expected (1) Predicted (0): $", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a], sub," $$$", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 0:
+                print("**Expected (0) Predicted (1): * ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub," ***", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 1:
+                print("##Expected (1) Predicted (1): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub," ###", file=log)
+            if self.y_predicted_fil[index] == 0 and self.y_test_fil[index] == 0:
+                print("##Expected (0) Predicted (0): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub, " ###", file=log)
+            if (index+1) % self.topk_answers_per_query == 0:
+                print("*" * 80, file = log)
+
+        log.close()
 
     def init_training_triples(self):
         triples = read_triples(self.training_file_path)
@@ -63,8 +94,8 @@ class SubgraphClassifier(AnswerClassifier):
         return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
 
     def predict(self):
-        self.predict_internal(self.x_test_raw, self.y_predicted_raw)
-        self.predict_internal(self.x_test_fil, self.y_predicted_fil)
+        self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
+        self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
 
     def get_dynamic_topk(self, ent, rel, sub_indexes):
         '''
@@ -103,8 +134,9 @@ class SubgraphClassifier(AnswerClassifier):
         return max(found_index)
 
 
-    def predict_internal(self, x_test, y_predicted):
+    def predict_internal(self, x_test, y_predicted, setting):
         # Go over all test queries
+        cnt_subgraphs_index = 0
         for index in tqdm(range(0, len(x_test), self.topk_answers_per_query)):
             #print(index , " : ")
             features = np.array(x_test[index: index + self.topk_answers_per_query])
@@ -135,6 +167,7 @@ class SubgraphClassifier(AnswerClassifier):
                         cnt_presence_in_sub += 1
                         #print("{} FOUND in subgraph # {}". format(answer, j))
                 #if cnt_presence_in_sub != 0:
+                self.cnt_subgraphs_dict[setting].append(str(cnt_presence_in_sub) + " / " + str(threshold_subgraphs))
                 if cnt_presence_in_sub > threshold_subgraphs: #topk_subgraphs/2:
                     y_predicted.append(1)
                 else:

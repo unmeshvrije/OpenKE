@@ -10,8 +10,13 @@ class MLPClassifier(AnswerClassifier):
         self.topk = topk
         self.threshold = threshold
 
+    def set_logfile(self, logfile):
+        self.logfile = logfile
+
     def print_answer_entities(self):
-        log = open("./delme.log", "w")
+        if self.logfile == None:
+            return
+        log = open(self.logfile, "w")
         for index, x in enumerate(self.x_test_fil):
             e = int(x[0])
             r = int(x[1])
@@ -26,6 +31,8 @@ class MLPClassifier(AnswerClassifier):
                 print("##Expected (0) Predicted (0): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , " ###", file=log)
             if (index+1) % self.topk == 0:
                 print("*" * 80, file = log)
+
+        log.close()
 
     def predict(self):
         with open(self.model_file_path, 'r') as fin:

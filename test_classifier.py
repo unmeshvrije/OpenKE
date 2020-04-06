@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
-    parser.add_argument('--pred', dest ='pred', type = str, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
+    parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
@@ -30,7 +30,9 @@ def parse_args():
 args = parse_args()
 
 result_dir =  args.result_dir + args.db + "/out/"
+log_dir =  args.result_dir + args.db + "/logs/"
 os.makedirs(result_dir, exist_ok = True)
+os.makedirs(log_dir, exist_ok = True)
 queries_file_path = args.test_file
 
 if args.classifier == "mlp" or args.classifier == "lstm":
@@ -38,12 +40,20 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     model_weights_path = args.weights_file
     # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
     myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path, threshold=args.threshold)
+
+    # entity dict is the id to string dictionary for entities
     myc.init_entity_dict(args.ent_dict, args.rel_dict)
+
+    # set log file
+    base_name = os.path.basename(model_file_path).rsplit('.', maxsplit=1)[0]
+    logfile = log_dir + base_name + ".log"
+    myc.set_logfile(logfile)
+
+    # prediction
     myc.predict()
     raw_result, fil_result = myc.results()
 
     # Pickle the output
-    base_name = os.path.basename(model_file_path).rsplit('.', maxsplit=1)[0]
     output_file = result_dir + base_name + ".out"
     result_dict = {}
     result_dict['raw'] = raw_result
@@ -55,5 +65,14 @@ elif args.classifier == "sub":
     sub_file = args.sub_file
     subemb_file = args.subemb_file
     mys = SubgraphClassifier(args.pred, args.topk, queries_file_path, emb_file, sub_file, subemb_file, args.model, args.train_file, args.sub_threshold)
+
+    # entity dict is the id to string dictionary for entities
+    mys.init_entity_dict(args.ent_dict, args.rel_dict)
+
+    # set log file
+    base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
+    logfile = log_dir + base_name + ".log"
+    mys.set_logfile(logfile)
+
     mys.predict()
     raw_result, fil_result = mys.results()
