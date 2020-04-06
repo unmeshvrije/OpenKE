@@ -13,6 +13,9 @@ import pickle
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
+from data_generator import DataGenerator
+import glob
+
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--infile', dest ='infile', required = True, type = str, help = 'File containing training/test data with labels.')
@@ -50,7 +53,53 @@ else:
 def percentify(num):
     return str(round(float(num)*100, 2)) + "%"
 
-print("Loading training data...", input_file, end = " ")
+all_files = glob.glob(input_file + "*" + type_prediction + "*.pkl")
+id_list = np.arange(1, len(all_files)+1)
+
+params = {
+    'db'        : args.db,
+    'emb_model' : "transe",
+    'topk'      : topk,
+    'dim_x'     : (1000, topk, 605),
+    'dim_y'     : (1000, topk, 1),
+    'batch_size': 8,
+    'n_classes' : 2,
+    'n_channels': 1,
+    'shuffle'   : True
+    }
+
+partition = {}
+partition['train'] = id_list
+
+training_generator = DataGenerator(partition['train'], input_file, type_prediction, **params)
+
+#TODO: deduce from data
+N_FEATURES=605
+# Model
+model = Sequential();
+if model_str == "lstm":
+    model.add(LSTM(n_units, input_shape=(topk, N_FEATURES), return_sequences = True));
+    model.add(Dropout(dropout))
+    model.add(Dense(1, activation = 'sigmoid'))
+elif model_str == "mlp":
+    model.add(Dense(n_units, input_shape=(topk, N_FEATURES)));
+    model.add(Dropout(dropout))
+    model.add(Dense(n_units))
+    model.add(Dropout(dropout))
+    model.add(Dense(1, activation = 'sigmoid'))
+
+# For classification problem (with 2 classes), binary cross entropy is used.
+model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
+print(model.summary())
+
+#model.fit(x_train, y_train, epochs = n_epochs, batch_size = batch_size, verbose = 2, validation_data=(x_valid, y_valid))
+
+model.fit_generator(generator=training_generator, use_multiprocessing = True, workers = 6)
+
+#score = model.evaluate(x_valid, y_valid, verbose=1)
+#print("Validation set : %s: %.2f%%" % (model.metrics_names[1], score[1]*100))
+print("DONE *****")
+'''
 with open(input_file, "rb") as fin:
     training_data = pickle.load(fin)
 print("DONE")
@@ -117,3 +166,4 @@ model_weights_file_name = result_dir + "models/" + base_name + "-" + type_predic
 
 model.save_weights(model_weights_file_name)
 print("Saved model to disk")
+'''
