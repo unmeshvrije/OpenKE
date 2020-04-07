@@ -37,6 +37,9 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         X, y = self.__data_generation(list_IDs_temp)
 
+        print("*"*80, X.shape)
+        X = np.reshape(X, (self.batch_size * self.dim_x[0], self.dim_x[1], self.dim_x[2]))
+        y = np.reshape(y, (self.batch_size * self.dim_y[0], self.dim_y[1], self.dim_y[2]))
         return X, y
 
     def on_epoch_end(self):
@@ -49,8 +52,8 @@ class DataGenerator(keras.utils.Sequence):
         # 'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
         #X = np.empty((self.batch_size, *self.dim_x, self.n_channels))
-        X = np.empty((self.batch_size, *self.dim_x))
-        y = np.empty((self.batch_size, *self.dim_y), dtype=int)
+        X = [] #np.empty((self.batch_size, *self.dim_x, self.n_channels))
+        y = [] #np.empty((self.batch_size, *self.dim_y, self.n_channels), dtype=int)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
@@ -60,14 +63,17 @@ class DataGenerator(keras.utils.Sequence):
             with open(batch_file, 'rb') as fin:
                 training_data = pickle.load(fin)
 
-            X[i] = training_data['x_' + self.type_pred]
-            N = len(X[i])
+            Xi = training_data['x_' + self.type_pred]
+            N = len(Xi)
+            N_FEATURES = len(Xi[0])
             if N != self.dim_x[0] * self.dim_x[1]:
                 print(batch_file + "   XXXXXX ")
-            y[i] = np.array(training_data['y_' + self.type_pred], dtype = np.int32)
+            yi = np.array(training_data['y_' + self.type_pred], dtype = np.int32)
 
             #TODO: this reshaping should not be necessary. Confirm it.
-            #X[i] = np.reshape(X[i], (N//self.topk, self.topk, N_FEATURES))
-            #y[i] = np.reshape(y[i], (N//self.topk, self.topk, 1))
+            Xi = np.reshape(Xi, (N//self.topk, self.topk, N_FEATURES))
+            yi = np.reshape(yi, (N//self.topk, self.topk, 1))
+            X.append(Xi)
+            y.append(yi)
 
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return np.array(X), np.array(y)#keras.utils.to_categorical(y, num_classes=self.n_classes))

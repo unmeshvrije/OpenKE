@@ -78,7 +78,7 @@ N_FEATURES=605
 # Model
 model = Sequential();
 if model_str == "lstm":
-    model.add(LSTM(n_units, input_shape=(topk, N_FEATURES), return_sequences = True));
+    model.add(LSTM(n_units, input_shape=(topk, N_FEATURES), batch_input_shape=(8000, topk, N_FEATURES), return_sequences = True));
     model.add(Dropout(dropout))
     model.add(Dense(1, activation = 'sigmoid'))
 elif model_str == "mlp":
@@ -94,7 +94,7 @@ print(model.summary())
 
 #model.fit(x_train, y_train, epochs = n_epochs, batch_size = batch_size, verbose = 2, validation_data=(x_valid, y_valid))
 
-model.fit_generator(generator=training_generator, use_multiprocessing = True, workers = 6)
+model.fit_generator(generator=training_generator, use_multiprocessing = True, steps_per_epoch = 10, epochs = n_epochs, workers = 8)
 
 #score = model.evaluate(x_valid, y_valid, verbose=1)
 #print("Validation set : %s: %.2f%%" % (model.metrics_names[1], score[1]*100))
