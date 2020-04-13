@@ -10,7 +10,7 @@ from subgraphs import read_triples
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str, training_file_path, subgraph_threshold_percentage = 0.2):
+    def __init__(self, type_prediction, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str, training_file_path, subgraph_threshold_percentage = 0.1):
         super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path)
         self.topk_answers_per_query = topk_answers_per_query
         self.emb_file_path = embeddings_file_path
@@ -41,15 +41,20 @@ class SubgraphClassifier(AnswerClassifier):
             e = int(x[0])
             r = int(x[1])
             a = int(x[2])
+            head = e
+            tail = a
+            if self.type_prediction == "head":
+                head = a
+                tail = e
             sub = "{" + self.cnt_subgraphs_dict["fil"][index] + "}"
             if self.y_test_fil[index] == 1 and self.y_predicted_fil[index] == 0:
-                print("$$Expected (1) Predicted (0): $", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a], sub," $$$", file=log)
+                print("$$Expected (1) Predicted (0): $", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail], sub," $$$", file=log)
             if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 0:
-                print("**Expected (0) Predicted (1): * ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub," ***", file=log)
+                print("**Expected (0) Predicted (1): * ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub," ***", file=log)
             if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 1:
-                print("##Expected (1) Predicted (1): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub," ###", file=log)
+                print("##Expected (1) Predicted (1): # ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub," ###", file=log)
             if self.y_predicted_fil[index] == 0 and self.y_test_fil[index] == 0:
-                print("##Expected (0) Predicted (0): # ", self.entity_dict[e] , " , ", self.relation_dict[r] , " => ", self.entity_dict[a] , sub, " ###", file=log)
+                print("##Expected (0) Predicted (0): # ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub, " ###", file=log)
             if (index+1) % self.topk_answers_per_query == 0:
                 print("*" * 80, file = log)
 
@@ -122,8 +127,10 @@ class SubgraphClassifier(AnswerClassifier):
             return int(0.1 * len(sub_indexes))
 
         found_index = []
-        for answer in answers:
-            for j, sub_index in enumerate(sub_indexes):
+        for j, sub_index in enumerate(sub_indexes):
+            if j > len(sub_indexes)/2:
+                break
+            for answer in answers:
                 if answer in self.subgraphs[sub_index].data['entities']:
                     found_index.append(j)
                     break

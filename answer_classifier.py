@@ -27,13 +27,12 @@ class AnswerClassifier(ABC):
         # h <SPACE> r <SPACE> ans1 + rank  + score + followed by h_bar + r_bar + ans1_bar
         with open(test_triples_file, "rb") as fin:
             data = pickle.load(fin)
-        SAMPLE_SIZE = len(data['x_' + self.type_prediction + "_raw"])
-        print("Size of all test triples = ", len(data['x_'+ self.type_prediction + "_raw"]))
         self.x_test_raw = np.array(data['x_' + self.type_prediction + "_raw"])
         self.y_test_raw = np.array(data['y_' + self.type_prediction + "_raw"], dtype = np.int32)
         self.x_test_fil = np.array(data['x_' + self.type_prediction + "_fil"])
         self.y_test_fil = np.array(data['y_' + self.type_prediction + "_fil"], dtype = np.int32)
         self.cnt_test_triples = len(self.x_test_raw)
+        print("Size of all test triples = ", self.cnt_test_triples)
         self.emb_dim = len(self.x_test_raw[0])
 
     def init_entity_dict(self, entity_dict_file, rel_dict_file):

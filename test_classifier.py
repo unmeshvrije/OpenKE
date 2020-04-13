@@ -53,13 +53,6 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     myc.predict()
     raw_result, fil_result = myc.results()
 
-    # Pickle the output
-    output_file = result_dir + base_name + ".out"
-    result_dict = {}
-    result_dict['raw'] = raw_result
-    result_dict['fil'] = fil_result
-    with open(output_file, 'wb') as fout:
-        pickle.dump(result_dict, fout, protocol = pickle.HIGHEST_PROTOCOL)
 elif args.classifier == "sub":
     emb_file = args.emb_file
     sub_file = args.sub_file
@@ -71,8 +64,18 @@ elif args.classifier == "sub":
 
     # set log file
     base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
+    base_name += "-" + args.pred
     logfile = log_dir + base_name + ".log"
     mys.set_logfile(logfile)
 
+    # prediction
     mys.predict()
     raw_result, fil_result = mys.results()
+
+# Pickle the output
+output_file = result_dir + base_name + ".out"
+result_dict = {}
+result_dict['raw'] = raw_result
+result_dict['fil'] = fil_result
+with open(output_file, 'wb') as fout:
+    pickle.dump(result_dict, fout, protocol = pickle.HIGHEST_PROTOCOL)
