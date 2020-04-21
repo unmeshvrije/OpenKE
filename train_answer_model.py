@@ -47,9 +47,6 @@ if args.batch_size == None:
 else:
     batch_size = int(args.batch_size)
 
-def percentify(num):
-    return str(round(float(num)*100, 2)) + "%"
-
 print("Loading training data...", input_file, end = " ")
 with open(input_file, "rb") as fin:
     training_data = pickle.load(fin)

@@ -57,8 +57,8 @@ else:
 
 ht = ["head", "tail"]
 for index in range(len(ht)):
-    batch_id = 1
     for rf in rf_arr:
+        batch_id = 1
         x_head = []
         y_head = []
         unique_pairs = set()
@@ -92,7 +92,7 @@ for index in range(len(ht)):
                 #print("# records    : ", len(x_head))
                 #print("# duplicates : ", dup_count)
                 #print("DONE")
-                answers_features_file = data_dir + ans_file + "-"+ ht[index] + "-batch-" + str(batch_id) + ".pkl"
+                answers_features_file = data_dir + ans_file + "-"+ ht[index] + rf + "-batch-" + str(batch_id) + ".pkl"
                 print("Creating " + answers_features_file)
                 with open(answers_features_file, "wb") as fout:
                     pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)

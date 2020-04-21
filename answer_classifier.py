@@ -3,10 +3,13 @@ import pickle
 import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
+import os
+import glob
+from data_generator import DataGenerator
 
 class AnswerClassifier(ABC):
 
-    def __init__(self, type_prediction, test_triples_file):
+    def __init__(self, type_prediction, test_queries_file, db, emb_model, topk):
         self.x_test_raw = None
         self.y_test_raw = None
         self.x_test_fil = None
@@ -17,23 +20,87 @@ class AnswerClassifier(ABC):
 
         self.y_predicted_raw = []
         self.y_predicted_fil = []
-        self.type_prediction = type_prediction
-        self.init_test_triples(test_triples_file)
 
+        self.type_prediction   = type_prediction
+        self.db                = db
+        self.emb_model         = emb_model
+        self.topk              = topk
+        self.use_generator     = os.path.isdir(test_queries_file)
+        self.test_queries_file = test_queries_file
+        self.test_generator = {}
+        self.test_labels    = {}
+        self.init_test_triples(test_queries_file)
 
-    def init_test_triples(self, test_triples_file):
+    def get_labels(self, list_IDs_temp, folder, type_pred, db="fb15k237", emb_model="transe", topk=10, batch_size=10, dim_x=(1000,10,605), dim_y=(1000,10,1), n_classes=2, type_data="test", shuffle=False, filtered=""):
+        y = []
+
+        if type_data == "test":
+            filtered = "_"+filtered
+        # Generate data
+        assert(dim_x[1] == topk)
+        N_FEATURES = dim_x[2]
+        for i, ID in enumerate(list_IDs_temp):
+            # type_data = {"training", "test"}
+            # batch_data/fb15k237-transe-test-topk-50-tail_fil-batch-13.pkl
+            batch_file = folder + db + "-" + emb_model + "-test-topk-" + str(topk) + "-" + type_pred + filtered+ "-batch-"+str(ID) + ".pkl"
+
+            with open(batch_file, 'rb') as fin:
+                training_data = pickle.load(fin)
+
+            yi = np.array(training_data['y_' + type_pred + filtered], dtype = np.int32)
+            N = len(yi)
+            #yi = np.reshape(yi, (N//topk, topk))
+            if N < dim_y[0] * dim_y[1]:
+                # padding
+                diff = (dim_x[0] * dim_y[1]) - N
+                yi = np.vstack([yi, np.zeros([diff])])
+                N = dim_y[0] * dim_y[1]
+
+            #yi = np.reshape(yi, (N//topk, topk, 1))
+            y.extend(yi)
+
+        return np.array(y)
+
+    def init_batch_test_triples(self):
+        N_FEATURES=605
+        for rf in ["raw", "fil"]:
+            all_files = glob.glob(self.test_queries_file + "*topk-"+str(self.topk) +"*" + self.type_prediction +"_"+ rf + "*.pkl")
+            num_files = len(all_files)
+            test_ids = np.arange(1, num_files + 1)
+
+            params = {
+                'db'        : self.db,
+                'emb_model' : self.emb_model,
+                'topk'      : self.topk,
+                'dim_x'     : (1000, self.topk, N_FEATURES),
+                'dim_y'     : (1000, self.topk, 1),
+                'batch_size': 1, # TODO : always 1 file so that any number of files would do. int(args.batch_size),
+                'n_classes' : 2,
+                'type_data' : "test",
+                'shuffle'   : False,
+                'filtered'  : rf
+                }
+
+            self.test_generator[rf] = DataGenerator(test_ids, self.test_queries_file, self.type_prediction, **params)
+            self.test_labels[rf]    = self.get_labels(test_ids, self.test_queries_file, self.type_prediction, **params)
+
+    def init_test_triples(self, test_queries_file):
         # Read the test file
         # A test triples file has 3 + 2 +  200*3 features where first three features are
-        # h <SPACE> r <SPACE> ans1 + rank  + score + followed by h_bar + r_bar + ans1_bar
-        with open(test_triples_file, "rb") as fin:
-            data = pickle.load(fin)
-        self.x_test_raw = np.array(data['x_' + self.type_prediction + "_raw"])
-        self.y_test_raw = np.array(data['y_' + self.type_prediction + "_raw"], dtype = np.int32)
-        self.x_test_fil = np.array(data['x_' + self.type_prediction + "_fil"])
-        self.y_test_fil = np.array(data['y_' + self.type_prediction + "_fil"], dtype = np.int32)
-        self.cnt_test_triples = len(self.x_test_raw)
-        print("Size of all test triples = ", self.cnt_test_triples)
-        self.emb_dim = len(self.x_test_raw[0])
+        # (h + r + ans1) + rank  + score + followed by h_bar + r_bar + ans1_bar
+        if self.use_generator:
+            # open folder and create data generator
+            self.init_batch_test_triples()
+        else:
+            with open(test_queries_file, "rb") as fin:
+                data = pickle.load(fin)
+            self.x_test_raw = np.array(data['x_' + self.type_prediction + "_raw"])
+            self.y_test_raw = np.array(data['y_' + self.type_prediction + "_raw"], dtype = np.int32)
+            self.x_test_fil = np.array(data['x_' + self.type_prediction + "_fil"])
+            self.y_test_fil = np.array(data['y_' + self.type_prediction + "_fil"], dtype = np.int32)
+            self.cnt_test_triples = len(self.x_test_raw)
+            print("Size of all test triples = ", self.cnt_test_triples)
+            self.emb_dim = len(self.x_test_raw[0])
 
     def init_entity_dict(self, entity_dict_file, rel_dict_file):
         with open(entity_dict_file, 'rb') as fin:

@@ -5,6 +5,7 @@ from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from mlp_classifier import MLPClassifier
 from subgraph_classifier import SubgraphClassifier
+from path_classifier import PathClassifier
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
@@ -39,7 +40,7 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     model_file_path = args.model_file
     model_weights_path = args.weights_file
     # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
-    myc = MLPClassifier(args.pred, args.topk, queries_file_path, model_file_path, model_weights_path, threshold=args.threshold)
+    myc = MLPClassifier(args.pred, args.db, args.topk, queries_file_path, args.model, model_file_path, model_weights_path, threshold=args.threshold)
 
     # entity dict is the id to string dictionary for entities
     myc.init_entity_dict(args.ent_dict, args.rel_dict)
@@ -53,11 +54,25 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     myc.predict()
     raw_result, fil_result = myc.results()
 
+elif args.classifier == "path":
+    emb_file = args.emb_file
+    path_classifier = PathClassifier(args.pred, args.db, args.topk, queries_file_path, emb_file, args.model, args.train_file, args.sub_threshold)
+    # entity dict is the id to string dictionary for entities
+    path_classifier.init_entity_dict(args.ent_dict, args.rel_dict)
+
+    # set log file
+    base_name = "path-classifier"
+    logfile = log_dir + base_name + ".log"
+    path_classifier.set_logfile(logfile)
+
+    path_classifier.predict()
+    raw_result, fil_result = path_classifier.results()
+
 elif args.classifier == "sub":
     emb_file = args.emb_file
     sub_file = args.sub_file
     subemb_file = args.subemb_file
-    mys = SubgraphClassifier(args.pred, args.topk, queries_file_path, emb_file, sub_file, subemb_file, args.model, args.train_file, args.sub_threshold)
+    mys = SubgraphClassifier(args.pred, args.db, args.topk, queries_file_path, emb_file, sub_file, subemb_file, args.model, args.train_file, args.sub_threshold)
 
     # entity dict is the id to string dictionary for entities
     mys.init_entity_dict(args.ent_dict, args.rel_dict)

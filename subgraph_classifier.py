@@ -10,8 +10,8 @@ from subgraphs import read_triples
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, model_str, training_file_path, subgraph_threshold_percentage = 0.1):
-        super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path)
+    def __init__(self, type_prediction, db, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, subgraph_threshold_percentage = 0.1):
+        super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path, db, emb_model, topk_answers_per_query)
         self.topk_answers_per_query = topk_answers_per_query
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
@@ -22,7 +22,7 @@ class SubgraphClassifier(AnswerClassifier):
         self.init_subgraphs()
         self.init_sub_embeddings()
         self.init_training_triples()
-        self.init_model_score_function(model_str)
+        self.init_model_score_function(emb_model)
         self.cnt_subgraphs_dict = {}
         # This is the list of Counts of subgraphs / % Threshold
         # Count of subgraphs in which the answer was found.
@@ -69,8 +69,8 @@ class SubgraphClassifier(AnswerClassifier):
         elif self.type_prediction == "tail":
             self.training_triples = sorted(triples, key = lambda l : (l[2], l[0]))
 
-    def init_model_score_function(self, model_str):
-        if model_str == "transe":
+    def init_model_score_function(self, emb_model):
+        if emb_model == "transe":
             self.model_score = self.transe_score
 
     def init_embeddings(self):
