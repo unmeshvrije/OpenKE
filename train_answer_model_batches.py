@@ -48,7 +48,7 @@ model_str = args.model_str
 n_epochs = args.epochs
 emb_model = args.emb_model
 
-all_files = glob.glob(input_file + "*topk-"+str(topk) +"*" + type_prediction + "*.pkl")
+all_files = glob.glob(input_file + "*training-topk-"+str(topk) +"*" + type_prediction + "*.pkl")
 num_files = len(all_files)
 num_valid_files = max((int)(0.05 * num_files), 2)
 marker = num_files - num_valid_files
