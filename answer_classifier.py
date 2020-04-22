@@ -29,6 +29,7 @@ class AnswerClassifier(ABC):
         self.test_queries_file = test_queries_file
         self.test_generator = {}
         self.test_labels    = {}
+        self.test_queries_answers = {}
         self.init_test_triples(test_queries_file)
 
     def get_labels(self, list_IDs_temp, folder, type_pred, db="fb15k237", emb_model="transe", topk=10, batch_size=10, dim_x=(1000,10,605), dim_y=(1000,10,1), n_classes=2, type_data="test", shuffle=False, filtered=""):
@@ -49,17 +50,45 @@ class AnswerClassifier(ABC):
 
             yi = np.array(training_data['y_' + type_pred + filtered], dtype = np.int32)
             N = len(yi)
-            #yi = np.reshape(yi, (N//topk, topk))
             if N < dim_y[0] * dim_y[1]:
                 # padding
                 diff = (dim_x[0] * dim_y[1]) - N
                 yi = np.vstack([yi, np.zeros([diff])])
                 N = dim_y[0] * dim_y[1]
 
-            #yi = np.reshape(yi, (N//topk, topk, 1))
             y.extend(yi)
 
         return np.array(y)
+
+    def get_queries_answers(self, list_IDs_temp, folder, type_pred, db="fb15k237", emb_model="transe", topk=10, batch_size=10, dim_x=(1000,10,605), dim_y=(1000,10,1), n_classes=2, type_data="test", shuffle=False, filtered=""):
+        x = []
+
+        if type_data == "test":
+            filtered = "_"+filtered
+        # Generate data
+        assert(dim_x[1] == topk)
+        N_FEATURES = dim_x[2]
+        for i, ID in enumerate(list_IDs_temp):
+            # type_data = {"training", "test"}
+            # batch_data/fb15k237-transe-test-topk-50-tail_fil-batch-13.pkl
+            batch_file = folder + db + "-" + emb_model + "-test-topk-" + str(topk) + "-" + type_pred + filtered+ "-batch-"+str(ID) + ".pkl"
+
+            with open(batch_file, 'rb') as fin:
+                training_data = pickle.load(fin)
+
+            xi = training_data['x_' + type_pred + filtered]
+            N = len(xi)
+            #if N < dim_y[0] * dim_y[1]:
+                # padding
+            #    diff = (dim_x[0] * dim_y[1]) - N
+            #    yi = np.vstack([yi, np.zeros([diff])])
+            #    N = dim_y[0] * dim_y[1]
+            # add [ent, rel, ans]
+            for q in xi:
+                print("appending {}, {}, {}".format(q[0], q[1], q[2]))
+                x.append([q[0], q[1], q[2]])
+
+        return np.array(x)
 
     def init_batch_test_triples(self):
         N_FEATURES=605
@@ -83,6 +112,7 @@ class AnswerClassifier(ABC):
 
             self.test_generator[rf] = DataGenerator(test_ids, self.test_queries_file, self.type_prediction, **params)
             self.test_labels[rf]    = self.get_labels(test_ids, self.test_queries_file, self.type_prediction, **params)
+            self.test_queries_answers[rf]    = self.get_queries_answers(test_ids, self.test_queries_file, self.type_prediction, **params)
 
     def init_test_triples(self, test_queries_file):
         # Read the test file
@@ -98,6 +128,9 @@ class AnswerClassifier(ABC):
             self.y_test_raw = np.array(data['y_' + self.type_prediction + "_raw"], dtype = np.int32)
             self.x_test_fil = np.array(data['x_' + self.type_prediction + "_fil"])
             self.y_test_fil = np.array(data['y_' + self.type_prediction + "_fil"], dtype = np.int32)
+
+            self.test_queries_answers["raw"] = self.x_test_raw
+            self.test_queries_answers["fil"] = self.x_test_fil
             self.cnt_test_triples = len(self.x_test_raw)
             print("Size of all test triples = ", self.cnt_test_triples)
             self.emb_dim = len(self.x_test_raw[0])

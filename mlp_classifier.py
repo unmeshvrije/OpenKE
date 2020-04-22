@@ -16,7 +16,7 @@ class MLPClassifier(AnswerClassifier):
         if self.logfile == None:
             return
         log = open(self.logfile, "w")
-        for index, x in enumerate(self.x_test_fil):
+        for index, x in enumerate(self.test_queries_answers["fil"]):
             e = int(x[0])
             r = int(x[1])
             a = int(x[2])
