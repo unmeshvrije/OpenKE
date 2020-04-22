@@ -85,7 +85,6 @@ class AnswerClassifier(ABC):
             #    N = dim_y[0] * dim_y[1]
             # add [ent, rel, ans]
             for q in xi:
-                print("appending {}, {}, {}".format(q[0], q[1], q[2]))
                 x.append([q[0], q[1], q[2]])
 
         return np.array(x)
@@ -113,6 +112,8 @@ class AnswerClassifier(ABC):
             self.test_generator[rf] = DataGenerator(test_ids, self.test_queries_file, self.type_prediction, **params)
             self.test_labels[rf]    = self.get_labels(test_ids, self.test_queries_file, self.type_prediction, **params)
             self.test_queries_answers[rf]    = self.get_queries_answers(test_ids, self.test_queries_file, self.type_prediction, **params)
+            self.cnt_test_triples = len(self.test_queries_answers[rf])
+            print("Size of all test triples = ", self.cnt_test_triples)
 
     def init_test_triples(self, test_queries_file):
         # Read the test file

@@ -107,6 +107,6 @@ for index in range(len(ht)):
         #print("# duplicates : ", dup_count)
         #print("DONE")
         #TODO: making the batch of remaining queries does not work for fit_generator
-        #answers_features_file = data_dir + ans_file + "-" + ht[index] + "-batch-" + str(batch_id) + ".pkl"
-        #with open(answers_features_file, "wb") as fout:
-        #    pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)
+        answers_features_file = data_dir + ans_file + "-" + ht[index] + "-batch-" + str(batch_id) + ".pkl"
+        with open(answers_features_file, "wb") as fout:
+            pickle.dump(triples, fout, protocol = pickle.HIGHEST_PROTOCOL)
