@@ -181,6 +181,7 @@ class AnswerClassifier(ABC):
         raw_result['predicted_cnt'] = {}
         raw_result['predicted_cnt']['0'] = raw_cnt_tuple[1][0]
         raw_result['predicted_cnt']['1'] = raw_cnt_tuple[1][1]
+        raw_result['predicted_y'] = self.y_predicted_raw
         raw_result['TP'] = raw_conf_mat[0][0]
         raw_result['FP'] = raw_conf_mat[0][1]
         raw_result['FN'] = raw_conf_mat[1][0]
@@ -196,6 +197,7 @@ class AnswerClassifier(ABC):
         filtered_result['predicted_cnt'] = {}
         filtered_result['predicted_cnt']['0'] = fil_cnt_tuple[1][0]
         filtered_result['predicted_cnt']['1'] = fil_cnt_tuple[1][1]
+        filtered_result['predicted_y'] = self.y_predicted_fil
         filtered_result['TP'] = fil_conf_mat[0][0]
         filtered_result['FP'] = fil_conf_mat[0][1]
         filtered_result['FN'] = fil_conf_mat[1][0]
