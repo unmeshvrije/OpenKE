@@ -166,6 +166,8 @@ class SubgraphClassifier(AnswerClassifier):
             # Check topk_subgraphs and if it is > 10
             threshold_subgraphs = int(self.subgraph_threshold_percentage * topk_subgraphs)
 
+            # working
+            '''
             for i, answer in enumerate(topk_ans_entities):
                 cnt_presence_in_sub = 0;
                 # Check in only topK subgraphs
@@ -176,6 +178,22 @@ class SubgraphClassifier(AnswerClassifier):
                 #if cnt_presence_in_sub != 0:
                 self.cnt_subgraphs_dict[setting].append(str(cnt_presence_in_sub) + " / " + str(threshold_subgraphs))
                 if cnt_presence_in_sub > threshold_subgraphs: #topk_subgraphs/2:
+                    y_predicted.append(1)
+                else:
+                    y_predicted.append(0)
+            '''
+            cntMap = dict.fromkeys(topk_ans_entities)
+            for sub_index in sub_indexes[:topk_subgraphs]:
+                for i, answer in enumerate(topk_ans_entities):
+                    if answer in self.subgraphs[sub_index].data['entities']:
+                        if cntMap[answer] == None:
+                            cntMap[answer] = 1
+                        else:
+                            cntMap[answer] += 1
+
+            for key in topk_ans_entities:
+                self.cnt_subgraphs_dict[setting].append(str(cntMap[key]) + " / " + str(threshold_subgraphs))
+                if cntMap[key] and cntMap[key] > threshold_subgraphs:
                     y_predicted.append(1)
                 else:
                     y_predicted.append(0)

@@ -9,8 +9,6 @@ import sys
 import json
 import argparse
 import pickle
-import torch
-import torch.nn as nn
 
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE

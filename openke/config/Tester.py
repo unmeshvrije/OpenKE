@@ -156,6 +156,11 @@ class Tester(object):
                 truths_tail_fil = np.zeros(topk_tail, dtype = int)
                 # Filter answers from raw answers
                 self.lib.ansTailInTest(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail_fil.__array_interface__["data"][0], answers_tail_fil.__array_interface__["data"][0])
+
+                if record['head'] in answers_tail_fil:
+                    print("#$%@"*30)
+                    print(record['head'], ",",  record['tail'], ",", record['rel'])
+                    print(answers_tail_fil)
                 # Slice the corresponding scores of the filtered answers from the scores_tail
                 # Because answers_tail was argsort'ed on scores_tail
                 scores_tail_fil = scores_tail[answers_tail_fil]
