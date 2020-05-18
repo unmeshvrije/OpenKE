@@ -20,6 +20,7 @@ class AnswerClassifier(ABC):
 
         self.y_predicted_raw = []
         self.y_predicted_fil = []
+        self.y_predicted_fil_abs = []
 
         self.type_prediction   = type_prediction
         self.db                = db
@@ -168,6 +169,7 @@ class AnswerClassifier(ABC):
         Use pre-trained model using training triples
 
         Both fill y_predicted_raw and y_predicted_fil in the end
+        and also y_predicted_fil_abs => to abstain
         '''
         pass
 
@@ -198,6 +200,7 @@ class AnswerClassifier(ABC):
         filtered_result['predicted_cnt']['0'] = fil_cnt_tuple[1][0]
         filtered_result['predicted_cnt']['1'] = fil_cnt_tuple[1][1]
         filtered_result['predicted_y'] = self.y_predicted_fil
+        filtered_result['predicted_y_abs'] = self.y_predicted_fil_abs
         filtered_result['TP'] = fil_conf_mat[0][0]
         filtered_result['FP'] = fil_conf_mat[0][1]
         filtered_result['FN'] = fil_conf_mat[1][0]

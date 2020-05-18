@@ -67,10 +67,22 @@ class MLPClassifier(AnswerClassifier):
 
             # Filtered
             x_test_fil = np.reshape(self.x_test_fil, (self.cnt_test_triples//self.topk, self.topk, self.emb_dim))
-            if self.threshold != 0.5:
-                probabilities = loaded_model.predict(x_test_fil)
-                predicted_fil = (probabilities > self.threshold).astype(int)
-                self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
-            else:
-                predicted_fil = loaded_model.predict_classes(x_test_fil)
-                self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
+            #if self.threshold != 0.5:
+            probabilities = loaded_model.predict(x_test_fil)
+            predicted_fil = (probabilities > self.threshold).astype(int)
+            self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
+
+            predicted_fil_abs = np.empty(len(predicted_fil), dtype=np.int)
+            for i, prob in enumerate(probabilities[0]):
+                if prob <= 0.2:
+                    predicted_fil_abs[i] = 0
+                elif prob >= 0.6:
+                    predicted_fil_abs[i] = 1
+                else:
+                    predicted_fil_abs[i] = -1
+
+            self.y_predicted_fil_abs = predicted_fil_abs
+
+            #else:
+            #    predicted_fil = loaded_model.predict_classes(x_test_fil)
+            #    self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)

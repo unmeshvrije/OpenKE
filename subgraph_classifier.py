@@ -29,6 +29,7 @@ class SubgraphClassifier(AnswerClassifier):
         # % Threshold for this query (dynamically computed, hence different for every query)
         self.cnt_subgraphs_dict["raw"] = []
         self.cnt_subgraphs_dict["fil"] = []
+        self.cnt_subgraphs_dict["abs"] = []
 
     def set_logfile(self, logfile):
         self.logfile = logfile
@@ -101,6 +102,7 @@ class SubgraphClassifier(AnswerClassifier):
     def predict(self):
         self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
         self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
+        self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
 
     def get_dynamic_topk(self, ent, rel, sub_indexes):
         '''
@@ -193,8 +195,12 @@ class SubgraphClassifier(AnswerClassifier):
 
             for key in topk_ans_entities:
                 self.cnt_subgraphs_dict[setting].append(str(cntMap[key]) + " / " + str(threshold_subgraphs))
-                if cntMap[key] and cntMap[key] > threshold_subgraphs:
+                #if cntMap[key] and cntMap[key] > threshold_subgraphs:
+                if cntMap[key] and cntMap[key] > 0:#threshold_subgraphs:
                     y_predicted.append(1)
                 else:
-                    y_predicted.append(0)
+                    if setting == "abs":
+                        y_predicted.append(-1)
+                    else:
+                        y_predicted.append(0)
 

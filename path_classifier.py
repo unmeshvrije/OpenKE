@@ -20,7 +20,6 @@ class PathClassifier(AnswerClassifier):
         self.score_threshold_percentage = score_threshold_percentage
         self.init_embeddings()
         self.init_graph()
-        self.init_model_score_function(emb_model)
         self.cnt_subgraphs_dict = {}
         # This is the list of Counts of subgraphs / % Threshold
         # Count of subgraphs in which the answer was found.
@@ -32,9 +31,6 @@ class PathClassifier(AnswerClassifier):
         self.logfile = logfile
 
     def print_path(self, path):
-        #if self.logfile == None:
-        #    return
-        #log = open(self.logfile, "a+")
         for p in path:
             ent = p[0]
             rel = p[1]
@@ -72,10 +68,6 @@ class PathClassifier(AnswerClassifier):
 
         log.close()
 
-
-    def init_model_score_function(self, emb_model):
-        if emb_model == "transe":
-            self.model_score = self.transe_score
 
     def init_embeddings(self):
         with open (self.emb_file_path, 'r') as fin:
@@ -180,6 +172,7 @@ class PathClassifier(AnswerClassifier):
     def predict(self):
         self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
         self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
+        self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
 
     def predict_internal(self, x_test, y_predicted, setting):
         # Go over all test queries
@@ -231,5 +224,9 @@ class PathClassifier(AnswerClassifier):
                 if query_results[answer]: #topk_subgraphs/2:
                     y_predicted.append(1)
                 else:
-                    y_predicted.append(0)
+                    if setting == "abs":
+                        # abstain
+                        y_predicted.append(-1)
+                    else:
+                        y_predicted.append(0)
 
