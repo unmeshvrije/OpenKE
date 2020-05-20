@@ -72,8 +72,8 @@ class MLPClassifier(AnswerClassifier):
             predicted_fil = (probabilities > self.threshold).astype(int)
             self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
 
-            predicted_fil_abs = np.empty(len(predicted_fil), dtype=np.int)
-            for i, prob in enumerate(probabilities[0]):
+            predicted_fil_abs = np.empty(len(probabilities.flatten()), dtype=np.int)
+            for i, prob in enumerate(probabilities.flatten()):
                 if prob <= 0.2:
                     predicted_fil_abs[i] = 0
                 elif prob >= 0.6:
