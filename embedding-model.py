@@ -1,6 +1,6 @@
 import openke
 from openke.config import Trainer, Tester
-from openke.module.model import TransE, ComplEx
+from openke.module.model import TransE, ComplEx, HolE, RotatE
 from openke.module.loss import MarginLoss, SigmoidLoss, SoftplusLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
@@ -69,6 +69,32 @@ def choose_model():
             )
         epochs = 1000
         alpha = 1.0
+    elif args.model == "rotate":
+        model = RotatE(ent_tot  = train_dataloader.get_ent_tot(),
+                        rel_tot = train_dataloader.get_rel_tot(),
+                        dim = N_DIM,
+                        margin = 6.0,
+                        epsilon = 2.0)
+        model_with_loss = NegativeSampling(
+                    model = model,
+                    loss = SigmoidLoss(adv_temperature = 2),
+                    batch_size = train_dataloader.get_batch_size(),
+                    regul_rate = 0.0
+                    )
+        epochs = 1000
+        alpha = 0.5
+    elif args.model == "hole":
+        model = HolE(ent_tot = train_dataloader.get_ent_tot(),
+                    rel_tot  = train_dataloader.get_rel_tot(),
+                    dim = N_DIM);
+        model_with_loss = NegativeSampling(
+                    model = model,
+                    loss = SoftplusLoss(),
+                    batch_size = train_dataloader.get_batch_size(),
+                    regul_rate = 1.0
+                    )
+        epochs = 1000
+        alpha = 0.5
     elif args.model == "complex":
         model = ComplEx(
                 ent_tot = train_dataloader.get_ent_tot(),
