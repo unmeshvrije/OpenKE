@@ -95,7 +95,6 @@ with open(args.true_out_file) as fin:
 #indexes_annotated = np.array(indexes)
 indexes_annotated = np.where(true_y != -1)[0]
 print("# of annotated answers = ", len(indexes_annotated))
-print(true_y[indexes_annotated])
 
 '''
     6. Compute simple max-voting and min-voting from 4 classifiers
@@ -142,8 +141,6 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
 
         indexes_annotated_train = indexes_annotated[train_split]
         indexes_annotated_test  = indexes_annotated[test_split]
-        print(len(indexes_annotated_train))
-        print(len(indexes_annotated_test))
 
         lstm_annotated_test = lstm_y[indexes_annotated_test]
         mlp_annotated_test  = mlp_y[indexes_annotated_test]
@@ -204,8 +201,6 @@ def get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, voter):
 
 snorkel_y_annotated, snorkel_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
 
-print("len(snorkel_y_annotated) = ", len(snorkel_y_annotated))
-print("len(indexes_anno_test  ) = ", len(indexes_annotated_test))
 major_y_annotated, major_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, MajorityLabelVoter)
 random_y_annotated, random_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, RandomVoter)
 
@@ -224,7 +219,6 @@ def r2(num):
 def get_results(y_true, y_predicted):
     #conf = confusion_matrix(y_true, y_predicted)
     result = classification_report(y_true, y_predicted, output_dict = True)
-    #print(result)
     return  "Precision = " + str(r2(result['1']['precision'])) + "," +\
             "Recall = "+str(r2(result['1']['recall']))         + "," +\
             "F1 score = "+str(r2(result['1']['f1-score']))         + "," +\

@@ -77,7 +77,7 @@ class Tester(object):
             'mode': data['mode']
         })
 
-    def run_ans_prediction(self, ent_embeddings, topk, outfile_name, dyntop, mode):
+    def run_ans_prediction(self, topk, outfile_name, dyntop, mode):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
