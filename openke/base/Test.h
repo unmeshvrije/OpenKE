@@ -114,8 +114,8 @@ void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT* filte
     INT h = testList[lastHead].h;
     INT t = testList[lastHead].t;
     INT r = testList[lastHead].r;
-
-    for (INT i = 0, j = 0; j < topK && i < entityTotal; ++i) {
+    INT i,j;
+    for (i = 0, j = 0; j < topK && i < entityTotal; ++i) {
         if (not _find_in_train(h, indexes[i], r) && not _find_in_valid(h, indexes[i], r) && indexes[i] != h) {
             filtered_indexes[j] = indexes[i];
             if (_find_in_test(h, indexes[i], r)) {

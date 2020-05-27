@@ -58,5 +58,49 @@ class ComplEx(Model):
         return regul
 
     def predict(self, data):
+        batch_h = data['batch_h']
+        batch_t = data['batch_t']
+        batch_r = data['batch_r']
+        mode    = data['mode']
+        h_re = self.ent_re_embeddings(batch_h)
+        h_im = self.ent_im_embeddings(batch_h)
+        t_re = self.ent_re_embeddings(batch_t)
+        t_im = self.ent_im_embeddings(batch_t)
+        r_re = self.rel_re_embeddings(batch_r)
+        r_im = self.rel_im_embeddings(batch_r)
+
+        #h_all = torch.cat((h_re, h_im, h_re, h_im))
+        #r_all = torch.cat((r_re, r_re, r_im, -r_im))
+        #t_all = torch.cat((t_re, t_im, t_im, t_re))
+        print("rel real shape = ", r_re.shape)
+        print("rel imag shape = ", r_im.shape)
+        print("head real shape = ", h_re.shape)
+        print("head imag shape = ", h_im.shape)
+        print("tail real shape = ", t_re.shape)
+        print("tail imag shape = ", t_im.shape)
+
+        if mode == 'head_batch':
+            #score = (r_all * o_all).mm(s_all.transpose(0,1))
+            score = torch.sum(
+            h_re.mm((r_re * t_re).transpose(0,1)) +
+            h_im.mm((r_re * t_im).transpose(0,1)) +
+            h_re.mm((r_im * t_im).transpose(0,1)) -
+            h_im.mm((r_im * t_re).transpose(0,1)),
+            -1
+            )
+        else:# tail_batch
+            score = torch.sum(
+            (t_re * r_re).mm(h_re.transpose(0,1)) +
+            (t_im * r_re).mm(h_im.transpose(0,1)) +
+            (t_re * r_im).mm(h_im.transpose(0,1)) -
+            -(t_im * r_im).mm(h_re.transpose(0,1)),
+            -1
+            )
+
+            #score = (h_all * r_all).mm(o_all.transpose(0,1))
+
+        return score.cpu().data.numpy()
+        '''
         score = -self.forward(data)
         return score.cpu().data.numpy()
+        '''

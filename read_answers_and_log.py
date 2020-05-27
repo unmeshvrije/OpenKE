@@ -49,12 +49,10 @@ if args.mode == "train":
 else:
     rf_arr = ["_fil"] # "_raw,"
 
-log = open("./delme", "w")
-ht = ["head", "tail"]
+ht = ["tail", "head"]
 for index in range(len(ht)):
-    #TODO:
-    if index == 1:
-        break
+    log = open("./delme"+ht[index], "w")
+    log_queries = open("./queries-"+ht[index]+".log", "w")
     for rf in rf_arr:
         unique_pairs = set()
         dup_count = 0
@@ -68,13 +66,13 @@ for index in range(len(ht)):
                     # log
                     rel = r['rel']
                     ent = r[ht[(index+1)%2]]
-                    print("{}, {}, {}".format(entity_dict[ent], relation_dict[rel], entity_dict[e]), file = log)
+                    print("{}, {}, {} ({})".format(entity_dict[ent], relation_dict[rel], entity_dict[e], s), file = log)
             else:
                 dup_count += 1
 
         print(ht[index] + " : " + rf)
+        log.close()
         print("# duplicates : ", dup_count)
         print("DONE")
 
-log.close()
 #ans_file = os.path.basename(args.ansfile)

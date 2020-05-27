@@ -131,7 +131,7 @@ elif args.mode == "test":
     model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
     model.load_parameters(result_path)
-    tester = Tester(args.db, model = model, data_loader = test_dataloader, use_gpu = args.gpu)
+    tester = Tester(args.db, model = model, model_name = args.model, data_loader = test_dataloader, use_gpu = args.gpu)
     with open (result_path, 'r') as fin:
         params = json.loads(fin.read())
     outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
@@ -147,7 +147,7 @@ elif args.mode == "trainAsTest":
     model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
     model.load_parameters(result_path)
-    tester = Tester(args.db, model = model, data_loader = new_train_dataloader, use_gpu = args.gpu)
+    tester = Tester(args.db, model = model, model_name = args.model, data_loader = new_train_dataloader, use_gpu = args.gpu)
     with open (result_path, 'r') as fin:
         params = json.loads(fin.read())
     outfile_name = result_dir + "data/"+ args.db + "-" + args.model + "-training-topk-"+str(args.topk)+".json"

@@ -19,9 +19,21 @@ from numpy import linalg as LA
 from openke.utils import DeepDict
 from numpy.ctypeslib import ndpointer
 
+def numpy_reverse(arr):
+    ln = arr.shape[0]
+    lidx, ridx = 0, ln - 1
+
+    while lidx < ridx:
+        rtmp = arr[ridx]
+        arr[ridx] = arr[lidx]
+        arr[lidx] = rtmp
+        lidx += 1
+        ridx -= 1
+    return arr
+
 class Tester(object):
 
-    def __init__(self, db, model = None, data_loader = None, use_gpu = True):
+    def __init__(self, db, model = None, model_name = None, data_loader = None, use_gpu = True):
         base_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../release/Base.so"))
         self.lib = ctypes.cdll.LoadLibrary(base_file)
         self.lib.testHead.argtypes = [ctypes.c_void_p, ctypes.c_int64, ctypes.c_int64]
@@ -46,6 +58,7 @@ class Tester(object):
 
         self.db = db
         self.model = model
+        self.model_name = model_name
         self.data_loader = data_loader
         self.use_gpu = use_gpu
 
@@ -77,6 +90,7 @@ class Tester(object):
             'mode': data['mode']
         })
 
+
     def run_ans_prediction(self, topk, outfile_name, dyntop, mode):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
@@ -103,8 +117,16 @@ class Tester(object):
                 topk_head = topk
 
             # Head answers raw
+            #if self.model_name == "complex":
+            #    answers_head = np.argsort(scores_head)[::-1]
+            #    sorted_scores_head = np.sort(scores_head)[::-1]
+            #else:
             answers_head = np.argsort(scores_head)
             sorted_scores_head = np.sort(scores_head)
+            if self.model_name == "complex":
+                answers_head = numpy_reverse(answers_head)
+                sorted_scores_head = numpy_reverse(sorted_scores_head)
+
             truths_head = np.zeros(topk_head, dtype=int)
             self.lib.ansHead(answers_head.__array_interface__["data"][0], index, topk_head, truths_head.__array_interface__["data"][0])
 
@@ -143,6 +165,10 @@ class Tester(object):
             # Tail answers raw
             answers_tail = np.argsort(scores_tail)
             sorted_scores_tail = np.sort(scores_tail)
+            if self.model_name == "complex":
+                answers_tail = numpy_reverse(answers_tail)
+                sorted_scores_tail = numpy_reverse(sorted_scores_tail)
+
             truths_tail = np.zeros(topk_tail, dtype=int)
             self.lib.ansTail(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail.__array_interface__["data"][0])
             record['tail_predictions' + suffix] = DeepDict()
@@ -155,6 +181,7 @@ class Tester(object):
                 answers_tail_fil = np.full(topk_tail, -1, dtype = int)
                 truths_tail_fil = np.zeros(topk_tail, dtype = int)
                 # Filter answers from raw answers
+                #print("UNM raw answers : ", answers_tail[:topk_tail].astype(int).tolist())
                 self.lib.ansTailInTest(answers_tail.__array_interface__["data"][0], index, topk_tail, truths_tail_fil.__array_interface__["data"][0], answers_tail_fil.__array_interface__["data"][0])
 
                 if record['head'] in answers_tail_fil:
@@ -163,6 +190,7 @@ class Tester(object):
                     print(answers_tail_fil)
                 # Slice the corresponding scores of the filtered answers from the scores_tail
                 # Because answers_tail was argsort'ed on scores_tail
+                #print("UNM fil answers : ", answers_tail_fil)
                 scores_tail_fil = scores_tail[answers_tail_fil]
                 assert(len(answers_tail_fil) == len(scores_tail_fil) == len(truths_tail_fil) == topk_tail)
                 record['tail_predictions_fil'] = DeepDict()
