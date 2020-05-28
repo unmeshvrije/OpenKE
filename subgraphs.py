@@ -48,6 +48,7 @@ class SubgraphFactory():
 
     def save(self, outdir, emb_model_str, protocol=pickle.HIGHEST_PROTOCOL):
         filename = outdir + self.db + "-" + emb_model_str + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
+        print("writing to...", filename)
         with open(filename, 'wb') as fout:
             pickle.dump(self.subgraphs, fout, protocol=protocol)
 

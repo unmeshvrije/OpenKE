@@ -36,6 +36,10 @@ N_DIM = 200 # Number of dimensions for embeddings
 db_path = "./benchmarks/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
+os.makedirs(result_dir + "embeddings/", exist_ok = True)
+os.makedirs(result_dir + "data/", exist_ok = True)
+os.makedirs(result_dir + "models", exist_ok = True)
+os.makedirs(result_dir + "subgraphs/", exist_ok = True)
 checkpoint_path = result_dir + "embeddings/" + args.db + "-" + args.model + ".ckpt"
 result_path     = result_dir + "embeddings/" + args.db + "-" + args.model + ".json"
 

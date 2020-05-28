@@ -72,7 +72,8 @@ elif args.classifier == "sub":
     emb_file = args.emb_file
     sub_file = args.sub_file
     subemb_file = args.subemb_file
-    mys = SubgraphClassifier(args.pred, args.db, args.topk, queries_file_path, emb_file, sub_file, subemb_file, args.model, args.train_file, args.sub_threshold)
+    db_path = "./benchmarks/" + args.db + "/"
+    mys = SubgraphClassifier(args.pred, args.db, args.topk, queries_file_path, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
 
     # entity dict is the id to string dictionary for entities
     mys.init_entity_dict(args.ent_dict, args.rel_dict)

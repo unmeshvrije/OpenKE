@@ -3,14 +3,17 @@ import json
 import pickle
 from tqdm import tqdm
 from answer_classifier import AnswerClassifier
+from openke.module.model import TransE, RotatE
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from numpy import linalg as LA
 from subgraphs import read_triples
+from openke.data import TrainDataLoader
+import torch
 
 class SubgraphClassifier(AnswerClassifier):
 
-    def __init__(self, type_prediction, db, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, subgraph_threshold_percentage = 0.1):
+    def __init__(self, type_prediction, db, topk_answers_per_query, queries_file_path, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
         super(SubgraphClassifier, self).__init__(type_prediction, queries_file_path, db, emb_model, topk_answers_per_query)
         self.topk_answers_per_query = topk_answers_per_query
         self.emb_file_path = embeddings_file_path
@@ -22,6 +25,9 @@ class SubgraphClassifier(AnswerClassifier):
         self.init_subgraphs()
         self.init_sub_embeddings()
         self.init_training_triples()
+
+        self.init_train_dataloader(db_path)
+        self.model_name = emb_model
         self.init_model_score_function(emb_model)
         self.cnt_subgraphs_dict = {}
         # This is the list of Counts of subgraphs / % Threshold
@@ -34,6 +40,17 @@ class SubgraphClassifier(AnswerClassifier):
     def set_logfile(self, logfile):
         self.logfile = logfile
 
+    def init_train_dataloader(self, db_path):
+        self.train_dataloader = TrainDataLoader(
+            in_path = db_path,
+            nbatches = 100,
+            threads = 8,
+            sampling_mode = "normal",
+            bern_flag = 1,
+            filter_flag = 1,
+            neg_ent = 25,
+            neg_rel = 0
+            )
     def print_answer_entities(self):
         if self.logfile == None:
             return
@@ -72,7 +89,30 @@ class SubgraphClassifier(AnswerClassifier):
 
     def init_model_score_function(self, emb_model):
         if emb_model == "transe":
-            self.model_score = self.transe_score
+            N_DIM = 200
+            #self.model_score = self.transe_score
+            self.model = TransE(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM,
+                    p_norm = 1,
+                    norm_flag = True
+                    )
+        elif emb_model == "rotate":
+            N_DIM = 200
+            self.model = RotatE(
+                            ent_tot  = self.train_dataloader.get_ent_tot(),
+                            rel_tot = self.train_dataloader.get_rel_tot(),
+                            dim = N_DIM,
+                            margin = 6.0,
+                            epsilon = 2.0)
+        elif emb_model == "complex":
+            N_DIM = 256
+            self.model = ComplEx(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    );
 
     def init_embeddings(self):
         with open (self.emb_file_path, 'r') as fin:
@@ -88,6 +128,31 @@ class SubgraphClassifier(AnswerClassifier):
         with open(self.sub_emb_file_path, 'rb') as fin:
             self.S = pickle.load(fin)
 
+    def complex_score(self, sub_emb, ent_emb, rel_emb, pred_type):
+        # separate real and imag embeddings
+        mid = len(sub_emb)/2
+        sub_re = sub_emb[:mid]
+        sub_im = sub_emb[mid:]
+        ent_re = ent_emb[:mid]
+        ent_im = ent_emb[mid:]
+        rel_re = rel_emb[:mid]
+        rel_im = rel_emb[mid:]
+
+        if pred_type == "tail":
+            score = (ent_emb + rel_emb) - sub_emb
+        else:
+            score = sub_emb + (rel_emb - ent_emb)
+
+        return LA.norm(score, 2)
+
+    def rotate_score(self, sub_emb, ent_emb, rel_emb, pred_type):
+        if pred_type == "tail":
+            score = (ent_emb + rel_emb) - sub_emb
+        else:
+            score = sub_emb + (rel_emb - ent_emb)
+
+        return LA.norm(score, 2)
+
     def transe_score(self, sub_emb, ent_emb, rel_emb, pred_type):
         if pred_type == "tail":
             score = (ent_emb + rel_emb) - sub_emb
@@ -96,8 +161,10 @@ class SubgraphClassifier(AnswerClassifier):
 
         return LA.norm(score, 2)
 
-    def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
-        return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
+    #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
+    #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
+    #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
+
 
     def predict(self):
         self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
@@ -109,7 +176,7 @@ class SubgraphClassifier(AnswerClassifier):
             1. Search ent, rel in training triples
             2. If answer is found, look for the answer in sorted subgraphs
         '''
-        print("ent {}, rel {} ". format(ent, rel))
+        #print("ent {}, rel {} ". format(ent, rel))
         answers = []
         for index, triple in enumerate(self.training_triples):
             if triple[2] != rel:
@@ -139,7 +206,7 @@ class SubgraphClassifier(AnswerClassifier):
         if len(found_index) == 0:
             return int(0.1 * len(sub_indexes))
 
-        print("found topk : ", found_index)
+        #print("found topk : ", found_index)
         return max(found_index)
 
 
@@ -153,12 +220,18 @@ class SubgraphClassifier(AnswerClassifier):
             rel = int(features[0][1])
             topk_ans_entities = features[:, 2].astype(int)
 
+            # call get_subgraph_scores only once and get all scores
+            new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
+            new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
+            subgraph_scores = self.model._calc(torch.Tensor(self.S), new_E, new_R, self.type_prediction+'_batch')
+            '''
             subgraph_scores = []
             for index, se in enumerate(self.S):
                 if self.subgraphs[index].data['ent'] == ent and self.subgraphs[index].data['rel'] == rel:
                     subgraph_scores.append(np.inf)
                 else:
                     subgraph_scores.append(self.get_subgraph_scores(se, self.E[ent], self.R[rel],  self.type_prediction, self.model_score))
+            '''
             sub_indexes = np.argsort(subgraph_scores)
 
             # TODO: Computer dynamic topk for query (ent, rel, ?)
