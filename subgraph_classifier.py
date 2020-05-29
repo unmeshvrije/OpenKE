@@ -3,13 +3,14 @@ import json
 import pickle
 from tqdm import tqdm
 from answer_classifier import AnswerClassifier
-from openke.module.model import TransE, RotatE
+from openke.module.model import TransE, RotatE, ComplEx
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from numpy import linalg as LA
 from subgraphs import read_triples
 from openke.data import TrainDataLoader
 import torch
+import kge.model
 
 class SubgraphClassifier(AnswerClassifier):
 
@@ -21,7 +22,7 @@ class SubgraphClassifier(AnswerClassifier):
         self.sub_emb_file_path = sub_emb_file_path
         self.training_file_path = training_file_path
         self.subgraph_threshold_percentage = subgraph_threshold_percentage
-        self.init_embeddings()
+        self.init_embeddings(emb_model)
         self.init_subgraphs()
         self.init_sub_embeddings()
         self.init_training_triples()
@@ -114,11 +115,18 @@ class SubgraphClassifier(AnswerClassifier):
                     dim = N_DIM
                     );
 
-    def init_embeddings(self):
-        with open (self.emb_file_path, 'r') as fin:
-            params = json.loads(fin.read())
-        self.E = params['ent_embeddings.weight']
-        self.R = params['rel_embeddings.weight']
+    def init_embeddings(self, emb_model):
+        if emb_model == "complex":
+            model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
+            E_temp = model._entity_embedder._embeddings_all()
+            R_temp = model._relation_embedder._embeddings_all()
+            self.E = E_temp.tolist()
+            self.R = R_temp.tolist()
+        else:
+            with open (self.emb_file_path, 'r') as fin:
+                params = json.loads(fin.read())
+            self.E = params['ent_embeddings.weight']
+            self.R = params['rel_embeddings.weight']
 
     def init_subgraphs(self):
         with open(self.sub_file_path, 'rb') as fin:
@@ -167,9 +175,16 @@ class SubgraphClassifier(AnswerClassifier):
 
 
     def predict(self):
-        self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
+        #self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
         self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
-        self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
+        self.y_predicted_raw = self.y_predicted_fil
+        # replace all 0s with -1
+        for x in self.y_predicted_fil:
+            if x == 1:
+                self.y_predicted_fil_abs.append(x)
+            elif x == 0:
+                self.y_predicted_fil_abs.append(-1)
+        #self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
 
     def get_dynamic_topk(self, ent, rel, sub_indexes):
         '''
@@ -214,7 +229,7 @@ class SubgraphClassifier(AnswerClassifier):
         # Go over all test queries
         cnt_subgraphs_index = 0
         for index in tqdm(range(0, len(x_test), self.topk_answers_per_query)):
-            #print(index , " : ")
+            print(index , " : ")
             features = np.array(x_test[index: index + self.topk_answers_per_query])
             ent = int(features[0][0])
             rel = int(features[0][1])
@@ -223,7 +238,14 @@ class SubgraphClassifier(AnswerClassifier):
             # call get_subgraph_scores only once and get all scores
             new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
             new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
-            subgraph_scores = self.model._calc(torch.Tensor(self.S), new_E, new_R, self.type_prediction+'_batch')
+            new_S = torch.Tensor(self.S)
+            if self.model_name == "complex":
+                s_re, s_im = torch.chunk(new_S, 2, dim = -1)
+                e_re, e_im = torch.chunk(new_E, 2, dim = -1)
+                r_re, r_im = torch.chunk(new_R, 2, dim = -1)
+                subgraph_scores = self.model._calc(s_re, s_im, e_re, e_im, r_re, r_im)
+            else:
+                subgraph_scores = self.model._calc(torch.Tensor(self.S), new_E, new_R, self.type_prediction+'_batch')
             '''
             subgraph_scores = []
             for index, se in enumerate(self.S):
@@ -234,13 +256,12 @@ class SubgraphClassifier(AnswerClassifier):
             '''
             sub_indexes = np.argsort(subgraph_scores)
 
-            # TODO: Computer dynamic topk for query (ent, rel, ?)
-            # and only check the answer in those subgraphs (sub_indexes)
             topk_subgraphs = self.get_dynamic_topk(ent, rel, sub_indexes)
 
             # Check topk_subgraphs and if it is > 10
             threshold_subgraphs = int(self.subgraph_threshold_percentage * topk_subgraphs)
 
+            threshold_subgraphs = min(len(sub_indexes)*0.1, threshold_subgraphs)
             # working
             '''
             for i, answer in enumerate(topk_ans_entities):

@@ -3,11 +3,13 @@ from keras.models import model_from_json
 from answer_classifier import AnswerClassifier
 
 class MLPClassifier(AnswerClassifier):
-    def __init__(self, type_prediction, db, topk, queries_file_path, emb_model, model_file_path, model_weights_path, threshold = 0.5):
+    def __init__(self, type_prediction, db, topk, queries_file_path, emb_model, model_file_path, model_weights_path, threshold = 0.5, abs_low = 0.2, abs_high = 0.6):
         super(MLPClassifier, self).__init__(type_prediction, queries_file_path, db, emb_model, topk)
         self.model_file_path = model_file_path
         self.model_weights_path = model_weights_path
         self.threshold = threshold
+        self.abs_low   = abs_low
+        self.abs_high  = abs_high
 
     def set_logfile(self, logfile):
         self.logfile = logfile
@@ -73,10 +75,12 @@ class MLPClassifier(AnswerClassifier):
             self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
 
             predicted_fil_abs = np.empty(len(probabilities.flatten()), dtype=np.int)
+            print ("#$ "*20, self.abs_low)
+            print ("#> "*20, self.abs_high)
             for i, prob in enumerate(probabilities.flatten()):
-                if prob <= 0.2:
+                if prob <= self.abs_low:
                     predicted_fil_abs[i] = 0
-                elif prob >= 0.6:
+                elif prob >= self.abs_high:
                     predicted_fil_abs[i] = 1
                 else:
                     predicted_fil_abs[i] = -1

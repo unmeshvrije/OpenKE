@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
     parser.add_argument('--true-out', dest ='true_out_file', type = str, help = 'File containing the true /expected answers.',
-    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-annotated-topk-10-tail.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-annotated-topk-10-tail.out')
     parser.add_argument('--lstm-out', dest ='lstm_out_file', type = str, help = 'File containing the output of lstm classifier.',
     default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-lstm-units-100-dropout-0.2.out')
     parser.add_argument('--mlp-out', dest ='mlp_out_file', type = str, help = 'File containing the output of mlp classifier.',
@@ -249,7 +249,7 @@ with open(logfile, "w") as log:
         if args.pred == "head":
             head = a
             tail = e
-        print("{}, {}, {}; LSTM:{},MLP:{},PATH:{},SUB:{},maxV:{},Snorkel:{},REAL:{}".format(entity_dict[head], relation_dict[r], entity_dict[tail], lstm_y[index], mlp_y[index], path_y[index], sub_y[index], max_voting_y[index], snorkel_y[index], true_y[index]), file = log)
+        print("{}, {}, {},LSTM:{},MLP:{},PATH:{},SUB:{},maxV:{},Snorkel:{},REAL:{}".format(entity_dict[head], relation_dict[r], entity_dict[tail], lstm_y[index], mlp_y[index], path_y[index], sub_y[index], max_voting_y[index], snorkel_y[index], true_y[index]), file = log)
         if (index+1) % args.topk == 0:
             print("*" * 80, file = log)
 
