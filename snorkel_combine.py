@@ -49,7 +49,7 @@ for m in models:
     filemap[m]["path"]  = result_dir + args.db           + "-path-classifier-tail.out"
     filemap[m]["test"]  = args.result_dir + args.db + "/data/" + args.db + "-" + m + "-test-topk-10.pkl"
 
-classifiers = ["true", "lstm", "mlp", "sub", "path", "test"]
+classifiers = ["true", "lstm", "mlp", "sub", "path"]
 
 #for m in models:
 #    for c in classifiers:
@@ -107,34 +107,6 @@ for m in models:
             y_map[m]["true"][i] = int(label)
 
 '''
-len_y  = len(y_map["transe"]["lstm"])
-
-y_map["transe"]["true"] = np.empty(len_y, dtype = np.int)
-y_map["transe"]["true"].fill(-1);
-y_map["rotate"]["true"] = np.empty(len_y, dtype = np.int)
-y_map["rotate"]["true"].fill(-1);
-y_map["complex"]["true"] = np.empty(len_y, dtype = np.int)
-y_map["complex"]["true"].fill(-1);
-
-with open (filemap["transe"]["true"]) as f1, open(filemap["rotate"]["true"]) as f2, open(filemap["complex"]["true"]) as f3:
-    lines1 = f1.readlines()
-    lines2 = f2.readlines()
-    lines3 = f3.readlines()
-    for i, _ in enumerate(lines1):
-        label1 = lines1[i].rstrip()
-        label2 = lines2[i].rstrip()
-        label3 = lines3[i].rstrip()
-        row = label1 + " " + label2 + " " + label3
-        if (len(row.split()) == 2) or len(row.split()) == 1:
-            print (i+1, " : ", "transe : (",label1,")", "rotate:(",label2,")", "complex:(",label3,")" )
-        elif label2 == "-1" and label3 == "-1" and label1 != "-1":
-            print (i+1, " : ", "transe : (",label1,")", "rotate:(",label2,")", "complex:(",label3,")" )
-        #print("_ "*20)
-#TODO
-sys.exit()
-'''
-
-'''
     5. Find indexes of answer triples which are actually annotated
     For now, consider answers that are either labelled 0 or 1
 '''
@@ -145,26 +117,54 @@ indexes_annotated = indexes_annotated1
 assert((indexes_annotated1 == indexes_annotated2).all())
 assert((indexes_annotated3 == indexes_annotated2).all())
 
+y_annotated_seq = {}
+for m in models:
+    y_annotated_seq[m] = {}
+    for c in classifiers:
+        y_annotated_seq[m][c] = y_map[m][c][indexes_annotated]
+
+transe_test_queries = load_pickle(filemap["transe"]["test"])
+rotate_test_queries = load_pickle(filemap["rotate"]["test"])
+complex_test_queries = load_pickle(filemap["complex"]["test"])
+
+transe_x_test_fil = np.array(transe_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
+rotate_x_test_fil = np.array(rotate_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
+complex_x_test_fil = np.array(complex_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
+q_map = {}
+q_map["transe"] = transe_x_test_fil
+q_map["rotate"] = rotate_x_test_fil
+q_map["complex"] = complex_x_test_fil
+
+'''
+    Build a map that stores 1/0/-1 answers in a dictionary
+    with key (ent, rel) for all three models
+    map["transe"]["lstm"][34] = should give label for answer id 34 for lstm run with transe.
+'''
+y_annotated_map = {}
+for m in models:
+    y_annotated_map[m] = {}
+    for c in classifiers:
+        y_annotated_map[m][c] = {}#y_map[m][c][indexes_annotated]
+
+for index, x in enumerate(tqdm(transe_x_test_fil)):
+    for m in models:
+        ent = int (q_map[m][index][0])
+        rel = int (q_map[m][index][1])
+        ans = int (q_map[m][index][2])
+        for c in classifiers:
+            y_annotated_map[m][c][ans] = y_annotated_seq[m][c][index]
 
 '''
     function that accepts 4 classifiers y labels
     and annotated indexes, fills the out array with labels at those indexes
 '''
-def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
-    snorkel_y = np.empty(len(lstm_y), dtype = np.int)
+def get_snorkel_labels(c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, true_y, indexes_annotated):
+    snorkel_y = np.empty(len(c1), dtype = np.int)
     snorkel_y.fill(-1);
 
-    kf = KFold(n_splits = 3, shuffle = False, random_state = 42)
+    kf = KFold(n_splits = 5, shuffle = False, random_state = 12)
     #kf.split(indexes_annotated)
 
-    '''
-    np.random.seed(24)
-    np.random.shuffle(indexes_annotated)
-    N_SPLIT = int(len(indexes_annotated)* 0.9)
-    print("SPLIT: ", N_SPLIT)
-    indexes_annotated_train = indexes_annotated[:N_SPLIT]
-    indexes_annotated_test  = indexes_annotated[N_SPLIT:]
-    '''
     max_accuracy = 0.0
     L_test_max = None
     indexes_annotated_test_max = None
@@ -175,23 +175,37 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
         indexes_annotated_train = indexes_annotated[train_split]
         indexes_annotated_test  = indexes_annotated[test_split]
 
-        lstm_annotated_test = lstm_y[indexes_annotated_test]
-        mlp_annotated_test  = mlp_y[indexes_annotated_test]
-        sub_annotated_test  = sub_y[indexes_annotated_test]
-        path_annotated_test = path_y[indexes_annotated_test]
+        c1_annotated_test = c1[indexes_annotated_test]
+        c2_annotated_test = c2[indexes_annotated_test]
+        c3_annotated_test = c3[indexes_annotated_test]
+        c4_annotated_test = c4[indexes_annotated_test]
+        c5_annotated_test = c5[indexes_annotated_test]
+        c6_annotated_test = c6[indexes_annotated_test]
+        c7_annotated_test = c7[indexes_annotated_test]
+        c8_annotated_test = c8[indexes_annotated_test]
+        c9_annotated_test = c9[indexes_annotated_test]
+        c10_annotated_test = c10[indexes_annotated_test]
         true_annotated_test = true_y[indexes_annotated_test]
 
-        lstm_annotated_train = lstm_y[indexes_annotated_train]
-        mlp_annotated_train  = mlp_y[indexes_annotated_train]
-        sub_annotated_train  = sub_y[indexes_annotated_train]
-        path_annotated_train = path_y[indexes_annotated_train]
+        c1_annotated_train = c1[indexes_annotated_train]
+        c2_annotated_train = c2[indexes_annotated_train]
+        c3_annotated_train = c3[indexes_annotated_train]
+        c4_annotated_train = c4[indexes_annotated_train]
+        c5_annotated_train = c5[indexes_annotated_train]
+        c6_annotated_train = c6[indexes_annotated_train]
+        c7_annotated_train = c7[indexes_annotated_train]
+        c8_annotated_train = c8[indexes_annotated_train]
+        c9_annotated_train = c9[indexes_annotated_train]
+        c10_annotated_train = c10[indexes_annotated_train]
         true_annotated_train = true_y[indexes_annotated_train]
 
 
         label_model = LabelModel(verbose = False)
-        L_train = np.transpose(np.vstack((lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train)))
+        L_train = np.transpose(np.vstack((c1_annotated_train, c2_annotated_train, c3_annotated_train, c4_annotated_train, c5_annotated_train,
+                                          c6_annotated_train, c7_annotated_train, c8_annotated_train, c9_annotated_train, c10_annotated_train)))
         label_model.fit(L_train, Y_dev=true_annotated_train, n_epochs=500, optimizer="adam")
-        L_test = np.transpose(np.vstack((lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test)))
+        L_test = np.transpose(np.vstack(( c1_annotated_test, c2_annotated_test, c3_annotated_test, c4_annotated_test, c5_annotated_test,
+                                          c6_annotated_test, c7_annotated_test, c8_annotated_test, c9_annotated_test, c10_annotated_test)))
         cv_accuracy = label_model.score(L = L_test, Y = true_annotated_test, tie_break_policy = "random")["accuracy"]
         if cv_accuracy > max_accuracy:
             max_accuracy = cv_accuracy
@@ -205,17 +219,10 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
     '''
     apply best model to entire annotated set
     '''
-    lstm_annotated= lstm_y[indexes_annotated]
-    mlp_annotated= mlp_y[indexes_annotated]
-    sub_annotated= sub_y[indexes_annotated]
-    path_annotated= path_y[indexes_annotated]
-    L_test_max = np.transpose(np.vstack((lstm_annotated, mlp_annotated, sub_annotated, path_annotated)))
-    out_y = best_model.predict(L_test_max, tie_break_policy = "random")
-    for i,index in enumerate(indexes_annotated):
-        snorkel_y[index] = out_y[i]
-    indexes_annotated_test_max = indexes_annotated
+    L_test_max = np.transpose(np.vstack((c1, c2, c3, c4, c5, c6, c7, c8, c9, c10)))
+    snorkel_y = best_model.predict(L_test_max, tie_break_policy = "random")
 
-    return out_y, snorkel_y, indexes_annotated_test_max, L_test_max
+    return best_model, snorkel_y
 
 def get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, voter):
     voter_y = np.empty(len(lstm_y), dtype = np.int)
@@ -242,42 +249,197 @@ def get_results(y_true, y_predicted):
             "F1 score = "+str(r2(result['1']['f1-score']))         + "," +\
             "Accuracy(overall) = "+str(r2(result['accuracy']))
 
-'''
-snorkel_y_annotated, snorkel_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
-major_y_annotated, major_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, MajorityLabelVoter)
-random_y_annotated, random_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, RandomVoter)
 
-lstm_annotated_test = lstm_y[indexes_annotated_test]
-mlp_annotated_test  = mlp_y[indexes_annotated_test]
-sub_annotated_test  = sub_y[indexes_annotated_test]
-path_annotated_test = path_y[indexes_annotated_test]
-maxv_annotated = max_voting_y[indexes_annotated_test]
-minv_annotated = min_voting_y[indexes_annotated_test]
-true_annotated = true_y[indexes_annotated_test]
-print("lstm  : ", get_results(true_annotated, lstm_annotated_test))
-print("mlp   : ", get_results(true_annotated, mlp_annotated_test))
-print("path  : ", get_results(true_annotated, path_annotated_test))
-print("sub   : ", get_results(true_annotated, sub_annotated_test))
-print("minv  : ", get_results(true_annotated, minv_annotated))
-print("snork : ", get_results(true_annotated, snorkel_y_annotated))
-print("major : ", get_results(true_annotated, major_y_annotated))
-print("maxv  : ", get_results(true_annotated, maxv_annotated))
-print("random: ", get_results(true_annotated, random_y_annotated))
-'''
 
-q_map = {}
+ans_dict_map = {}
 for m in models:
-    q_map[m] = {}
+    ans_dict_map[m] = {}
+
+def build_ans_dict(answer_triples):
+    ans_dict = {}
+    for triple in answer_triples:
+        ent = int(triple[0])
+        rel = int(triple[1])
+        ans = int(triple[2])
+        if (ent, rel) not in ans_dict.keys():
+            ans_dict[(ent, rel)] = [ans]
+        else:
+            ans_dict[(ent, rel)].append(ans)
+    return ans_dict
+
+ans_dict_map["transe"] = build_ans_dict(transe_x_test_fil)
+ans_dict_map["rotate"] = build_ans_dict(rotate_x_test_fil)
+ans_dict_map["complex"] = build_ans_dict(complex_x_test_fil)
+
+transe_lstm_y   = []
+transe_mlp_y    = []
+transe_sub_y    = []
+rotate_lstm_y   = []
+rotate_mlp_y    = []
+rotate_sub_y    = []
+complex_lstm_y  = []
+complex_mlp_y   = []
+complex_sub_y   = []
+path_y  = []
 
 
-transe_test_queries = load_pickle(filemap["transe"]["test"])
-rotate_test_queries = load_pickle(filemap["rotate"]["test"])
-complex_test_queries = load_pickle(filemap["complex"]["test"])
+same_answer_count = 0
+abstain_count     = 0
 
-transe_x_test_fil = np.array(transe_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
-rotate_x_test_fil = np.array(rotate_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
-complex_x_test_fil = np.array(complex_test_queries['x_' + args.pred + "_fil"])[indexes_annotated]
+# 1. TransE
+for index, x in enumerate(tqdm(transe_x_test_fil)):
+    transe_lstm_y.append(y_annotated_seq["transe"]["lstm"][index])
+    transe_mlp_y.append(y_annotated_seq["transe"]["mlp"][index])
+    transe_sub_y.append(y_annotated_seq["transe"]["sub"][index])
+    path_y.append(y_annotated_seq["transe"]["path"][index])
 
+    e_transe = int(x[0])
+    r_transe = int(x[1])
+    a_transe = int(x[2])
+
+    if a_transe in ans_dict_map["rotate"][(e_transe, r_transe)]:
+        rotate_lstm_y.append(y_annotated_map["rotate"]["lstm"][a_transe])
+        rotate_mlp_y.append(y_annotated_map["rotate"]["mlp"][a_transe])
+        same_answer_count += 1
+    else:# abstain
+        rotate_lstm_y.append(-1)
+        rotate_mlp_y.append(-1)
+        abstain_count += 1
+    #rotate_sub_y.append(y_annotated_seq["transe"]["sub"][index])
+    rotate_sub_y.append(-1)
+
+    if a_transe in ans_dict_map["complex"][(e_transe, r_transe)]:
+        complex_lstm_y.append(y_annotated_map["complex"]["lstm"][a_transe])
+        complex_mlp_y.append(y_annotated_map["complex"]["mlp"][a_transe])
+        same_answer_count += 1
+    else:# abstain
+        complex_lstm_y.append(-1)
+        complex_mlp_y.append(-1)
+        abstain_count += 1
+    #complex_sub_y.append(y_annotated_seq["transe"]["sub"][index])
+    complex_sub_y.append(-1)
+
+
+# 2. Rotate Answers
+for index, x in enumerate(tqdm(rotate_x_test_fil)):
+    rotate_lstm_y.append(y_annotated_seq["rotate"]["lstm"][index])
+    rotate_mlp_y.append(y_annotated_seq["rotate"]["mlp"][index])
+    rotate_sub_y.append(y_annotated_seq["rotate"]["sub"][index])
+    path_y.append(y_annotated_seq["rotate"]["path"][index])
+
+    e_rotate = int(x[0])
+    r_rotate = int(x[1])
+    a_rotate = int(x[2])
+
+    if a_rotate in ans_dict_map["transe"][(e_rotate, r_rotate)]:
+        transe_lstm_y.append(y_annotated_map["transe"]["lstm"][a_rotate])
+        transe_mlp_y.append(y_annotated_map["transe"]["mlp"][a_rotate])
+        same_answer_count += 1
+    else:# abstain
+        transe_lstm_y.append(-1)
+        transe_mlp_y.append(-1)
+        abstain_count += 1
+    #transe_sub_y.append(y_annotated_seq["rotate"]["sub"][index])
+    transe_sub_y.append(-1)
+
+    if a_rotate in ans_dict_map["complex"][(e_rotate, r_rotate)]:
+        complex_lstm_y.append(y_annotated_map["complex"]["lstm"][a_rotate])
+        complex_mlp_y.append(y_annotated_map["complex"]["mlp"][a_rotate])
+        same_answer_count += 1
+    else:# abstain
+        complex_lstm_y.append(-1)
+        complex_mlp_y.append(-1)
+        abstain_count += 1
+    #complex_sub_y.append(y_annotated_seq["rotate"]["sub"][index])
+    complex_sub_y.append(-1)
+
+# 3. Complex Answers
+for index, x in enumerate(tqdm(complex_x_test_fil)):
+    complex_lstm_y.append(y_annotated_seq["complex"]["lstm"][index])
+    complex_mlp_y.append(y_annotated_seq["complex"]["mlp"][index])
+    complex_sub_y.append(y_annotated_seq["complex"]["sub"][index])
+    path_y.append(y_annotated_seq["complex"]["path"][index])
+
+    e_complex = int(x[0])
+    r_complex = int(x[1])
+    a_complex = int(x[2])
+
+    if a_complex in ans_dict_map["transe"][(e_complex, r_complex)]:
+        transe_lstm_y.append(y_annotated_map["transe"]["lstm"][a_complex])
+        transe_mlp_y.append(y_annotated_map["transe"]["mlp"][a_complex])
+        same_answer_count += 1
+    else:# abstain
+        transe_lstm_y.append(-1)
+        transe_mlp_y.append(-1)
+        abstain_count += 1
+    #transe_sub_y.append(y_annotated_seq["complex"]["sub"][index])
+    transe_sub_y.append(-1)
+
+    if a_complex in ans_dict_map["rotate"][(e_complex, r_complex)]:
+        rotate_lstm_y.append(y_annotated_map["rotate"]["lstm"][a_complex])
+        rotate_mlp_y.append(y_annotated_map["rotate"]["mlp"][a_complex])
+        same_answer_count += 1
+    else:# abstain
+        rotate_lstm_y.append(-1)
+        rotate_mlp_y.append(-1)
+        abstain_count += 1
+    #rotate_sub_y.append(y_annotated_seq["complex"]["sub"][index])
+    rotate_sub_y.append(-1)
+
+
+gold_y  = []
+gold_y.extend(y_annotated_seq["transe"]["true"])
+gold_y.extend(y_annotated_seq["rotate"]["true"])
+gold_y.extend(y_annotated_seq["complex"]["true"])
+
+all_indexes = np.arange(len(transe_lstm_y))
+
+label_model, snorkel_y = get_snorkel_labels(
+                                        np.array(transe_lstm_y),  np.array(transe_mlp_y),  np.array(transe_sub_y),
+                                        np.array(rotate_lstm_y),  np.array(rotate_mlp_y),  np.array(rotate_sub_y),
+                                        np.array(complex_lstm_y), np.array(complex_mlp_y), np.array(complex_sub_y),
+                                        np.array(path_y), np.array(gold_y), all_indexes
+                                        )
+print("snork : ", get_results(gold_y, snorkel_y))
+
+# 0, 2100
+# 2100, 4200
+for i, (si, ei) in enumerate(zip([0, 2100, 4200], [2100, 4200, 6300])):
+    transe_test_snorkel = np.transpose(np.vstack ((
+                                            np.array(transe_lstm_y[si:ei]),  np.array(transe_mlp_y[si:ei]),  np.array(transe_sub_y[si:ei]),
+                                            np.array(rotate_lstm_y[si:ei]),  np.array(rotate_mlp_y[si:ei]),  np.array(rotate_sub_y[si:ei]),
+                                            np.array(complex_lstm_y[si:ei]), np.array(complex_mlp_y[si:ei]), np.array(complex_sub_y[si:ei]),
+                                            np.array(path_y[si:ei])
+                                                   )))
+    snorkel_y_transe = label_model.predict(transe_test_snorkel, tie_break_policy="random")
+    print("snork ( "+ models[i] + " answers ) : ", get_results(gold_y[si:ei], snorkel_y_transe))
+
+major_voter = MajorityLabelVoter()
+major_y = major_voter.predict(transe_test_snorkel, tie_break_policy="random")
+print("major : ", get_results(gold_y[si:ei], major_y))
+
+random_voter = RandomVoter()
+random_y = random_voter.predict(transe_test_snorkel, tie_break_policy = "random")
+print("random: ", get_results(gold_y[si:ei], random_y))
+'''
+vs_train = np.transpose(np.vstack((
+                                        np.array(transe_lstm_y),  np.array(transe_mlp_y),  np.array(transe_sub_y),
+                                        np.array(rotate_lstm_y),  np.array(rotate_mlp_y),  np.array(rotate_sub_y),
+                                        np.array(complex_lstm_y), np.array(complex_mlp_y), np.array(complex_sub_y),
+                                        np.array(path_y)
+                                       ) ))
+label_model = LabelModel(verbose = True)
+label_model.fit(vs_train, n_epochs = 200, lr = 0.001)
+snorkel_y = label_model.predict(vs_train)
+'''
+#maxv_annotated = max_voting_y[indexes_annotated_test]
+#minv_annotated = min_voting_y[indexes_annotated_test]
+
+#print("minv  : ", get_results(gold_y, minv_annotated))
+#print("maxv  : ", get_results(gold_y, maxv_annotated))
+
+
+'''
 logfile = log_dir + args.pred + "-combined-magic.log"
 with open(logfile, "w") as log:
     for index, x in enumerate(tqdm(transe_x_test_fil)):
@@ -304,4 +466,4 @@ with open(logfile, "w") as log:
         #print("{}, {}, {},LSTM:{},MLP:{},PATH:{},SUB:{},maxV:{},Snorkel:{},REAL:{}".format(entity_dict[head], relation_dict[r], entity_dict[tail], lstm_y[index], mlp_y[index], path_y[index], sub_y[index], max_voting_y[index], snorkel_y[index], true_y[index]), file = log)
         if (index+1) % args.topk == 0:
             print("*" * 80, file = log)
-
+'''

@@ -52,7 +52,6 @@ else:
 ht = ["tail", "head"]
 for index in range(len(ht)):
     log = open("./delme"+ht[index], "w")
-    log_queries = open("./queries-"+ht[index]+".log", "w")
     for rf in rf_arr:
         unique_pairs = set()
         dup_count = 0
