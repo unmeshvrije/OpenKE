@@ -65,7 +65,7 @@ for index in range(len(ht)):
                     # log
                     rel = r['rel']
                     ent = r[ht[(index+1)%2]]
-                    print("{}, {}, {} ({})".format(entity_dict[ent], relation_dict[rel], entity_dict[e], s), file = log)
+                    print("{}, {}, {} ({}, {}, {})".format(entity_dict[ent], relation_dict[rel], entity_dict[e], ent, rel, e), file = log)
             else:
                 dup_count += 1
 

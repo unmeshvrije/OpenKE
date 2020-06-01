@@ -61,7 +61,7 @@ elif args.classifier == "path":
     path_classifier.init_entity_dict(args.ent_dict, args.rel_dict)
 
     # set log file
-    base_name = "path-classifier" + "-" + args.pred
+    base_name = args.db + "-" + args.model + "-path-classifier" + "-" + args.pred
     logfile = log_dir + base_name + ".log"
     path_classifier.set_logfile(logfile)
 

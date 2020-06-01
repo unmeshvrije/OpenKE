@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
 from snorkel.labeling.model.label_model import LabelModel
 from snorkel.labeling.model import MajorityLabelVoter
 from snorkel.labeling.model.baselines import RandomVoter
@@ -23,7 +24,7 @@ def parse_args():
     parser.add_argument('--mlp-out', dest ='mlp_out_file', type = str, help = 'File containing the output of mlp classifier.',
     default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-mlp-units-100-dropout-0.2.out')
     parser.add_argument('--path-out', dest ='path_out_file', type = str, help = 'File containing the output of path classifier.',
-    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/path-classifier-tail.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-path-classifier-tail.out')
     parser.add_argument('--sub-out', dest ='sub_out_file', type = str, help = 'File containing the output of sub classifier.',
     default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-subgraphs-tau-10-tail.out')
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
@@ -137,7 +138,6 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
     indexes_annotated_test_max = None
     best_model = None
     for train_split, test_split in kf.split(indexes_annotated):
-        print("Splitting training and test annotated data: ")
 
         indexes_annotated_train = indexes_annotated[train_split]
         indexes_annotated_test  = indexes_annotated[test_split]
@@ -157,7 +157,7 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
 
         label_model = LabelModel(verbose = False)
         L_train = np.transpose(np.vstack((lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train)))
-        label_model.fit(L_train, Y_dev=true_annotated_train, n_epochs=500, optimizer="adam")
+        label_model.fit(L_train, n_epochs=500, optimizer="adam")
         L_test = np.transpose(np.vstack((lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test)))
         cv_accuracy = label_model.score(L = L_test, Y = true_annotated_test, tie_break_policy = "random")["accuracy"]
         if cv_accuracy > max_accuracy:
@@ -212,18 +212,21 @@ maxv_annotated = max_voting_y[indexes_annotated_test]
 minv_annotated = min_voting_y[indexes_annotated_test]
 true_annotated = true_y[indexes_annotated_test]
 
-
 def r2(num):
     return np.round(num, 2)
 
 def get_results(y_true, y_predicted):
     #conf = confusion_matrix(y_true, y_predicted)
     result = classification_report(y_true, y_predicted, output_dict = True)
+    #print ("Accuracy score: ", accuracy_score(y_true, y_predicted))
     return  "Precision = " + str(r2(result['1']['precision'])) + "," +\
             "Recall = "+str(r2(result['1']['recall']))         + "," +\
             "F1 score = "+str(r2(result['1']['f1-score']))         + "," +\
             "Accuracy(overall) = "+str(r2(result['accuracy']))
 
+baseline = np.empty(len(true_annotated), dtype = np.int)
+baseline.fill(1)
+print("baseline  : ", get_results(true_annotated, baseline))
 print("lstm  : ", get_results(true_annotated, lstm_annotated_test))
 print("mlp   : ", get_results(true_annotated, mlp_annotated_test))
 print("path  : ", get_results(true_annotated, path_annotated_test))
@@ -236,7 +239,7 @@ print("random: ", get_results(true_annotated, random_y_annotated))
 
 test_queries = load_pickle(args.test_file)
 x_test_fil = np.array(test_queries['x_' + args.pred + "_fil"])
-logfile = log_dir + args.pred + "-ensembled.log"
+logfile = log_dir + args.model + "-" + args.db + "-" + args.pred + "-ensembled.log"
 with open(logfile, "w") as log:
     for index, x in enumerate(tqdm(x_test_fil)):
         if index not in indexes_annotated_test:

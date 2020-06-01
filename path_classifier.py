@@ -9,6 +9,8 @@ from numpy import linalg as LA
 from subgraphs import read_triples
 from openke.utils import DeepDict
 #import copy
+import torch
+import kge.model
 
 class PathClassifier(AnswerClassifier):
 
@@ -18,7 +20,7 @@ class PathClassifier(AnswerClassifier):
         self.emb_file_path = embeddings_file_path
         self.training_file_path = training_file_path
         self.score_threshold_percentage = score_threshold_percentage
-        self.init_embeddings()
+        self.init_embeddings(emb_model)
         self.init_graph()
         self.cnt_subgraphs_dict = {}
         # This is the list of Counts of subgraphs / % Threshold
@@ -68,12 +70,25 @@ class PathClassifier(AnswerClassifier):
 
         log.close()
 
+    #def read_complex_embeddings(filename):
+    #    model = kge.model.KgeModel.load_from_checkpoint(filename)
+    #    E = model._entity_embedder._embeddings_all()
+    #    R = model._relation_embedder._embeddings_all()
+    #    return E.tolist(), R.tolist()
 
-    def init_embeddings(self):
-        with open (self.emb_file_path, 'r') as fin:
-            params = json.loads(fin.read())
-        self.E = params['ent_embeddings.weight']
-        self.R = params['rel_embeddings.weight']
+    def init_embeddings(self, emb_model):
+        if emb_model == "complex":
+            model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
+            E = model._entity_embedder._embeddings_all()
+            R = model._relation_embedder._embeddings_all()
+            self.E = E.tolist()
+            self.R = R.tolist()
+        else:
+            with open (self.emb_file_path, 'r') as fin:
+                params = json.loads(fin.read())
+            self.E = params['ent_embeddings.weight']
+            self.R = params['rel_embeddings.weight']
+
         self.N = len(self.E)
         self.M = len(self.R)
 
@@ -172,7 +187,13 @@ class PathClassifier(AnswerClassifier):
     def predict(self):
         self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
         self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
-        self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
+        # replace all 0s with -1
+        for x in self.y_predicted_fil:
+            if x == 1:
+                self.y_predicted_fil_abs.append(x)
+            elif x == 0:
+                self.y_predicted_fil_abs.append(-1)
+        #self.predict_internal(self.x_test_fil, self.y_predicted_fil_abs, "abs")
 
     def predict_internal(self, x_test, y_predicted, setting):
         # Go over all test queries
