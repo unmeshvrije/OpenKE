@@ -5,6 +5,7 @@ import argparse
 from tqdm import tqdm
 import numpy as np
 from sklearn.model_selection import KFold
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
@@ -79,7 +80,6 @@ sub_y  = np.array(sub_results['fil'][y_label_str])
 len_y  = len(lstm_y)
 indexes = []
 true_y = np.empty(len_y, dtype = np.int)
-# TODO: fill with -2 and include -1 as ABSTAIN label ?
 true_y.fill(-1);
 with open(args.true_out_file) as fin:
     lines = fin.readlines()
@@ -97,30 +97,14 @@ with open(args.true_out_file) as fin:
 indexes_annotated = np.where(true_y != -1)[0]
 print("# of annotated answers = ", len(indexes_annotated))
 
-'''
-    6. Compute simple max-voting and min-voting from 4 classifiers
-'''
-def count_ones(arr):
-    ones = 0
-    for a in arr:
-        if a == 1:
-            ones += 1
-    return ones
-
-vs = np.vstack((lstm_y, mlp_y, path_y, sub_y))
-#sums = np.sum(vs, axis = 0)
-sums = np.apply_along_axis(count_ones, 0, vs)
-max_voting_y = (sums > 2).astype(int)
-# TODO: check with abstain
-min_voting_y = (sums > 0).astype(int)
 
 '''
     function that accepts 4 classifiers y labels
     and annotated indexes, fills the out array with labels at those indexes
 '''
 def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
-    snorkel_y = np.empty(len(lstm_y), dtype = np.int)
-    snorkel_y.fill(-1);
+    super_y = np.empty(len(lstm_y), dtype = np.int)
+    super_y.fill(-1);
 
     kf = KFold(n_splits = 3, shuffle = False, random_state = 42)
     #kf.split(indexes_annotated)
@@ -155,19 +139,21 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
         true_annotated_train = true_y[indexes_annotated_train]
 
 
-        label_model = LabelModel(verbose = False)
+        #label_model = LabelModel(verbose = False)
+        model = LogisticRegression()
         L_train = np.transpose(np.vstack((lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train)))
-        label_model.fit(L_train, n_epochs=500, optimizer="adam")
+        # use MLP / LR here
+        model.fit(L_train, true_annotated_train)
         L_test = np.transpose(np.vstack((lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test)))
-        cv_accuracy = label_model.score(L = L_test, Y = true_annotated_test, tie_break_policy = "random")["accuracy"]
+        cv_accuracy = model.score(L_test, true_annotated_test)
         if cv_accuracy > max_accuracy:
             max_accuracy = cv_accuracy
             L_test_max = L_test
-            best_model = label_model
+            best_model = model
             indexes_annotated_test_max = indexes_annotated_test
-            out_y = label_model.predict(L_test, tie_break_policy="random")
+            out_y = model.predict(L_test)
             for i,index in enumerate(indexes_annotated_test):
-                snorkel_y[index] = out_y[i]
+                super_y[index] = out_y[i]
 
     '''
     apply best model to entire annotated set
@@ -177,39 +163,20 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
     sub_annotated= sub_y[indexes_annotated]
     path_annotated= path_y[indexes_annotated]
     L_test_max = np.transpose(np.vstack((lstm_annotated, mlp_annotated, sub_annotated, path_annotated)))
-    out_y = best_model.predict(L_test_max, tie_break_policy = "random")
+    out_y = best_model.predict(L_test_max)
     for i,index in enumerate(indexes_annotated):
-        snorkel_y[index] = out_y[i]
+        super_y[index] = out_y[i]
     indexes_annotated_test_max = indexes_annotated
 
-    return out_y, snorkel_y, indexes_annotated_test_max, L_test_max
+    return out_y, super_y, indexes_annotated_test_max, L_test_max
 
 
-def get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, voter):
-    voter_y = np.empty(len(lstm_y), dtype = np.int)
-    voter_y.fill(-1);
-    lstm_annotated_test = lstm_y[indexes_annotated]
-    mlp_annotated_test  = mlp_y [indexes_annotated]
-    sub_annotated_test  = sub_y [indexes_annotated]
-    path_annotated_test = path_y[indexes_annotated]
-    L_test = np.transpose(np.vstack((lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test)))
-    my_voter = voter()
-    out_y = my_voter.predict(L_test, tie_break_policy="random")
-    for i,index in enumerate(indexes_annotated):
-        voter_y[index] = out_y[i]
-    return out_y, voter_y
-
-snorkel_y_annotated, snorkel_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
-
-major_y_annotated, major_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, MajorityLabelVoter)
-random_y_annotated, random_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, RandomVoter)
+super_y_annotated, super_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
 
 lstm_annotated_test = lstm_y[indexes_annotated_test]
 mlp_annotated_test  = mlp_y[indexes_annotated_test]
 sub_annotated_test  = sub_y[indexes_annotated_test]
 path_annotated_test = path_y[indexes_annotated_test]
-maxv_annotated = max_voting_y[indexes_annotated_test]
-minv_annotated = min_voting_y[indexes_annotated_test]
 true_annotated = true_y[indexes_annotated_test]
 
 def r2(num):
@@ -226,20 +193,15 @@ def get_results(y_true, y_predicted):
 
 baseline = np.empty(len(true_annotated), dtype = np.int)
 baseline.fill(1)
-print("baseline  : ", get_results(true_annotated, baseline))
 print("lstm  : ", get_results(true_annotated, lstm_annotated_test))
 print("mlp   : ", get_results(true_annotated, mlp_annotated_test))
 print("path  : ", get_results(true_annotated, path_annotated_test))
 print("sub   : ", get_results(true_annotated, sub_annotated_test))
-print("minv  : ", get_results(true_annotated, minv_annotated))
-print("snork : ", get_results(true_annotated, snorkel_y_annotated))
-print("major : ", get_results(true_annotated, major_y_annotated))
-print("maxv  : ", get_results(true_annotated, maxv_annotated))
-print("random: ", get_results(true_annotated, random_y_annotated))
+print("super : ", get_results(true_annotated, super_y_annotated))
 
 test_queries = load_pickle(args.test_file)
 x_test_fil = np.array(test_queries['x_' + args.pred + "_fil"])
-logfile = log_dir + args.model + "-" + args.db + "-" + args.pred + "-ensembled.log"
+logfile = log_dir + args.model + "-" + args.db + "-" + args.pred + "-supervised.log"
 print("logfile = ", logfile)
 with open(logfile, "w") as log:
     for index, x in enumerate(tqdm(x_test_fil)):
@@ -253,7 +215,7 @@ with open(logfile, "w") as log:
         if args.pred == "head":
             head = a
             tail = e
-        print("{}, {}, {},LSTM:{},MLP:{},PATH:{},SUB:{},maxV:{},Snorkel:{},REAL:{}".format(entity_dict[head], relation_dict[r], entity_dict[tail], lstm_y[index], mlp_y[index], path_y[index], sub_y[index], max_voting_y[index], snorkel_y[index], true_y[index]), file = log)
+        print("{}, {}, {},LSTM:{},MLP:{},PATH:{},SUB:{},Snorkel:{},REAL:{}".format(entity_dict[head], relation_dict[r], entity_dict[tail], lstm_y[index], mlp_y[index], path_y[index], sub_y[index],  super_y[index], true_y[index]), file = log)
         if (index+1) % args.topk == 0:
             print("*" * 80, file = log)
 
