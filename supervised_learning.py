@@ -12,6 +12,8 @@ from sklearn.metrics import accuracy_score
 from snorkel.labeling.model.label_model import LabelModel
 from snorkel.labeling.model import MajorityLabelVoter
 from snorkel.labeling.model.baselines import RandomVoter
+
+from sklearn.neural_network import MLPClassifier
 import logging
 
 logging.basicConfig(level = logging.INFO)
@@ -102,7 +104,7 @@ print("# of annotated answers = ", len(indexes_annotated))
     function that accepts 4 classifiers y labels
     and annotated indexes, fills the out array with labels at those indexes
 '''
-def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
+def get_supervised_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, supervised_model_name):
     super_y = np.empty(len(lstm_y), dtype = np.int)
     super_y.fill(-1);
 
@@ -139,8 +141,11 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
         true_annotated_train = true_y[indexes_annotated_train]
 
 
-        #label_model = LabelModel(verbose = False)
-        model = LogisticRegression()
+        if supervised_model_name == "LR":
+            model = LogisticRegression()
+        else:
+            model = MLPClassifier(solver = "lbfgs", alpha = 1e-5, hidden_layer_sizes = (4,2), random_state = 1)
+
         L_train = np.transpose(np.vstack((lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train)))
         # use MLP / LR here
         model.fit(L_train, true_annotated_train)
@@ -171,7 +176,8 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
     return out_y, super_y, indexes_annotated_test_max, L_test_max
 
 
-super_y_annotated, super_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
+super_y_annotated, super_y, indexes_annotated_test, L_test = get_supervised_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, "LR")
+shallow_y_annotated, shallow_super_y, indexes_annotated_test, L_test = get_supervised_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, "shallow")
 
 lstm_annotated_test = lstm_y[indexes_annotated_test]
 mlp_annotated_test  = mlp_y[indexes_annotated_test]
@@ -193,11 +199,12 @@ def get_results(y_true, y_predicted):
 
 baseline = np.empty(len(true_annotated), dtype = np.int)
 baseline.fill(1)
-print("lstm  : ", get_results(true_annotated, lstm_annotated_test))
-print("mlp   : ", get_results(true_annotated, mlp_annotated_test))
-print("path  : ", get_results(true_annotated, path_annotated_test))
-print("sub   : ", get_results(true_annotated, sub_annotated_test))
-print("super : ", get_results(true_annotated, super_y_annotated))
+print("lstm    : ", get_results(true_annotated, lstm_annotated_test))
+print("mlp     : ", get_results(true_annotated, mlp_annotated_test))
+print("path    : ", get_results(true_annotated, path_annotated_test))
+print("sub     : ", get_results(true_annotated, sub_annotated_test))
+print("LR      : ", get_results(true_annotated, super_y_annotated))
+print("shallow : ", get_results(true_annotated, shallow_y_annotated))
 
 test_queries = load_pickle(args.test_file)
 x_test_fil = np.array(test_queries['x_' + args.pred + "_fil"])
