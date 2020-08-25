@@ -27,6 +27,9 @@ class Subgraph():
         self.data['size']    = ssize
         self.data['entities']= copy.deepcopy(entities)
 
+    def __str__():
+        return str(self.data)
+
 class SubgraphFactory():
     def __init__(self, db, min_subgraph_size, triples, ent_embeddings):
         self.db = db

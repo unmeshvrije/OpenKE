@@ -13,6 +13,7 @@ import pickle
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from dynamic_topk import DynamicTopk
+from subgraph_predictor import SubgraphPredictor
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
@@ -25,6 +26,13 @@ def parse_args():
     parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
     parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10, help = "-1 means dynamic topk")
+    parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
+    parser.add_argument('--subembfile', dest ='subemb_file', type = str, help = 'File containing subgraphs embeddings.')
+    #parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing training triples.')
+    parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     return parser.parse_args()
 
 args = parse_args()
@@ -41,7 +49,7 @@ os.makedirs(result_dir + "data/", exist_ok = True)
 os.makedirs(result_dir + "models", exist_ok = True)
 os.makedirs(result_dir + "subgraphs/", exist_ok = True)
 checkpoint_path = result_dir + "embeddings/" + args.db + "-" + args.model + ".ckpt"
-result_path     = result_dir + "embeddings/" + args.db + "-" + args.model + ".json"
+embeddings_file_path     = result_dir + "embeddings/" + args.db + "-" + args.model + ".json"
 
 train_dataloader = TrainDataLoader(
     in_path = db_path,
@@ -129,14 +137,14 @@ if args.mode == "train":
     trainer.run()
 
     model.save_checkpoint(checkpoint_path)
-    model.save_parameters(result_path)
+    model.save_parameters(embeddings_file_path)
 elif args.mode == "test":
     test_dataloader = TestDataLoader(db_path, "link")
     model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
-    model.load_parameters(result_path)
+    model.load_parameters(embeddings_file_path)
     tester = Tester(args.db, model = model, model_name = args.model, data_loader = test_dataloader, use_gpu = args.gpu)
-    with open (result_path, 'r') as fin:
+    with open (embeddings_file_path, 'r') as fin:
         params = json.loads(fin.read())
     outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
 
@@ -150,9 +158,9 @@ elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss, epochs, alpha = choose_model()
     model.load_checkpoint(checkpoint_path)
-    model.load_parameters(result_path)
+    model.load_parameters(embeddings_file_path)
     tester = Tester(args.db, model = model, model_name = args.model, data_loader = new_train_dataloader, use_gpu = args.gpu)
-    with open (result_path, 'r') as fin:
+    with open (embeddings_file_path, 'r') as fin:
         params = json.loads(fin.read())
     outfile_name = result_dir + "data/"+ args.db + "-" + args.model + "-training-topk-"+str(args.topk)+".json"
     dyntopk = None
@@ -161,3 +169,17 @@ elif args.mode == "trainAsTest":
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
     #tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
     tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode)
+elif args.mode == "subtest":
+    test_dataloader = TestDataLoader(db_path, "link")
+    model, model_with_loss, epochs, alpha = choose_model()
+    model.load_checkpoint(checkpoint_path)
+    model.load_parameters(embeddings_file_path)
+    model.load_subgraphs_embeddings(args.subemb_file)
+    tester = Tester(args.db, model = model, model_name = args.model, data_loader = test_dataloader, use_gpu = args.gpu)
+    with open (embeddings_file_path, 'r') as fin:
+        params = json.loads(fin.read())
+    outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
+
+    db_path = "./benchmarks/" + args.db + "/"
+    tester.run_link_prediction_subgraphs(args.db, args.topk, embeddings_file_path, args.sub_file,
+    args.subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
