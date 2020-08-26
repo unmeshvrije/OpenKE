@@ -335,7 +335,7 @@ class SubgraphPredictor():
         print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
         float(head_normal_comparisons)*100)
         tail_normal_comparisons = self.entity_total * hitsTail
-        print("%Red (H)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
+        print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
         float(tail_normal_comparisons)*100)
 
         #ScaNN based scores
@@ -350,12 +350,12 @@ class SubgraphPredictor():
         print(max_subset_size_tail)
         print("topk scann", topk_scann)
         #searcher = scann.ScannBuilder(normalized_dataset, topk_scann, "dot_product").score_brute_force().create_pybind()
-        searcher = scann.ScannBuilder(normalized_dataset, 2000, "dot_product").tree(1000, 100).score_ah(2, anisotropic_quantization_threshold = 0.2).create_pybind()
+        searcher = scann.ScannBuilder(normalized_dataset, 1, "dot_product").tree(3000, 300).score_ah(2, anisotropic_quantization_threshold = 0.2).create_pybind()
         print(type(searcher))
 
         start = time.time()
-        head_neighbours, head_distances = searcher.search_batched(queries_head)
-        tail_neighbours, tail_distances = searcher.search_batched(queries_tail)
+        head_neighbours, head_distances = searcher.search_batched(queries_head, final_num_neighbors = 6000)
+        tail_neighbours, tail_distances = searcher.search_batched(queries_tail, final_num_neighbors = 6000)
         end = time.time()
 
         print("head neighbours : ")
