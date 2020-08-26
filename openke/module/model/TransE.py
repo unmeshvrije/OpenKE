@@ -42,8 +42,7 @@ class TransE(Model):
         else:
             self.margin_flag = False
 
-
-    def _calc(self, h, t, r, mode):
+    def _calc_embedding(self, h, t, r, mode):
         if self.norm_flag:
             h = F.normalize(h, 2, -1)
             r = F.normalize(r, 2, -1)
@@ -56,6 +55,11 @@ class TransE(Model):
             score = h + (r - t)
         else:
             score = (h + r) - t
+
+        return score
+
+    def _calc(self, h, t, r, mode):
+        score = self._calc_embedding(h, t, r, mode)
         score = torch.norm(score, self.p_norm, -1).flatten()
         return score
 

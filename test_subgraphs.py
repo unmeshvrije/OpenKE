@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
+    parser.add_argument('--testonly', dest = 'num_test_queries', required = False, type = int, default = 50)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
@@ -39,7 +40,7 @@ subemb_file = args.subemb_file
 db_path = "./benchmarks/" + args.db + "/"
 mys = SubgraphPredictor(args.pred, args.db, args.topk, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
 
-mys.set_test_triples(queries_file_path)
+mys.set_test_triples(queries_file_path, args.num_test_queries)
 # entity dict is the id to string dictionary for entities
 mys.init_entity_dict(args.ent_dict, args.rel_dict)
 

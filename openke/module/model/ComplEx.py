@@ -17,6 +17,12 @@ class ComplEx(Model):
         nn.init.xavier_uniform_(self.rel_re_embeddings.weight.data)
         nn.init.xavier_uniform_(self.rel_im_embeddings.weight.data)
 
+    def _calc_embedding(self, h_re, h_im, t_re, t_im, r_re, r_im):
+        return h_re * t_re * r_re
+        + h_im * t_im * r_re
+        + h_re * t_im * r_im
+        - h_im * t_re * r_im
+
     def _calc(self, h_re, h_im, t_re, t_im, r_re, r_im):
         return torch.sum(
             h_re * t_re * r_re
