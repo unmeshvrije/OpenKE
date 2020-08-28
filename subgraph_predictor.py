@@ -238,6 +238,8 @@ class SubgraphPredictor():
     def predict(self, dynamic_topk = False):
         hitsHead = 0
         hitsTail = 0
+        hits_head_scann = 0
+        hits_tail_scann = 0
         head_subgraph_comparisons = 0
         tail_subgraph_comparisons = 0
         max_subset_size_head = 0
@@ -246,6 +248,11 @@ class SubgraphPredictor():
         #print("dim = ", dim)
         all_tail_answer_embeddings = torch.empty(0, dim).to('cuda')
         all_head_answer_embeddings = torch.empty(0, dim).to('cuda')
+
+        dataset = self.E.cpu().numpy()
+        print("dataset shape : ", dataset.shape)
+        normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
+        searcher = scann.ScannBuilder(normalized_dataset, 1500, "dot_product").tree(3000, 300).score_ah(2, anisotropic_quantization_threshold = 0.2).create_pybind()
 
         if self.test_triples is None:
             print("ERROR: set_test_triples() is not called.")
@@ -280,11 +287,11 @@ class SubgraphPredictor():
 
                 temp = answer_embedding_tail.unbind()
                 answer_embedding_tail = torch.cat(temp, dim = -1).squeeze(0)
-                all_tail_answer_embeddings = torch.cat((all_tail_answer_embeddings, answer_embedding_tail), dim = 0)
+                #all_tail_answer_embeddings = torch.cat((all_tail_answer_embeddings, answer_embedding_tail), dim = 0)
 
                 temp = answer_embedding_head.unbind()
                 answer_embedding_head = torch.cat(temp, dim = -1).squeeze(0)
-                all_head_answer_embeddings = torch.cat((all_head_answer_embeddings, answer_embedding_head), dim = 0)
+                #all_head_answer_embeddings = torch.cat((all_head_answer_embeddings, answer_embedding_head), dim = 0)
             #time_end = timeit.default_timer()
 
             # Set scores of known subgraph(s) to infinity.
@@ -307,6 +314,7 @@ class SubgraphPredictor():
                 topk_subgraphs_head = max(10, topk_subgraphs_head)
                 topk_subgraphs_tail = max(10, topk_subgraphs_tail)
             else:
+                #print("topk subgraphs : ", self.topk_subgraphs)
                 topk_subgraphs_head = self.topk_subgraphs
                 topk_subgraphs_tail = self.topk_subgraphs
 
@@ -317,7 +325,13 @@ class SubgraphPredictor():
             if head in subset_head_predictions:
                 hitsHead += 1
             head_subgraph_comparisons += len(subset_head_predictions)
-            max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
+            #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
+
+            topk_subgraphs_scann = min(1500, len(subset_head_predictions))
+            print(topk_subgraphs_scann)
+            head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            if head in head_neighbours:
+                hits_head_scann += 1
 
             subset_tail_predictions = set()
             for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
@@ -325,7 +339,13 @@ class SubgraphPredictor():
             if tail in subset_tail_predictions:
                 hitsTail += 1
             tail_subgraph_comparisons += len(subset_tail_predictions)
-            max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
+            #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
+            topk_subgraphs_scann = min(1500, len(subset_tail_predictions))
+            print(topk_subgraphs_scann)
+
+            tail_neighbours, tail_distances = searcher.search_batched(answer_embedding_tail.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            if tail in tail_neighbours:
+                hits_tail_scann += 1
             time_end = timeit.default_timer()
 
         # calculate recall
@@ -338,49 +358,9 @@ class SubgraphPredictor():
         print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
         float(tail_normal_comparisons)*100)
 
-        #ScaNN based scores
-        dataset = self.E.cpu().numpy()
-        queries_head = all_head_answer_embeddings.cpu().numpy()
-        queries_tail = all_tail_answer_embeddings.cpu().numpy()
-
-        normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
-        # Create ScaNN searcher
-        topk_scann = max(max_subset_size_head, max_subset_size_tail)
-        print(max_subset_size_head)
-        print(max_subset_size_tail)
-        print("topk scann", topk_scann)
-        #searcher = scann.ScannBuilder(normalized_dataset, topk_scann, "dot_product").score_brute_force().create_pybind()
-        searcher = scann.ScannBuilder(normalized_dataset, 1, "dot_product").tree(3000, 300).score_ah(2, anisotropic_quantization_threshold = 0.2).create_pybind()
-        print(type(searcher))
-
-        start = time.time()
-        head_neighbours, head_distances = searcher.search_batched(queries_head, final_num_neighbors = 6000)
-        tail_neighbours, tail_distances = searcher.search_batched(queries_tail, final_num_neighbors = 6000)
-        end = time.time()
-
-        print("head neighbours : ")
-        print(head_neighbours.shape)
-        print(head_neighbours[:5])
-        print(tail_neighbours.shape)
-        def compute_scann_recall(neighbours, true_neighbours):
-            #total = 0
-            #for gt_row, row in zip(true_neighbours, neighbours):
-            #    total += np.intersect1d(gt_row, row).shape[0]
-            #return total / true_neighbours.size
-            hits_scann = 0
-            for i, x in enumerate(neighbours):
-                #print (true_neighbours[i] , " : ", x)
-                if true_neighbours[i] in x:
-                    hits_scann += 1
-            return float(hits_scann) / float(len(true_neighbours)) * 100
-
-        true_head_neighbours = np.array(self.test_triples)[:, 0]
-        true_tail_neighbours = np.array(self.test_triples)[:, 1]
-
-
-        print("Recall (H) ScaNN : ", compute_scann_recall(head_neighbours, true_head_neighbours))
-        print("Recall (T) ScaNN : ", compute_scann_recall(tail_neighbours, true_tail_neighbours))
-        print("Time: ", end - start)
+        print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
+        print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
+        #print("Time: ", end - start)
 
     #def predict_internal(self, ent, rel, ans, tester):
     #    # call get_subgraph_scores only once and get all scores
