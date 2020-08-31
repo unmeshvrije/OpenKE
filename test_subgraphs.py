@@ -21,7 +21,6 @@ def parse_args():
     parser.add_argument('--testonly', dest = 'num_test_queries', required = False, type = int, default = 50)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
-    parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
@@ -38,7 +37,7 @@ emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_file = args.subemb_file
 db_path = "./benchmarks/" + args.db + "/"
-mys = SubgraphPredictor(args.pred, args.db, args.topk, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
+mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
 
 mys.set_test_triples(queries_file_path, args.num_test_queries)
 # entity dict is the id to string dictionary for entities
@@ -46,7 +45,6 @@ mys.init_entity_dict(args.ent_dict, args.rel_dict)
 
 # set log file
 base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
-base_name += "-" + args.pred
 logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 

@@ -1,6 +1,6 @@
 import numpy as np
 import json
-import pickle
+import pickle5 as pickle
 from tqdm import tqdm
 from openke.module.model import TransE, RotatE, ComplEx
 from subgraphs import Subgraph
@@ -15,9 +15,8 @@ import timeit
 
 class SubgraphPredictor():
 
-    def __init__(self, type_prediction, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
+    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
 
-        self.type_prediction = type_prediction
         self.topk_subgraphs = topk_subgraphs
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
@@ -252,7 +251,7 @@ class SubgraphPredictor():
         dataset = self.E.cpu().numpy()
         print("dataset shape : ", dataset.shape)
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
-        searcher = scann.ScannBuilder(normalized_dataset, 1500, "dot_product").tree(3000, 300).score_ah(2, anisotropic_quantization_threshold = 0.2).create_pybind()
+        searcher = scann.ScannBuilder(normalized_dataset, 2000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(1000).create_pybind()
 
         if self.test_triples is None:
             print("ERROR: set_test_triples() is not called.")
@@ -275,7 +274,7 @@ class SubgraphPredictor():
                 r_re, r_im = torch.chunk(new_R, 2, dim = -1).to('cuda')
                 subgraph_scores_head_prediction = self.model._calc(s_re, s_im, t_re, t_im, r_re, r_im)
                 subgraph_scores_tail_prediction = self.model._calc(s_re, s_im, h_re, h_im, r_re, r_im)
-            elif self.model_name == "rotate":
+            else:# self.model_name == "rotate":
                 new_H.unsqueeze_(0)
                 new_T.unsqueeze_(0)
                 new_R.unsqueeze_(0)
@@ -285,17 +284,16 @@ class SubgraphPredictor():
                 answer_embedding_head = self.model._calc_embedding(new_H, new_T, new_R, 'head_batch')
                 answer_embedding_tail = self.model._calc_embedding(new_H, new_T, new_R, 'tail_batch')
 
-                temp = answer_embedding_tail.unbind()
-                answer_embedding_tail = torch.cat(temp, dim = -1).squeeze(0)
-                #all_tail_answer_embeddings = torch.cat((all_tail_answer_embeddings, answer_embedding_tail), dim = 0)
+                if self.model_name == "rotate":
+                    temp = answer_embedding_tail.unbind()
+                    answer_embedding_tail = torch.cat(temp, dim = -1)
 
-                temp = answer_embedding_head.unbind()
-                answer_embedding_head = torch.cat(temp, dim = -1).squeeze(0)
-                #all_head_answer_embeddings = torch.cat((all_head_answer_embeddings, answer_embedding_head), dim = 0)
-            #time_end = timeit.default_timer()
+                    temp = answer_embedding_head.unbind()
+                    answer_embedding_head = torch.cat(temp, dim = -1)
 
-            # Set scores of known subgraph(s) to infinity.
-            #time_start = timeit.default_timer()
+                answer_embedding_head = answer_embedding_head.squeeze(0)
+                answer_embedding_tail = answer_embedding_tail.squeeze(0)
+
             for index, se in enumerate(self.S):
                 if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
                     subgraph_scores_tail_prediction[index] = np.inf
@@ -327,10 +325,13 @@ class SubgraphPredictor():
             head_subgraph_comparisons += len(subset_head_predictions)
             #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
 
-            topk_subgraphs_scann = min(1500, len(subset_head_predictions))
-            print(topk_subgraphs_scann)
+            topk_subgraphs_scann = min(10000, len(subset_head_predictions))
+            #if topk_subgraphs_scann == 1000:
+            #    hitsHead -= 1
+
             head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
-            if head in head_neighbours:
+            if head in np.squeeze(head_neighbours):
+                print("ScaNN HEAD FOUND")
                 hits_head_scann += 1
 
             subset_tail_predictions = set()
@@ -340,11 +341,13 @@ class SubgraphPredictor():
                 hitsTail += 1
             tail_subgraph_comparisons += len(subset_tail_predictions)
             #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
-            topk_subgraphs_scann = min(1500, len(subset_tail_predictions))
-            print(topk_subgraphs_scann)
+            topk_subgraphs_scann = min(10000, len(subset_tail_predictions))
+            #if topk_subgraphs_scann == 1000:
+            #    hitsTail -= 1
 
             tail_neighbours, tail_distances = searcher.search_batched(answer_embedding_tail.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
-            if tail in tail_neighbours:
+            if tail in np.squeeze(tail_neighbours):
+                print("ScaNN TAIL FOUND")
                 hits_tail_scann += 1
             time_end = timeit.default_timer()
 
@@ -352,11 +355,13 @@ class SubgraphPredictor():
         print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
         print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
         head_normal_comparisons = self.entity_total * hitsHead
-        print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
-        float(head_normal_comparisons)*100)
+        if head_normal_comparisons != 0:
+            print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
+            float(head_normal_comparisons)*100)
         tail_normal_comparisons = self.entity_total * hitsTail
-        print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
-        float(tail_normal_comparisons)*100)
+        if tail_normal_comparisons != 0:
+            print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
+            float(tail_normal_comparisons)*100)
 
         print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
         print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
