@@ -48,7 +48,6 @@ base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
 logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 
-# prediction
 mys.predict()
 '''
 raw_result, fil_result = mys.results()

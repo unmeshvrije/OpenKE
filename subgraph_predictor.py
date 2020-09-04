@@ -12,12 +12,20 @@ import torch
 import time
 import scann
 import timeit
+import kge.model
 
 class SubgraphPredictor():
 
     def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
 
         self.topk_subgraphs = topk_subgraphs
+        self.dynamic_topk = False
+        self.dynamic_threshold = False
+        if topk_subgraphs == -1:
+            self.dynamic_topk = True
+        elif topk_subgraphs == -2:
+            self.dynamic_threshold = True
+
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
         self.sub_emb_file_path = sub_emb_file_path
@@ -129,17 +137,17 @@ class SubgraphPredictor():
         self.model.cuda()
 
     def init_embeddings(self, emb_model):
-        #if emb_model == "complex":
-        #    model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
-        #    E_temp = model._entity_embedder._embeddings_all()
-        #    R_temp = model._relation_embedder._embeddings_all()
-        #    self.E = E_temp.tolist()
-        #    self.R = R_temp.tolist()
-        #else:
-        with open (self.emb_file_path, 'r') as fin:
-            parameters = json.loads(fin.read())
-        for i in parameters:
-            parameters[i] = torch.Tensor(parameters[i]).to('cuda')
+        if emb_model == "complex":
+            model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
+            E_temp = model._entity_embedder._embeddings_all()
+            R_temp = model._relation_embedder._embeddings_all()
+            self.E = torch.Tensor(E_temp.tolist()).to('cuda')
+            self.R = torch.Tensor(R_temp.tolist()).to('cuda')
+        else:
+            with open (self.emb_file_path, 'r') as fin:
+                parameters = json.loads(fin.read())
+            for i in parameters:
+                parameters[i] = torch.Tensor(parameters[i]).to('cuda')
 
         self.E = parameters['ent_embeddings.weight']
         self.R = parameters['rel_embeddings.weight']
@@ -189,6 +197,44 @@ class SubgraphPredictor():
     #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
 
+    def get_dynamic_threshold(self, ent, rel, ent_emb, rel_emb, type_pred):
+        '''
+            1. Search ent, rel in training triples
+            2. If answer is found, look for the scores of these answers
+            3. Get the minimum of these scores
+        '''
+        #print("ent {}, rel {} ". format(ent, rel))
+        if type_pred == "head":
+            training_triples = self.training_triples_head_predictions
+        else:
+            training_triples = self.training_triples_tail_predictions
+
+        answers = []
+        for index, triple in enumerate(training_triples):
+            if triple[2] != rel:
+                continue
+
+            if triple[2] > rel:
+                break
+
+            if type_pred == "head":
+                if triple[1] == ent:
+                    answers.append(triple[0])
+            elif type_pred == "tail":
+                if triple[0] == ent:
+                    answers.append(triple[1])
+
+        if len(answers) == 0:
+            return 0.0
+
+        all_answer_emb = self.E[np.array(answers)]
+        if type_pred == "head":
+            all_answer_scores = self.model._calc(all_answer_emb, ent_emb, rel_emb, 'head_batch')
+        else:
+            all_answer_scores = self.model._calc(ent_emb, all_answer_emb,rel_emb, 'tail_batch')
+
+        #return torch.mean(all_answer_scores).cpu().numpy()
+        return torch.min(all_answer_scores).cpu().numpy()
 
     def get_dynamic_topk(self, ent, rel, sub_indexes, type_pred):
         '''
@@ -197,9 +243,9 @@ class SubgraphPredictor():
         '''
         #print("ent {}, rel {} ". format(ent, rel))
         if type_pred == "head":
-            training_triples = training_triples_head_predictions
+            training_triples = self.training_triples_head_predictions
         else:
-            training_triples = training_triples_tail_predictions
+            training_triples = self.training_triples_tail_predictions
 
         answers = []
         for index, triple in enumerate(training_triples):
@@ -230,11 +276,10 @@ class SubgraphPredictor():
         if len(found_index) == 0:
             return int(0.1 * len(sub_indexes))
 
-        #print("found topk : ", found_index)
         return max(found_index)
 
 
-    def predict(self, dynamic_topk = False):
+    def predict(self):
         hitsHead = 0
         hitsTail = 0
         hits_head_scann = 0
@@ -251,7 +296,7 @@ class SubgraphPredictor():
         dataset = self.E.cpu().numpy()
         print("dataset shape : ", dataset.shape)
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
-        searcher = scann.ScannBuilder(normalized_dataset, 2000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(1000).create_pybind()
+        searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
         if self.test_triples is None:
             print("ERROR: set_test_triples() is not called.")
@@ -305,12 +350,22 @@ class SubgraphPredictor():
             #time_end = timeit.default_timer()
             #print("time taken to sort scores = {}s".format((time_end - time_start)*1000))
 
-            if dynamic_topk:
-                topk_subgraphs_head = self.get_dynamic_topk(tail, rel, sub_indexes, "head")
-                topk_subgraphs_tail = self.get_dynamic_topk(head, rel, sub_indexes, "tail")
+            if self.dynamic_topk:
+                topk_subgraphs_head = self.get_dynamic_topk(tail, rel, sub_indexes_head_prediction, "head")
+                topk_subgraphs_tail = self.get_dynamic_topk(head, rel, sub_indexes_tail_prediction, "tail")
                 # Check topk_subgraphs and if it is >= 10
                 topk_subgraphs_head = max(10, topk_subgraphs_head)
                 topk_subgraphs_tail = max(10, topk_subgraphs_tail)
+                print("Looking for answers in {}/{} subgraphs".format(topk_subgraphs_head, len(self.subgraphs)))
+            elif self.dynamic_threshold:
+                thresh_subgraphs_head = self.get_dynamic_threshold(tail, rel, new_T, new_R, "head")
+                thresh_subgraphs_tail = self.get_dynamic_threshold(head, rel, new_H, new_R, "tail")
+
+                sub_indexes_head_prediction = np.where(subgraph_scores_head_prediction.cpu().numpy() > thresh_subgraphs_head)[0]
+                sub_indexes_tail_prediction = np.where(subgraph_scores_tail_prediction.cpu().numpy() > thresh_subgraphs_tail)[0]
+                topk_subgraphs_head = -1
+                topk_subgraphs_tail = -1 # consider all of these indexes
+                print("Looking for answers in {}/{} subgraphs".format(len(sub_indexes_head_prediction), len(self.subgraphs)))
             else:
                 #print("topk subgraphs : ", self.topk_subgraphs)
                 topk_subgraphs_head = self.topk_subgraphs
@@ -322,14 +377,19 @@ class SubgraphPredictor():
                 subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
             if head in subset_head_predictions:
                 hitsHead += 1
-            head_subgraph_comparisons += len(subset_head_predictions)
+                head_subgraph_comparisons += len(subset_head_predictions)
+            print("head total sub comparisons {} ({})".format(len(subset_head_predictions), head_subgraph_comparisons))
             #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
 
-            topk_subgraphs_scann = min(10000, len(subset_head_predictions))
+            print("Length of subset = ", len(subset_head_predictions))
+            topk_subgraphs_scann = min(100000, len(subset_head_predictions))
             #if topk_subgraphs_scann == 1000:
             #    hitsHead -= 1
 
+            print("Searching in {}".format(topk_subgraphs_scann))
             head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            print("Actual neighbours returned :  ",len(np.squeeze(head_neighbours)))
+            #print("Actual neighbours returned :  ",(np.squeeze(head_neighbours)))
             if head in np.squeeze(head_neighbours):
                 print("ScaNN HEAD FOUND")
                 hits_head_scann += 1
@@ -339,9 +399,9 @@ class SubgraphPredictor():
                 subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
             if tail in subset_tail_predictions:
                 hitsTail += 1
-            tail_subgraph_comparisons += len(subset_tail_predictions)
+                tail_subgraph_comparisons += len(subset_tail_predictions)
             #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
-            topk_subgraphs_scann = min(10000, len(subset_tail_predictions))
+            topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
             #if topk_subgraphs_scann == 1000:
             #    hitsTail -= 1
 
