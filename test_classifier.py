@@ -4,6 +4,7 @@ import argparse
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from mlp_classifier import MLPClassifier
+from mlp_classifier_supervised import MLPClassifierSupervised
 from subgraph_classifier import SubgraphClassifier
 from path_classifier import PathClassifier
 
@@ -53,6 +54,25 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     # prediction
     myc.predict()
     raw_result, fil_result = myc.results()
+elif args.classifier == "mlps" or args.classifier == "lstms":# s for supervised
+    model_file_path = args.model_file
+    model_weights_path = args.weights_file
+    # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
+    myc = MLPClassifierSupervised(args.pred, args.db, args.topk, queries_file_path, args.model, model_file_path, model_weights_path, args.train_file)
+
+    # entity dict is the id to string dictionary for entities
+    myc.init_entity_dict(args.ent_dict, args.rel_dict)
+
+    # set log file
+    base_name = os.path.basename(model_file_path).rsplit('.', maxsplit=1)[0]
+    logfile = log_dir + base_name + "-lr.log"
+    myc.set_logfile(logfile)
+
+    # prediction
+    myc.predict()
+    raw_result, fil_result = myc.results()
+    with open(logfile, "w") as fout:
+        fout.write(str(fil_result))
 
 elif args.classifier == "path":
     emb_file = args.emb_file

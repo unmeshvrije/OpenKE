@@ -12,6 +12,7 @@ from snorkel.labeling.model.label_model import LabelModel
 from snorkel.labeling.model import MajorityLabelVoter
 from snorkel.labeling.model.baselines import RandomVoter
 import logging
+import itertools
 
 logging.basicConfig(level = logging.INFO)
 def parse_args():
@@ -118,7 +119,7 @@ min_voting_y = (sums > 0).astype(int)
     function that accepts 4 classifiers y labels
     and annotated indexes, fills the out array with labels at those indexes
 '''
-def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
+def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, labels = {'lstm': True, 'mlp': True, 'sub' : True, 'path': True}):
     snorkel_y = np.empty(len(lstm_y), dtype = np.int)
     snorkel_y.fill(-1);
 
@@ -156,12 +157,30 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
 
 
         label_model = LabelModel(verbose = False)
-        train_feature_list = [lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train]
+
+        train_feature_list = []
+        if labels['lstm']:
+            train_feature_list.append(lstm_annotated_train)
+        if labels['mlp']:
+            train_feature_list.append(mlp_annotated_train)
+        if labels['sub']:
+            train_feature_list.append(sub_annotated_train)
+        if labels['path']:
+            train_feature_list.append(path_annotated_train)
 
         L_train = np.transpose(np.vstack(tuple(train_feature_list)))
         label_model.fit(L_train, n_epochs=500, optimizer="adam")
 
-        test_feature_list = [lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test]
+        test_feature_list = []
+        if labels['lstm']:
+            test_feature_list.append(lstm_annotated_test)
+        if labels['mlp']:
+            test_feature_list.append(mlp_annotated_test)
+        if labels['sub']:
+            test_feature_list.append(sub_annotated_test)
+        if labels['path']:
+            test_feature_list.append(path_annotated_test)
+
         L_test = np.transpose(np.vstack(tuple(test_feature_list)))
         cv_accuracy = label_model.score(L = L_test, Y = true_annotated_test, tie_break_policy = "random")["accuracy"]
         if cv_accuracy > max_accuracy:
@@ -180,7 +199,17 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated):
     mlp_annotated= mlp_y[indexes_annotated]
     sub_annotated= sub_y[indexes_annotated]
     path_annotated= path_y[indexes_annotated]
-    L_test_max = np.transpose(np.vstack((lstm_annotated, mlp_annotated, sub_annotated, path_annotated)))
+
+    test_feature_list = []
+    if labels['lstm']:
+        test_feature_list.append(lstm_annotated)
+    if labels['mlp']:
+        test_feature_list.append(mlp_annotated)
+    if labels['sub']:
+        test_feature_list.append(sub_annotated)
+    if labels['path']:
+        test_feature_list.append(path_annotated)
+    L_test_max = np.transpose(np.vstack(tuple(test_feature_list)))
     out_y = best_model.predict(L_test_max, tie_break_policy = "random")
     for i,index in enumerate(indexes_annotated):
         snorkel_y[index] = out_y[i]
@@ -204,6 +233,54 @@ def get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, voter):
     return out_y, voter_y
 
 snorkel_y_annotated, snorkel_y, indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated)
+
+withoutC4 = {
+    'labels' : {
+    'lstm' : True,
+    'mlp' : True,
+    'sub' : True,
+    'path' : False
+    },
+    'snorkel_y_annotated': None,
+    'snorkel_y' : None
+}
+withoutC4["snorkel_y_annotated"], withoutC4["snorkel_y"], indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, withoutC4['labels'])
+
+withoutC3 = {
+    'labels' : {
+    'lstm' : True,
+    'mlp' : True,
+    'sub' : False,
+    'path' : True
+    },
+    'snorkel_y_annotated': None,
+    'snorkel_y' : None
+}
+withoutC3["snorkel_y_annotated"], withoutC3["snorkel_y"], indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, withoutC3['labels'])
+
+withoutC2 = {
+    'labels' : {
+    'lstm' : True,
+    'mlp' : False,
+    'sub' : True,
+    'path' : True
+    },
+    'snorkel_y_annotated': None,
+    'snorkel_y' : None
+}
+withoutC2["snorkel_y_annotated"], withoutC2["snorkel_y"], indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, withoutC2['labels'])
+
+withoutC1 = {
+    'labels' : {
+    'lstm' : False,
+    'mlp' : True,
+    'sub' : True,
+    'path' : True
+    },
+    'snorkel_y_annotated': None,
+    'snorkel_y' : None
+}
+withoutC1["snorkel_y_annotated"], withoutC1["snorkel_y"], indexes_annotated_test, L_test = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, withoutC1['labels'])
 
 major_y_annotated, major_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, MajorityLabelVoter)
 random_y_annotated, random_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated_test, RandomVoter)
@@ -236,10 +313,14 @@ print("mlp   : ", get_results(true_annotated, mlp_annotated_test))
 print("path  : ", get_results(true_annotated, path_annotated_test))
 print("sub   : ", get_results(true_annotated, sub_annotated_test))
 print("minv  : ", get_results(true_annotated, minv_annotated))
-print("snork : ", get_results(true_annotated, snorkel_y_annotated))
 print("major : ", get_results(true_annotated, major_y_annotated))
 print("maxv  : ", get_results(true_annotated, maxv_annotated))
 print("random: ", get_results(true_annotated, random_y_annotated))
+print("snork      : ", get_results(true_annotated, snorkel_y_annotated))
+print("snork(-C1) : ", get_results(true_annotated, withoutC1["snorkel_y_annotated"]))
+print("snork(-C2) : ", get_results(true_annotated, withoutC2["snorkel_y_annotated"]))
+print("snork(-C3) : ", get_results(true_annotated, withoutC3["snorkel_y_annotated"]))
+print("snork(-C4) : ", get_results(true_annotated, withoutC4["snorkel_y_annotated"]))
 
 test_queries = load_pickle(args.test_file)
 x_test_fil = np.array(test_queries['x_' + args.pred + "_fil"])
