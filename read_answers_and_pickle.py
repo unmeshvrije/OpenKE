@@ -32,6 +32,12 @@ combine_embeddings = args.combine_emb
 print("Reading embeddings file...", end=" ")
 with open(args.embfile, "r") as fin:
     params = json.loads(fin.read())
+
+print(params.keys())
+'''
+Keys for ComplEx
+(['rel_im_embeddings.weight', 'ent_im_embeddings.weight', 'ent_re_embeddings.weight', 'zero_const', 'rel_re_embeddings.weight', 'pi_const'])
+'''
 embeddings = params['ent_embeddings.weight']
 rel_embeddings = params['rel_embeddings.weight']
 print("DONE")

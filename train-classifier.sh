@@ -22,13 +22,13 @@ M="lstm"
 U=100
 DR=0.2
 
-for K in 10 #5
+for K in 1 #5
 do
     for P in "head" "tail"
     do
     for M in "lstm" "mlp"
     do
-    for U in 10 100 200 #500
+    for U in 100 #200 #500
     do
     for DR in 0.2 #0.5 0.8
     do

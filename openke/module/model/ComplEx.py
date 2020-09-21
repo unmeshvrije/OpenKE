@@ -72,12 +72,6 @@ class ComplEx(Model):
         #h_all = torch.cat((h_re, h_im, h_re, h_im))
         #r_all = torch.cat((r_re, r_re, r_im, -r_im))
         #t_all = torch.cat((t_re, t_im, t_im, t_re))
-        print("rel real shape = ", r_re.shape)
-        print("rel imag shape = ", r_im.shape)
-        print("head real shape = ", h_re.shape)
-        print("head imag shape = ", h_im.shape)
-        print("tail real shape = ", t_re.shape)
-        print("tail imag shape = ", t_im.shape)
 
         if mode == 'head_batch':
             #score = (r_all * o_all).mm(s_all.transpose(0,1))

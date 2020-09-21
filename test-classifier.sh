@@ -20,9 +20,9 @@ RDD=$RDB"data/" # contains files in the name format fb15k237-transe-training-top
 RDM=$RDB"models/"
 RDS=$RDB"subgraphs/"
 
-for K in 10
+for K in 5 #10
 do
-    for P in  "head" #"tail"
+    for P in  "head" "tail"
     do
     for M in  "mlp" #"lstm" #"path" #"sub"
     do
