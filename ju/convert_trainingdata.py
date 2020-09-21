@@ -15,12 +15,8 @@ def postprocess(data, suffix):
     return newdata
 
 newdata = {}
-newdata['x_tail'] = postprocess(data, 'x_tail')
-newdata['x_head'] = postprocess(data, 'x_head')
+newdata['x_tail'] = postprocess(data, 'tail')
+newdata['x_head'] = postprocess(data, 'head')
 newdata['y_tail'] = data['y_tail']
 newdata['y_head'] = data['y_head']
 plt.dump(newdata, open(outputFile, 'wb'))
-
-
-
-
