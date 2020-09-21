@@ -16,11 +16,11 @@ from sklearn.metrics import confusion_matrix
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--infile', dest ='infile', required = True, type = str, help = 'File containing training/test data with labels.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--units', dest = 'units', type = int, default = 100)
     parser.add_argument('-bs', '--batch-size', dest = 'batch_size', type = int)
-    parser.add_argument('--epochs', dest = 'epochs', type = int, default = 100)
+    parser.add_argument('--epochs', dest = 'epochs', type = int, default = 50)
     parser.add_argument('--dropout', dest = 'dropout', type = float, default = 0.5)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', required = True, dest = 'model_str', type = str, default = "lstm")
@@ -56,20 +56,28 @@ SAMPLE_SIZE = len(training_data['x_' + type_prediction])
 print("Sample size for the total data = ", SAMPLE_SIZE)
 all_data_x = training_data['x_' + type_prediction][:SAMPLE_SIZE]
 all_data_y = training_data['y_' + type_prediction][:SAMPLE_SIZE]
+all_data_y = np.array(all_data_y)
 N_TOTAL = len(all_data_x)
-N_VALID = 10000
+N_VALID = 50000
 N_TRAIN = int(N_TOTAL - N_VALID)
 
 print("N_TOTAL = ", N_TOTAL)
 print("N_TRAIN = ", N_TRAIN)
-print("N_TEST  =", N_VALID)
+print("N_VALID  =", N_VALID)
 print("#"*80)
 
-x_train = np.array(all_data_x[:N_TRAIN])
-y_train = np.array(all_data_y[:N_TRAIN], dtype=np.int32)
+randomChoice = np.random.choice(N_TOTAL // 10, N_VALID // 10, replace=False)
+randomIdxs = np.zeros(N_TOTAL, dtype=np.bool)
+for i in range(len(randomChoice)):
+    startIdx = randomChoice[i] * 10
+    for j in range(10):
+        randomIdxs[startIdx + j] = True
 
-x_valid = np.array(all_data_x[N_TRAIN:])
-y_valid = np.array(all_data_y[N_TRAIN:], dtype=np.int32)
+x_train = np.array(all_data_x[~randomIdxs])
+y_train = np.array(all_data_y[~randomIdxs], dtype=np.int32)
+
+x_valid = np.array(all_data_x[randomIdxs])
+y_valid = np.array(all_data_y[randomIdxs], dtype=np.int32)
 
 N_FEATURES = len(x_train[0])
 
@@ -81,9 +89,9 @@ x_valid = np.reshape(x_valid, (N_VALID//topk, topk, N_FEATURES))
 y_valid = np.reshape(y_valid, (N_VALID//topk, topk, 1))
 
 # Model
-model = Sequential();
+model = Sequential()
 if model_str == "lstm":
-    model.add(LSTM(n_units, input_shape=(topk, N_FEATURES), return_sequences = True));
+    model.add(LSTM(n_units, input_shape=(topk, N_FEATURES), return_sequences = True))
     model.add(Dropout(dropout))
     model.add(Dense(1, activation = 'sigmoid'))
 elif model_str == "mlp":
