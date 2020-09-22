@@ -208,6 +208,6 @@ class AnswerClassifier(ABC):
         print(classification_report(self.y_test_fil, self.y_predicted_fil))
 
         print("*" * 80)
-        if self.entity_dict is not None and self.relation_dict is not None:
-            self.print_answer_entities()
+        #if self.entity_dict is not None and self.relation_dict is not None:
+        #    self.print_answer_entities()
         return raw_result, filtered_result

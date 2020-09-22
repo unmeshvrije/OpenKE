@@ -47,6 +47,12 @@ with open(args.ansfile, "r") as fin:
     res = json.loads(fin.read())
 print("DONE")
 
+def postprocess(x_data, features_dim):
+    newdata = np.zeros(shape=(len(x_data), features_dim), dtype=np.float64)
+    for i in range(len(x_data)):
+        newdata[i]  = x_data[i][5:]
+    return newdata
+
 triples= {}
 
 if args.mode == "train":
@@ -84,7 +90,7 @@ for index in range(len(ht)):
             else:
                 dup_count += 1
         # add the x_head and y_head to dictionary
-        triples['x_' + ht[index] + rf] = x_head
+        triples['x_' + ht[index] + rf] = postprocess(x_head, dim*3)
         triples['y_' + ht[index] + rf] = y_head
 
         print(ht[index] + " : " + rf)
