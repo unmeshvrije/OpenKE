@@ -66,11 +66,11 @@ print("N_TRAIN = ", N_TRAIN)
 print("N_VALID  =", N_VALID)
 print("#"*80)
 
-randomChoice = np.random.choice(N_TOTAL // 10, N_VALID // 10, replace=False)
+randomChoice = np.random.choice(N_TOTAL // args.topk, N_VALID // args.topk, replace=False)
 randomIdxs = np.zeros(N_TOTAL, dtype=np.bool)
 for i in range(len(randomChoice)):
-    startIdx = randomChoice[i] * 10
-    for j in range(10):
+    startIdx = randomChoice[i] * args.topk
+    for j in range(args.topk):
         randomIdxs[startIdx + j] = True
 
 x_train = np.array(all_data_x[~randomIdxs])

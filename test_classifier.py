@@ -5,8 +5,8 @@ from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from mlp_classifier import MLPClassifier
 from mlp_classifier_supervised import MLPClassifierSupervised
-from subgraph_classifier import SubgraphClassifier
-from path_classifier import PathClassifier
+#from subgraph_classifier import SubgraphClassifier
+#from path_classifier import PathClassifier
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
@@ -18,8 +18,8 @@ def parse_args():
     parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
     parser.add_argument('--subembfile', dest ='subemb_file', type = str, help = 'File containing subgraphs embeddings.')
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
-    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
-    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
