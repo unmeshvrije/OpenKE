@@ -26,7 +26,8 @@ def parse_args():
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
-    parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
+    parser.add_argument('-tl', '--tau-low',dest ='tau_low', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
+    parser.add_argument('-th', '--tau-high',dest ='tau_high', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
 
 args = parse_args()
@@ -41,7 +42,7 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     model_file_path = args.model_file
     model_weights_path = args.weights_file
     # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
-    myc = MLPClassifier(args.pred, args.db, args.topk, queries_file_path, args.model, model_file_path, model_weights_path, threshold=args.threshold)
+    myc = MLPClassifier(args.pred, args.db, args.topk, queries_file_path, args.model, model_file_path, model_weights_path, abs_low=args.tau_low, abs_high=args.tau_high)
 
     # entity dict is the id to string dictionary for entities
     myc.init_entity_dict(args.ent_dict, args.rel_dict)
@@ -109,7 +110,8 @@ elif args.classifier == "sub":
     raw_result, fil_result = mys.results()
 
 # Pickle the output
-output_file = result_dir + base_name + ".out"
+tau_values = "-taulow-" + str(args.tau_low) + "-tauhigh-" + str(args.tau_high)
+output_file = result_dir + base_name + tau_values +".out"
 result_dict = {}
 result_dict['raw'] = raw_result
 result_dict['fil'] = fil_result

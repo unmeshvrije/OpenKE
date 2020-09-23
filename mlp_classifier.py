@@ -3,11 +3,10 @@ from keras.models import model_from_json
 from answer_classifier import AnswerClassifier
 
 class MLPClassifier(AnswerClassifier):
-    def __init__(self, type_prediction, db, topk, queries_file_path, emb_model, model_file_path, model_weights_path, threshold = 0.5, abs_low = 0.2, abs_high = 0.6):
+    def __init__(self, type_prediction, db, topk, queries_file_path, emb_model, model_file_path, model_weights_path, abs_low = 0.2, abs_high = 0.6):
         super(MLPClassifier, self).__init__(type_prediction, queries_file_path, db, emb_model, topk)
         self.model_file_path = model_file_path
         self.model_weights_path = model_weights_path
-        self.threshold = threshold
         self.abs_low   = abs_low
         self.abs_high  = abs_high
 
@@ -48,45 +47,27 @@ class MLPClassifier(AnswerClassifier):
         loaded_model.load_weights(self.model_weights_path)
         loaded_model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])
 
-        if self.use_generator:
-            # evaluate_generator() works but it gives confusion matrix as the output
-            # we want to have true labels (y_test_raw) that are already read by the generator
-            # and then predict_generator()
-            probabilities_raw    = loaded_model.predict_generator(self.test_generator["raw"])
-            predicted_raw        = (probabilities_raw > self.threshold).astype(int)
-            self.y_predicted_raw = predicted_raw.flatten().astype(np.int32)
-            self.y_test_raw      = self.test_labels["raw"]
+        # Raw
+        x_test_raw = np.reshape(self.x_test_raw, (self.cnt_test_triples//self.topk, self.topk, self.emb_dim))
+        predicted_raw = loaded_model.predict_classes(x_test_raw)
+        self.y_predicted_raw = predicted_raw.flatten().astype(np.int32)
 
-            probabilities_fil    = loaded_model.predict_generator(self.test_generator["fil"])
-            predicted_fil        = (probabilities_fil > self.threshold).astype(int)
-            self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
-            self.y_test_fil      = self.test_labels["fil"]
-        else:
-            # Raw
-            x_test_raw = np.reshape(self.x_test_raw, (self.cnt_test_triples//self.topk, self.topk, self.emb_dim))
-            predicted_raw = loaded_model.predict_classes(x_test_raw)
-            self.y_predicted_raw = predicted_raw.flatten().astype(np.int32)
+        # Filtered
+        x_test_fil = np.reshape(self.x_test_fil, (self.cnt_test_triples//self.topk, self.topk, self.emb_dim))
+        probabilities = loaded_model.predict(x_test_fil)
+        predicted_fil = (probabilities > self.abs_high).astype(int)
+        self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
 
-            # Filtered
-            x_test_fil = np.reshape(self.x_test_fil, (self.cnt_test_triples//self.topk, self.topk, self.emb_dim))
-            #if self.threshold != 0.5:
-            probabilities = loaded_model.predict(x_test_fil)
-            predicted_fil = (probabilities > self.threshold).astype(int)
-            self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)
+        predicted_fil_abs = np.empty(len(probabilities.flatten()), dtype=np.int)
+        print ("#< "*20, self.abs_low)
+        print ("#> "*20, self.abs_high)
+        for i, prob in enumerate(probabilities.flatten()):
+            if prob <= self.abs_low:
+                predicted_fil_abs[i] = 0
+            elif prob >= self.abs_high:
+                predicted_fil_abs[i] = 1
+            else:
+                predicted_fil_abs[i] = -1
 
-            predicted_fil_abs = np.empty(len(probabilities.flatten()), dtype=np.int)
-            print ("#$ "*20, self.abs_low)
-            print ("#> "*20, self.abs_high)
-            for i, prob in enumerate(probabilities.flatten()):
-                if prob <= self.abs_low:
-                    predicted_fil_abs[i] = 0
-                elif prob >= self.abs_high:
-                    predicted_fil_abs[i] = 1
-                else:
-                    predicted_fil_abs[i] = -1
+        self.y_predicted_fil_abs = predicted_fil_abs
 
-            self.y_predicted_fil_abs = predicted_fil_abs
-
-            #else:
-            #    predicted_fil = loaded_model.predict_classes(x_test_fil)
-            #    self.y_predicted_fil = predicted_fil.flatten().astype(np.int32)

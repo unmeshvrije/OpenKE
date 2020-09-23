@@ -36,7 +36,7 @@ do
     if [ ! -f  $mo_file ];
     then
         echo "$mo_file not found. Generating one...";
-        python train_answer_model.py --infile $RDD"$DB-$E-training-topk-$K.pkl" --topk $K --mode train  --pred $P --db $DB --units $U --dropout $DR --model $M
+        python train_answer_model.py --infile $RDD"$DB-$E-training-topk-$K-ju.pkl" --topk $K --mode train  --pred $P --db $DB --units $U --dropout $DR --model $M
         echo "DONE"
     else
         echo "$mo_file FOUND";
