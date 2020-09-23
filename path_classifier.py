@@ -17,10 +17,10 @@ class PathClassifier(AnswerClassifier):
     def __init__(self, type_prediction, db, topk_answers_per_query, queries_file_path, embeddings_file_path, emb_model, training_file_path, score_threshold_percentage = 0.1):
         super(PathClassifier, self).__init__(type_prediction, queries_file_path, db, emb_model, topk_answers_per_query)
         self.topk_answers_per_query = topk_answers_per_query
-        self.emb_file_path = embeddings_file_path
+        #self.emb_file_path = embeddings_file_path
         self.training_file_path = training_file_path
         self.score_threshold_percentage = score_threshold_percentage
-        self.init_embeddings(emb_model)
+        #self.init_embeddings(emb_model)
         self.init_graph()
         self.cnt_subgraphs_dict = {}
         # This is the list of Counts of subgraphs / % Threshold
@@ -183,7 +183,6 @@ class PathClassifier(AnswerClassifier):
 
         return paths
 
-
     def predict(self):
         self.predict_internal(self.x_test_raw, self.y_predicted_raw, "raw")
         self.predict_internal(self.x_test_fil, self.y_predicted_fil, "fil")
@@ -250,4 +249,3 @@ class PathClassifier(AnswerClassifier):
                         y_predicted.append(-1)
                     else:
                         y_predicted.append(0)
-

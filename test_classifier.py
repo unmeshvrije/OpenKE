@@ -5,8 +5,8 @@ from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from mlp_classifier import MLPClassifier
 from mlp_classifier_supervised import MLPClassifierSupervised
-#from subgraph_classifier import SubgraphClassifier
-#from path_classifier import PathClassifier
+from subgraph_classifier import SubgraphClassifier
+from path_classifier import PathClassifier
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
