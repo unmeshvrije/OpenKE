@@ -28,33 +28,46 @@ for K in 10 # 1 5
 do
     for P in  "head" "tail"
     do
-    for M in  "mlp" "lstm" #"path" #"sub"
+    for M in  "mlp" "lstm" "sub" "path"
     do
     for U in 100 #200 10 #500
     do
         if [ $M  == "sub" ];
         then
-            if [ $E == "complex" ];
-            then
-                emb_file=$RDE"$DB-$E.pt"
-            else
-                emb_file=$RDE"$DB-$E.json"
-            fi
             sub_file=$RDS"$DB-$E-subgraphs-tau-10.pkl"
-            sub_emb_file=$RDS"$DB-$E-avgemb-tau-10.pkl"
-            test_file=$RDD"$DB-$E-test-topk-$K.pkl"
-            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --embfile $emb_file --subfile $sub_file --subembfile $sub_emb_file --topk $K --db $DB --pred $P --trainfile "./benchmarks/$DB/train2id.txt" --model $E -stp 0.01 --entdict $ENTDICT --reldict $RELDICT
+            mo_file=$RDB"out/$DB-$E-subgraphs-tau-10-$P.out"
+            if [ -f  $mo_file ];
+            then
+              echo "$mo_file FOUND";
+            else
+              echo "$mo_file NOT FOUND";
+              if [ $E == "complex" ];
+              then
+                  emb_file=$RDE"$DB-$E.pt"
+              else
+                  emb_file=$RDE"$DB-$E.json"
+              fi
+              sub_emb_file=$RDS"$DB-$E-avgemb-tau-10.pkl"
+              test_file=$RDD"$DB-$E-test-topk-$K.pkl"
+              python3 generate_classifier_labels.py -rd $RD --classifier $M --testfile $test_file --embfile $emb_file --subfile $sub_file --subembfile $sub_emb_file --topk $K --db $DB --pred $P --trainfile "./benchmarks/$DB/train2id.txt" --model $E -stp 0.01 --entdict $ENTDICT --reldict $RELDICT
+            fi
         elif [ $M == "path" ];
         then
-            if [ $E == "complex" ];
+            mo_file=$RDB"out/$DB-$E-path-classifier-$P.out"
+            if [ -f  $mo_file ];
             then
-                emb_file=$RDE"$DB-$E.pt"
+              echo "$mo_file FOUND";
             else
-                emb_file=$RDE"$DB-$E.json"
+              echo "$mo_file NOT FOUND";
+              if [ $E == "complex" ];
+              then
+                  emb_file=$RDE"$DB-$E.pt"
+              else
+                  emb_file=$RDE"$DB-$E.json"
+              fi
+              test_file=$RDD"$DB-$E-test-topk-$K.pkl"
+              python3 generate_classifier_labels.py -rd $RD --classifier $M --testfile $test_file --embfile $emb_file --topk $K --model $E --db $DB --pred $P --trainfile "./benchmarks/$DB/train2id.txt" -stp 0.01 --entdict $ENTDICT --reldict $RELDICT
             fi
-            echo "$emb_file"
-            test_file=$RDD"$DB-$E-test-topk-$K.pkl"
-            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --embfile $emb_file --topk $K --model $E --db $DB --pred $P --trainfile "./benchmarks/$DB/train2id.txt" -stp 0.01 --entdict $ENTDICT --reldict $RELDICT
         else
             mo_file=$RDM"$DB-$E-training-topk-$K-ju-$P-model-$M-units-$U-dropout-$DR.json"
             train_file=$RDD"$DB-$E-training-topk-$K-ju.pkl"
@@ -72,5 +85,5 @@ do
         fi
     done;
     done;
-done;
+    done;
 done;
