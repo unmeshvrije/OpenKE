@@ -23,7 +23,6 @@ def parse_args():
     parser.add_argument('--abs-high', required = True, dest = 'abs_high', type = float, default = 0.6)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
-    parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
 
 def r2(num):
@@ -52,7 +51,7 @@ model_file_path = args.model_file
 model_weights_path = args.weights_file
 # For this to work, queries_file_path must contain 10 (topk) answers present for each triple
 myc = MLPClassifier(args.pred, args.db, args.topk, queries_file_path, args.model,
-    model_file_path, model_weights_path, threshold=args.threshold, abs_low = float(args.abs_low), abs_high = float(args.abs_high))
+    model_file_path, model_weights_path, abs_low = float(args.abs_low), abs_high = float(args.abs_high))
 
 myc.predict()
 raw_result, fil_result = myc.results()
@@ -80,7 +79,7 @@ results = {}
 for low in [0.1, 0.2, 0.3, 0.4]:
     for high in [0.6, 0.7, 0.8, 0.9]:
         myc = MLPClassifier(args.pred, args.db, args.topk, queries_file_path, args.model,
-            model_file_path, model_weights_path, threshold=args.threshold, abs_low = float(low), abs_high = float(high))
+            model_file_path, model_weights_path, abs_low = float(low), abs_high = float(high))
 
         myc.predict()
         raw_result, fil_result = myc.results()

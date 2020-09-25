@@ -35,10 +35,11 @@ with open(args.embfile, "r") as fin:
 
 embeddings = params['ent_embeddings.weight']
 rel_embeddings = params['rel_embeddings.weight']
-dim = len(embeddings[0])
-if "rotate" in args.embfile:
-    dim = int(dim/2)
-print("dim = ", dim)
+ent_dim = len(embeddings[0])
+rel_dim = len(rel_embeddings[0])
+#if "rotate" in args.embfile:
+#    dim = int(dim/2)
+#print("dim = ", dim)
 print("DONE")
 
 # Read the answers file (generated from the test option of the model)
@@ -82,15 +83,15 @@ for index in range(len(ht)):
                     features.append(rank)
 
                     features.extend(rel_embeddings[r['rel']])
-                    features.extend(embeddings[r[ht[(index+1)%2]]][:dim])
-                    features.extend(embeddings[e][:dim])
+                    features.extend(embeddings[r[ht[(index+1)%2]]][:ent_dim])
+                    features.extend(embeddings[e][:ent_dim])
 
                     x_head.append(features)
                     y_head.append(c)
             else:
                 dup_count += 1
         # add the x_head and y_head to dictionary
-        triples['x_' + ht[index] + rf] = postprocess(x_head, dim*3)
+        triples['x_' + ht[index] + rf] = postprocess(x_head, (ent_dim*2) + rel_dim)
         triples['y_' + ht[index] + rf] = y_head
 
         print(ht[index] + " : " + rf)
