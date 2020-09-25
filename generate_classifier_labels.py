@@ -20,14 +20,14 @@ def parse_args():
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
-    parser.add_argument('-tl', '--tau-low',dest ='tau_low', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
-    parser.add_argument('-th', '--tau-high',dest ='tau_high', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
+    parser.add_argument('-tl', '--tau-low',dest ='tau_low', type = float, default = 0.2, help = 'Probability value that decides the boundary between class 0 and 1.')
+    parser.add_argument('-th', '--tau-high',dest ='tau_high', type = float, default = 0.6, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
 
 args = parse_args()
@@ -38,6 +38,7 @@ os.makedirs(result_dir, exist_ok = True)
 os.makedirs(log_dir, exist_ok = True)
 queries_file_path = args.test_file
 
+tau_values = ""
 if args.classifier == "mlp" or args.classifier == "lstm":
     model_file_path = args.model_file
     model_weights_path = args.weights_file
@@ -55,6 +56,7 @@ if args.classifier == "mlp" or args.classifier == "lstm":
     # prediction
     myc.predict()
     raw_result, fil_result = myc.results()
+    tau_values = "-taulow-" + str(args.tau_low) + "-tauhigh-" + str(args.tau_high)
 elif args.classifier == "mlps" or args.classifier == "lstms":# s for supervised
     model_file_path = args.model_file
     model_weights_path = args.weights_file
@@ -110,7 +112,6 @@ elif args.classifier == "sub":
     raw_result, fil_result = mys.results()
 
 # Pickle the output
-tau_values = "-taulow-" + str(args.tau_low) + "-tauhigh-" + str(args.tau_high)
 output_file = result_dir + base_name + tau_values +".out"
 result_dict = {}
 result_dict['raw'] = raw_result
