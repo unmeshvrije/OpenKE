@@ -9,7 +9,7 @@ import copy
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--true-out', dest ='true_out_file', type = str, help = 'File containing the true /expected answers.',
-    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-annotated-topk-10-tail.out')
+    default = 'OpenKE-results/fb15k237/out/fb15k237-transe-annotated-topk-10-tail.out')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
     parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing training triples.')
     parser.add_argument('--modelfile', dest ='model_file',type = str, help = 'File containing the model.')

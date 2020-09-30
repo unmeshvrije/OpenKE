@@ -6,13 +6,11 @@ then
 fi
 
 # Result Directory
-RD="experiments/"
+RD="/Users/jacopo/Desktop/data_unmesh/"
 export PYTHONPATH="${PYTHONPATH}:./LibKGE/libkge"
 
 E=$1
 DB=$2
-#M="lstm"
-#U=100
 DR=0.2
 
 RDB=$RD"$DB/"
@@ -69,9 +67,10 @@ do
               python3 generate_classifier_labels.py -rd $RD --classifier $M --testfile $test_file --embfile $emb_file --topk $K --model $E --db $DB --pred $P --trainfile "./benchmarks/$DB/train2id.txt" -stp 0.01 --entdict $ENTDICT --reldict $RELDICT
             fi
         else
-            mo_file=$RDM"$DB-$E-training-topk-$K-ju-$P-model-$M-units-$U-dropout-$DR.json"
+            mo_file=$RDM"$DB-$E-training-topk-$K-$P-model-$M-units-$U-dropout-$DR.json"
+            wt_file=$RDM"$DB-$E-training-topk-$K-$P-weights-$M-units-$U-dropout-$DR.h5"
             train_file=$RDD"$DB-$E-training-topk-$K-ju.pkl"
-            test_file=$RDD"$DB-$E-test-topk-$K-ju.pkl"
+            test_file=$RDD"$DB-$E-test-topk-$K.pkl"
             if [ ! -f  $mo_file ];
             then
                 echo "$mo_file not found. Generating one...";
@@ -80,8 +79,7 @@ do
             fi
             echo "$mo_file FOUND";
             echo "Test file : $test_file "
-            wt_file=$RDM"$DB-$E-training-topk-$K-ju-$P-weights-$M-units-$U-dropout-$DR.h5"
-            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --entdict $ENTDICT --reldict $RELDICT -rd $RD -tl 0.25 -th 0.5
+            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --entdict $ENTDICT --reldict $RELDICT -rd $RD -tl 0.5 -th 0.5
         fi
     done;
     done;
