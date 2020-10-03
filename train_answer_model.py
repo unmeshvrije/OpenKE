@@ -58,12 +58,12 @@ all_data_x = training_data['x_' + type_prediction][:SAMPLE_SIZE]
 all_data_y = training_data['y_' + type_prediction][:SAMPLE_SIZE]
 all_data_y = np.array(all_data_y)
 N_TOTAL = len(all_data_x)
-N_VALID = 50000
+N_VALID = int(N_TOTAL * 0.20)
 N_TRAIN = int(N_TOTAL - N_VALID)
 
 print("N_TOTAL = ", N_TOTAL)
 print("N_TRAIN = ", N_TRAIN)
-print("N_VALID  =", N_VALID)
+print("N_VALID = ", N_VALID)
 print("#"*80)
 
 randomChoice = np.random.choice(N_TOTAL // args.topk, N_VALID // args.topk, replace=False)
@@ -73,7 +73,9 @@ for i in range(len(randomChoice)):
     for j in range(args.topk):
         randomIdxs[startIdx + j] = True
 
+print("rand indexes : ", len(randomIdxs))
 x_train = np.array(all_data_x[~randomIdxs])
+print("x_Train len : ", len(x_train))
 y_train = np.array(all_data_y[~randomIdxs], dtype=np.int32)
 
 x_valid = np.array(all_data_x[randomIdxs])
