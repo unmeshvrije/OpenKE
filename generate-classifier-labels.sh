@@ -24,11 +24,11 @@ RDS=$RDB"subgraphs/"
 ENTDICT=$RD"$DB/misc/$DB-id-to-entity.pkl"
 RELDICT=$RD"$DB/misc/$DB-id-to-relation.pkl"
 
-for K in 10 # 1 5
+for K in 3 # 1 5
 do
-    for P in  "head" "tail"
+    for P in  "head" #"tail"
     do
-    for M in  "mlp" "lstm" "sub" "path"
+    for M in  "mlp" "lstm" #"sub" "path"
     do
     for U in 100 #200 10 #500
     do

@@ -84,7 +84,7 @@ elif args.classifier == "path":
     path_classifier.init_entity_dict(args.ent_dict, args.rel_dict)
 
     # set log file
-    base_name = args.db + "-" + args.model + "-path-classifier" + "-" + args.pred
+    base_name = args.db + "-" + args.model + "-path-classifier" + "-" + args.pred + "-topk-" + str(args.topk)
     logfile = log_dir + base_name + ".log"
     path_classifier.set_logfile(logfile)
 
@@ -103,7 +103,7 @@ elif args.classifier == "sub":
 
     # set log file
     base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
-    base_name += "-" + args.pred
+    base_name += "-" + args.pred + "-topk-" + str(args.topk)
     logfile = log_dir + base_name + ".log"
     mys.set_logfile(logfile)
 
@@ -116,5 +116,6 @@ output_file = result_dir + base_name + tau_values +".out"
 result_dict = {}
 result_dict['raw'] = raw_result
 result_dict['fil'] = fil_result
+print("### Writing to " + output_file)
 with open(output_file, 'wb') as fout:
     pickle.dump(result_dict, fout, protocol = pickle.HIGHEST_PROTOCOL)
