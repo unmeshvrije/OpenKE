@@ -48,6 +48,7 @@ args = parse_args()
 '''
 result_dir =  args.result_dir + args.db + "/out/"
 log_dir =  args.result_dir + args.db + "/logs/"
+models_dir = args.result_dir + args.db + "/models/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(log_dir, exist_ok = True)
 
@@ -127,6 +128,30 @@ max_voting_y = (sums > 2).astype(int)
 # TODO: check with abstain
 min_voting_y = (sums > 0).astype(int)
 
+def get_snorkel_labels_v2(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated):
+    snorkel_y = np.empty(len(lstm_y), dtype = np.int)
+    snorkel_y.fill(-1);
+
+    a_str = ""
+    if args.abstain:
+        a_str = ".abs"
+    snorkel_model_file_name = models_dir + args.db + "-" + args.model + "-" + args.pred + "-snorkel.model"+a_str
+    best_model = LabelModel()
+    best_model.load(snorkel_model_file_name)
+
+    '''
+    apply best model to entire annotated set
+    '''
+    lstm_annotated= lstm_y[indexes_annotated]
+    mlp_annotated= mlp_y[indexes_annotated]
+    sub_annotated= sub_y[indexes_annotated]
+    path_annotated= path_y[indexes_annotated]
+    L_test_max = np.transpose(np.vstack((lstm_annotated, mlp_annotated, sub_annotated, path_annotated)))
+    out_y = best_model.predict(L_test_max, tie_break_policy = "random")
+    for i,index in enumerate(indexes_annotated):
+        snorkel_y[index] = out_y[i]
+    return out_y, snorkel_y
+
 '''
     function that accepts 4 classifiers y labels
     and annotated indexes, fills the out array with labels at those indexes
@@ -177,7 +202,8 @@ def get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated):
             for i,index in enumerate(indexes_annotated_test):
                 snorkel_y[index] = out_y[i]
 
-
+    # Write the best_model to disk
+    # TODO: Name : db-model-head/tail (assuming 0.2 and 0.6 as taus, 100 lstm units, 0.2 dropout, topk = 10)
     '''
     apply best model to entire annotated set
     '''
@@ -219,7 +245,7 @@ def get_supervised_aggregation_labels(lstm_y, mlp_y, sub_y, path_y, true_y, inde
         train_feature_list = [lstm_annotated_train, mlp_annotated_train, sub_annotated_train, path_annotated_train]
         train_data = np.vstack(tuple(train_feature_list))
         train_data = train_data.transpose()
-        model = svm.SVC()
+        model = svm.SVC(gamma = 'auto')
         model.fit(train_data, true_annotated_train.ravel())
 
         test_feature_list = [lstm_annotated_test, mlp_annotated_test, sub_annotated_test, path_annotated_test]
@@ -259,7 +285,8 @@ def get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, voter):
         voter_y[index] = out_y[i]
     return out_y, voter_y
 
-snorkel_y_annotated, snorkel_y = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated)
+#snorkel_y_annotated, snorkel_y = get_snorkel_labels(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated)
+snorkel_y_annotated, snorkel_y = get_snorkel_labels_v2(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated)
 #major_y_annotated, major_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, MajorityLabelVoter)
 random_y_annotated, random_y = get_voter_labels(lstm_y, mlp_y, sub_y, path_y, indexes_annotated, RandomVoter)
 sup_y_annotated, sup_y = get_supervised_aggregation_labels(lstm_y, mlp_y, sub_y, path_y, true_y, indexes_annotated)
@@ -302,31 +329,31 @@ print("snork     \t", get_results(true_annotated, snorkel_y_annotated))
 print("sup       \t", get_results(true_annotated, sup_y_annotated))
 #print("major     :\t", get_results(true_annotated, major_y_annotated))
 
-"Analysis of errors"
-idx2ans = {}
-for queryId, query in enumerate(queries):
-    startidx = query['idx']
-    for j, ans in enumerate(query['answers']):
-        idx2ans[startidx + j] = {'queryId': queryId, 'query': query['str_e'] + ',' + query['str_r'], 'answer': ans['str_answer'], 'cor': ans['cor']}
-cnt_false_negative = 0
-cnt_false_positive = 0
-for i, t_val in enumerate(true_annotated):
-    if t_val == 1 and snorkel_y_annotated[i] != 1:
-        originalIdx = indexes_annotated[i]
-        query = idx2ans[originalIdx]
-        assert(query['cor'] == 1)
-        #print(query['query'], "=>", query['answer'])
-        cnt_false_negative += 1
-    if t_val == 0 and snorkel_y_annotated[i] == 1:
-        originalIdx = indexes_annotated[i]
-        query = idx2ans[originalIdx]
-        assert (query['cor'] == 0)
-        #print(query['queryId'], query['query'], "=>", query['answer'])
-        cnt_false_positive += 1
-print("N. false negative", cnt_false_negative, "N. false positive", cnt_false_positive)
+if args.true_out_ext_file is not None:
+    "Analysis of errors"
+    idx2ans = {}
+    for queryId, query in enumerate(queries):
+        startidx = query['idx']
+        for j, ans in enumerate(query['answers']):
+            idx2ans[startidx + j] = {'queryId': queryId, 'query': query['str_e'] + ',' + query['str_r'], 'answer': ans['str_answer'], 'cor': ans['cor']}
+    cnt_false_negative = 0
+    cnt_false_positive = 0
+    for i, t_val in enumerate(true_annotated):
+        if t_val == 1 and snorkel_y_annotated[i] != 1:
+            originalIdx = indexes_annotated[i]
+            query = idx2ans[originalIdx]
+            assert(query['cor'] == 1)
+            #print(query['query'], "=>", query['answer'])
+            cnt_false_negative += 1
+        if t_val == 0 and snorkel_y_annotated[i] == 1:
+            originalIdx = indexes_annotated[i]
+            query = idx2ans[originalIdx]
+            assert (query['cor'] == 0)
+            #print(query['queryId'], query['query'], "=>", query['answer'])
+            cnt_false_positive += 1
+    print("N. false negative", cnt_false_negative, "N. false positive", cnt_false_positive)
+    exit(0)
 
-
-exit(0)
 test_queries = load_pickle(args.test_file)
 x_test_fil = np.array(test_queries['x_' + args.pred + "_fil"])
 logfile = log_dir + args.model + "-" + args.db + "-" + args.pred + "-ensembled.log"
