@@ -8,7 +8,7 @@ then
 fi
 
 RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
-E=$2  # "transe", "hole", "rotate"
+E=$2  # "transe", "complex", "rotate"
 DB=$3 #"fb15k237"
 RDB=$RD"$DB/"
 RDE=$RDB"embeddings/" # contains file in the name format : db-model.json
@@ -27,6 +27,16 @@ fi
 echo "Model $EMB_MODEL_PATH is found. Generating test answers..."
 for K in 10 #1 3 5
 do
-    python embedding_model.py --gpu --db $DB --mode "trainAsTest" --model $E --topk $K
-    python embedding_model.py --gpu --db $DB --mode "test" --model $E --topk $K
+    #fb15k237-complex-training-topk-10.json
+    training_file=$RDD"$DB-$E-training-topk-$K.json"
+    if [ ! -f $training_file ];
+    then
+        python embedding_model.py --gpu --db $DB --mode "trainAsTest" --model $E --topk $K
+    fi
+
+    test_file=$RDD"$DB-$E-test-topk-$K.json"
+    if [ ! -f $test_file ];
+    then
+        python embedding_model.py --gpu --db $DB --mode "test" --model $E --topk $K
+    fi
 done
