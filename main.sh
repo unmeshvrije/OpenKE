@@ -1,7 +1,12 @@
 #!/bin/sh
 source ~/.bashrc
+if [ "$#" -ne 1 ];
+then
+    echo "usage: $0 [result_dir]. Found $#"
+    exit
+fi
 
-RD="/var/scratch2/uji300/OpenKE-results/"
+RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
 
 for DB in "fb15k237" "dbpedia50"
 do
