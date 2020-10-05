@@ -316,7 +316,7 @@ def get_results(y_true, y_predicted):
 
 baseline = np.empty(len(true_annotated), dtype = np.int)
 baseline.fill(1)
-print("Method    \t Pr(1)\t Re(1)\t F1(1) \t Accuracy (overall)\t Pr(0)\t Re(0)\t F1(0)")
+print("Method    \t Pr(1)\t Re(1)\t F1(1) \t Acc \t Pr(0)\t Re(0)\t F1(0)")
 print("baseline  \t", get_results(true_annotated, baseline))
 print("random    \t", get_results(true_annotated, random_y_annotated))
 print("lstm      \t", get_results(true_annotated, lstm_annotated_test))
