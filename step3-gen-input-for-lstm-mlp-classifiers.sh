@@ -28,6 +28,7 @@ do
     tr_file=$RDD"$DB-$E-training-topk-$K.pkl"
     if [ ! -f  $tr_file ];
     then
+        #TODO: for complex call scrips from LibKGE/libkge/
         echo "$tr_file not found";
         python read_answers_and_pickle_numpy.py --embfile $embfile --db $DB --topk $K --mode train --ansfile $RDD"$DB-$E-training-topk-$K.json"
     else

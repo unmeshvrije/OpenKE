@@ -27,7 +27,6 @@ fi
 echo "Model $EMB_MODEL_PATH is found. Generating test answers..."
 for K in 10 #1 3 5
 do
-    #fb15k237-complex-training-topk-10.json
     training_file=$RDD"$DB-$E-training-topk-$K.json"
     if [ ! -f $training_file ];
     then
