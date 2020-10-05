@@ -18,7 +18,7 @@ M="lstm"
 U=100
 DR=0.2
 
-for K in 100 # 1 3 5
+for K in 10 # 1 3 5
 do
     for P in "head" "tail"
     do

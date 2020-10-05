@@ -80,7 +80,7 @@ do
             fi
             echo "$mo_file FOUND";
             echo "Test file : $test_file "
-            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --entdict $ENTDICT --reldict $RELDICT -rd $RD -tl 0.5 -th 0.5
+            python3 generate_classifier_labels.py --classifier $M --testfile $test_file --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --entdict $ENTDICT --reldict $RELDICT -rd $RD -tl 0.2 -th 0.6
         fi
     done;
     done;

@@ -14,12 +14,7 @@ RDB=$RD"$DB/"
 RDE=$RDB"embeddings/" # contains file in the name format : db-model.json
 RDD=$RDB"data/" # contains files in the name format fb15k237-transe-training-topk-10.pkl (embedding features) or .json (raw answers)
 
-if [ $E == "complex" ];
-then
-  embfile=$RDE"$DB-$E.pt"
-else
-  embfile=$RDE"$DB-$E.json"
-fi
+embfile=$RDE"$DB-$E.json"
 echo "$embfile"
 
 # Generate training and test data for LSTM / MLP
@@ -28,7 +23,7 @@ do
     tr_file=$RDD"$DB-$E-training-topk-$K.pkl"
     if [ ! -f  $tr_file ];
     then
-        #TODO: for complex call scrips from LibKGE/libkge/
+        #TODO: for complex call scripts from LibKGE/libkge/
         echo "$tr_file not found";
         python read_answers_and_pickle_numpy.py --embfile $embfile --db $DB --topk $K --mode train --ansfile $RDD"$DB-$E-training-topk-$K.json"
     else

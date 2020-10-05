@@ -52,6 +52,14 @@ with open(input_file, "rb") as fin:
     training_data = pickle.load(fin)
 print("DONE")
 
+def round_to_multiple_of_k(n, k):
+    # Smaller multiple
+    a = (n // k) * k
+    # Larger multiple
+    b = a + k
+    # Return of closest of two
+    return (b if n - a > b - n else a)
+
 SAMPLE_SIZE = len(training_data['x_' + type_prediction])
 print("Sample size for the total data = ", SAMPLE_SIZE)
 all_data_x = training_data['x_' + type_prediction][:SAMPLE_SIZE]
@@ -59,6 +67,7 @@ all_data_y = training_data['y_' + type_prediction][:SAMPLE_SIZE]
 all_data_y = np.array(all_data_y)
 N_TOTAL = len(all_data_x)
 N_VALID = int(N_TOTAL * 0.20)
+N_VALID = round_to_multiple_of_k(N_VALID, topk)
 N_TRAIN = int(N_TOTAL - N_VALID)
 
 print("N_TOTAL = ", N_TOTAL)
