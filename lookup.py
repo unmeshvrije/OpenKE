@@ -1,11 +1,11 @@
 from tqdm import tqdm
 import pickle
 
-efile = "/home/uji300/OpenKE/benchmarks/fb15k237/entity2id.txt"
+efile = "/home/xxx/OpenKE/benchmarks/fb15k237/entity2id.txt"
 
-rfile = "/home/uji300/OpenKE/benchmarks/fb15k237/relation2id.txt"
+rfile = "/home/xxx/OpenKE/benchmarks/fb15k237/relation2id.txt"
 
-idfile = "/var/scratch2/uji300/kbs/fb15k237-id-to-entity.tsv"
+idfile = "/var/scratch2/xxx/kbs/fb15k237-id-to-entity.tsv"
 
 eid_to_fid = {}
 
@@ -43,8 +43,8 @@ with open(rfile, "r") as fin:
         key = cols[1]
         id_to_relation[int(key)] = val.rstrip()
 
-with open('/var/scratch2/uji300/kbs/fb15k237-id-to-entity.pkl', 'wb') as fout:
+with open('/var/scratch2/xxx/kbs/fb15k237-id-to-entity.pkl', 'wb') as fout:
     pickle.dump(id_to_entity, fout, protocol = pickle.HIGHEST_PROTOCOL)
 
-with open('/var/scratch2/uji300/kbs/fb15k237-id-to-relation.pkl', 'wb') as fout:
+with open('/var/scratch2/xxx/kbs/fb15k237-id-to-relation.pkl', 'wb') as fout:
     pickle.dump(id_to_relation, fout, protocol = pickle.HIGHEST_PROTOCOL)

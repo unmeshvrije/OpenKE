@@ -2,7 +2,7 @@
 source ~/.bashrc
 # Result Directory
 DB="fb15k237"
-RD="/var/scratch2/uji300/OpenKE-results/"
+RD="/var/scratch2/xxx/OpenKE-results/"
 RDB=$RD"$DB/"
 RDE=$RDB"embeddings/" # contains file in the name format : db-model.json
 RDD=$RDB"data/" # contains files in the name format fb15k237-transe-training-topk-10.pkl (embedding features) or .json (raw answers)
@@ -12,7 +12,7 @@ RDS=$RDB"subgraphs/" # contains files in the name format fb15k237-transe-{subgra
 E=$1 # "transe", "hole", "rotate"
 K=10
 
-# /var/scratch2/uji300/OpenKE-results//data/fb15k237-hole-training-topk-10.json
+# /var/scratch2/xxx/OpenKE-results//data/fb15k237-hole-training-topk-10.json
 echo "$RDD"
 
 echo "****"

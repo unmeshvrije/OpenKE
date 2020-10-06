@@ -8,7 +8,7 @@ fi
 
 source ~/.bashrc
 # Result Directory
-RD="/var/scratch2/uji300/OpenKE-results/"
+RD="/var/scratch2/xxx/OpenKE-results/"
 E=$1
 DB=$2
 K=10

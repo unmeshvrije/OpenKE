@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--classifier', dest ='classifier', required = True, type = str, help = 'Classifier LSTM/MLP.')
     parser.add_argument('--weightsfile', dest ='weights_file', type = str, help = 'File containing the model weights.')
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--abs-low', required = True, dest = 'abs_low', type = float, default = 0.2)

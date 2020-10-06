@@ -7,7 +7,7 @@ then
     exit
 fi
 
-RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
+RD=$1 #"/var/scratch2/xxx/OpenKE-results/"
 E=$2  # "transe", "complex", "rotate"
 DB=$3 #"fb15k237"
 RDB=$RD"$DB/"

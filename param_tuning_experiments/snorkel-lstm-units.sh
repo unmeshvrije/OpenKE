@@ -3,7 +3,7 @@
 P=$1
 source ~/.bashrc
 # Result Directory
-RD="/var/scratch2/uji300/OpenKE-results/"
+RD="/var/scratch2/xxx/OpenKE-results/"
 E="complex"
 DB="fb15k237"
 #"fb15k237"

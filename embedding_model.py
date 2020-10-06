@@ -17,13 +17,13 @@ from dynamic_topk import DynamicTopk
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
     parser.add_argument('--gpu', dest ='gpu', help = 'Whether to use gpu or not', action = 'store_true')
-    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest', 'subtest'], \
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
-    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
-    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
+    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
+    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10, help = "-1 means dynamic topk")
     return parser.parse_args()
 
