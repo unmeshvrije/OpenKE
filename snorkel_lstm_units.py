@@ -18,8 +18,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
     parser.add_argument('--true-out', dest ='true_out_file', type = str, help = 'File containing the true /expected answers.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-annotated-topk-10-tail.out')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-annotated-topk-10-tail.out')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--abstain', dest = 'abstain', default = False, action = 'store_true')
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = "fb15k237")
@@ -45,12 +45,12 @@ def load_pickle(file_name):
         pkl = pickle.load(fin)
     return pkl
 
-lstm100 = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-100-dropout-0.2.out'
-mlp100  = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-100-dropout-0.2.out'
-lstm10 = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-10-dropout-0.2.out'
-mlp10  = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-10-dropout-0.2.out'
-lstm200 = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-200-dropout-0.2.out'
-mlp200  = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-200-dropout-0.2.out'
+lstm100 = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-100-dropout-0.2.out'
+mlp100  = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-100-dropout-0.2.out'
+lstm10 = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-10-dropout-0.2.out'
+mlp10  = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-10-dropout-0.2.out'
+lstm200 = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-lstm-units-200-dropout-0.2.out'
+mlp200  = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-complex-training-topk-10-tail-model-mlp-units-200-dropout-0.2.out'
 
 lstm10_results  = load_pickle(lstm10)
 lstm100_results = load_pickle(lstm100)

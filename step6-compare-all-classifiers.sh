@@ -8,7 +8,7 @@ fi
 
 source ~/.bashrc
 # Result Directory
-RD=$1 #"/var/scratch2/xxx/OpenKE-results/"
+RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
 E=$2
 DB=$3
 P=$4
@@ -39,7 +39,7 @@ then
         python run_and_save_snorkel_model.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --abstain --model $E -rd $RD
     fi
 
-    python compare_all_classifiers.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --abstain --entdict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E -rd $RD
+    python compare_all_classifiers.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --abstain --entdict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E -rd $RD
 
 else
     echo "python compare_all_classifiers.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to"
@@ -51,5 +51,5 @@ else
         echo "Snorkel label model not found. Running..."
         python run_and_save_snorkel_model.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --model $E -rd $RD
     fi
-    python compare_all_classifiers.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --entdict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E -rd $RD
+    python compare_all_classifiers.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --entdict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E -rd $RD
 fi

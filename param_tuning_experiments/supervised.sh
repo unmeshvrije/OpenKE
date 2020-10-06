@@ -8,7 +8,7 @@ fi
 
 source ~/.bashrc
 # Result Directory
-RD="/var/scratch2/xxx/OpenKE-results/"
+RD="/var/scratch2/uji300/OpenKE-results/"
 E=$1
 DB=$2
 P=$3
@@ -31,7 +31,7 @@ ent_file=$RDB"misc/$DB-id-to-entity.pkl"
 rel_file=$RDB"misc/$DB-id-to-relation.pkl"
 
 echo "python supervised_learning.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to"
-python supervised_learning.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --entdict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E
+python supervised_learning.py --testfile $tf --topk $K --db $DB --pred $P --lstm-out $lo --mlp-out $mo --path-out $po --sub-out $so --true-out $to --entdict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl" --reldict "/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl" --model $E
 
 
 #U=100

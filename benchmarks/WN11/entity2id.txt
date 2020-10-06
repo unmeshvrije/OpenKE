@@ -26977,7 +26977,7 @@ __place_name_1	26974
 __musical_passage_1	26975
 __bush_hibiscus_1	26976
 __genus_radyera_1	26977
-__xxx_2	26978
+__uji300_2	26978
 __bell_4	26979
 __drip_1	26980
 __jangle_1	26981

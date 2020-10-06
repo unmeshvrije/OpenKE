@@ -6,7 +6,7 @@ then
     exit
 fi
 
-RD=$1 #"/var/scratch2/xxx/OpenKE-results/"
+RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
 
 for DB in "fb15k237" "dbpedia50"
 do

@@ -6,7 +6,7 @@ then
 fi
 
 # Result Directory
-RD=$1 # "/var/scratch2/xxx/OpenKE-results/"
+RD=$1 # "/var/scratch2/uji300/OpenKE-results/"
 E=$2
 DB=$3
 RDB=$RD"$DB/"

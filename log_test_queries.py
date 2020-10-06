@@ -7,10 +7,10 @@ import numpy as np
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.',
-    default = '/home/xxx/OpenKE/benchmarks/fb15k237/test2id.txt')
-    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
-    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    default = '/home/uji300/OpenKE/benchmarks/fb15k237/test2id.txt')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = "fb15k237")
     return parser.parse_args()
 

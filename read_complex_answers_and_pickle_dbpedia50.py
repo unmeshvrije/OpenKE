@@ -12,18 +12,18 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
-    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-entity.pkl',help = 'entity id dictionary.')
-    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-relation.pkl',help = 'relation id dictionary.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test triples.',
-    default = '/home/xxx/OpenKE/benchmarks/dbpedia50/test2id.txt')
+    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/test2id.txt')
     parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing train triples.',
-    default = '/home/xxx/OpenKE/benchmarks/dbpedia50/train2id.txt')
+    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/train2id.txt')
     parser.add_argument('--validfile', dest ='valid_file', type = str, help = 'File containing valid triples.',
-    default = '/home/xxx/OpenKE/benchmarks/dbpedia50/valid2id.txt')
+    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/valid2id.txt')
     parser.add_argument('--inputfile', required = True, dest ='input_file', type = str, help = 'File containing sample queries from TransE (train/test).',
-    default = "/var/scratch2/xxx/OpenKE-results/dbpedia50/data/dbpedia50-transe-test-topk-10.json"
+    default = "/var/scratch2/uji300/OpenKE-results/dbpedia50/data/dbpedia50-transe-test-topk-10.json"
 )
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10)
     parser.add_argument('--abstain', dest = 'abstain', default = False, action = 'store_true')
     parser.add_argument('--logans', dest = 'logans', default = False, action = 'store_true')

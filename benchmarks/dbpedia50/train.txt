@@ -7453,7 +7453,7 @@ Louise_Mandrell	Drum_kit	instrument
 Louise_Mandrell	RCA_Records	recordLabel
 Jonava	Eastern_European_Time	timeZone
 Glossy_snake	Glossy_snake	genus
-Exxxtasy_TV	480i	pictureFormat
+Euji300tasy_TV	480i	pictureFormat
 Rain_(1932_film)	English_language	language
 He's_the_DJ,_I'm_the_Rapper	Hip_hop_music	genre
 Code_Red_(DJ_Jazzy_Jeff_&_the_Fresh_Prince_album)	Hip_hop_music	genre

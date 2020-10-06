@@ -11,18 +11,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
     parser.add_argument('--true-out', dest ='true_out_file', type = str, help = 'File containing the true /expected answers.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-annotated-topk-10-tail.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-annotated-topk-10-tail.out')
     parser.add_argument('--lstm-out', dest ='lstm_out_file', type = str, help = 'File containing the output of lstm classifier.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-lstm-units-100-dropout-0.2.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-lstm-units-100-dropout-0.2.out')
     parser.add_argument('--mlp-out', dest ='mlp_out_file', type = str, help = 'File containing the output of mlp classifier.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-mlp-units-100-dropout-0.2.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-training-topk-10-tail-model-mlp-units-100-dropout-0.2.out')
     parser.add_argument('--path-out', dest ='path_out_file', type = str, help = 'File containing the output of path classifier.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/path-classifier-tail.out')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/path-classifier-tail.out')
     parser.add_argument('--sub-out', dest ='sub_out_file', type = str, help = 'File containing the output of sub classifier.',
-    default = '/var/scratch2/xxx/OpenKE-results/fb15k237/out/fb15k237-transe-subgraphs-tau-10-tail.out')
-    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
-    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/xxx/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    default = '/var/scratch2/uji300/OpenKE-results/fb15k237/out/fb15k237-transe-subgraphs-tau-10-tail.out')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = "fb15k237")
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')

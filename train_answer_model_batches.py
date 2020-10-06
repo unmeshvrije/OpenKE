@@ -19,7 +19,7 @@ import glob
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--infile', dest ='infile', required = True, type = str, help = 'File containing training/test data with labels.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--units', dest = 'units', type = int, default = 100)
     parser.add_argument('-bs', '--batch-size', dest = 'batch_size', type = int, default=2)

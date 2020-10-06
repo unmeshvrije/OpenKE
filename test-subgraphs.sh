@@ -6,7 +6,7 @@ then
 fi
 
 # Result Directory
-RD="/var/scratch2/xxx/OpenKE-results/"
+RD="/var/scratch2/uji300/OpenKE-results/"
 
 E=$1
 DB=$2
@@ -34,7 +34,7 @@ do
     sub_emb_file=$RDS"$DB-$E-avgemb-tau-10.pkl"
     test_file="./benchmarks/$DB/test2id.txt"
     train_file="./benchmarks/$DB/train2id.txt"
-    edict_file="/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
-    rdict_file="/var/scratch2/xxx/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"
+    edict_file="/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
+    rdict_file="/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"
     python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembfile $sub_emb_file --topk $K --db $DB --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R
 done;

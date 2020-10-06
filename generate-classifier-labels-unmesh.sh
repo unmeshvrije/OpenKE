@@ -9,7 +9,7 @@ fi
 #RD="experiments/"
 #export PYTHONPATH="${PYTHONPATH}:./LibKGE/libkge"
 
-RD="/var/scratch2/xxx/OpenKE-results/"
+RD="/var/scratch2/uji300/OpenKE-results/"
 E=$1
 DB=$2
 #M="lstm"

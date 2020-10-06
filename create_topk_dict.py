@@ -7,9 +7,9 @@ from dynamic_topk import DynamicTopk
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training triples and prepare an estimate of topk for head and tail predictions.')
-    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/xxx/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
-    parser.add_argument('--infile', dest ='infile', type = str, help = 'File containing training triples.', default = "/home/xxx/OpenKE/benchmarks/fb15k237/train2id.txt")
+    parser.add_argument('--infile', dest ='infile', type = str, help = 'File containing training triples.', default = "/home/uji300/OpenKE/benchmarks/fb15k237/train2id.txt")
     return parser.parse_args()
 
 args = parse_args()

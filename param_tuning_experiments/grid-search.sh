@@ -5,7 +5,7 @@ then
     exit
 fi
 # Result Directory
-RD="/var/scratch2/xxx/OpenKE-results/"
+RD="/var/scratch2/uji300/OpenKE-results/"
 
 E=$1
 DB=$2
@@ -33,7 +33,7 @@ do
         else
             echo "$mo_file FOUND";
             wt_file=$RDM"$DB-$E-training-topk-$K-$P-weights-$M-units-$U-dropout-$DR.h5"
-                python grid_search_lstm.py --classifier $M --testfile $RDD"$DB-$E-test-topk-$K.pkl" --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --abs-low 0.2 --abs-high 0.75 --true-out "/var/scratch2/xxx/OpenKE-results/$DB/out/$DB-$E-annotated-topk-10-$P.out"
+                python grid_search_lstm.py --classifier $M --testfile $RDD"$DB-$E-test-topk-$K.pkl" --modelfile $mo_file --weightsfile $wt_file --topk $K --db $DB --pred $P --abs-low 0.2 --abs-high 0.75 --true-out "/var/scratch2/uji300/OpenKE-results/$DB/out/$DB-$E-annotated-topk-10-$P.out"
         fi
     done;
 done;
