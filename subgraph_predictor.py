@@ -296,7 +296,7 @@ class SubgraphPredictor():
         dataset = self.E.cpu().numpy()
         print("dataset shape : ", dataset.shape)
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
-        searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
+        #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
         if self.test_triples is None:
             print("ERROR: set_test_triples() is not called.")
@@ -382,17 +382,17 @@ class SubgraphPredictor():
             #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
 
             print("Length of subset = ", len(subset_head_predictions))
-            topk_subgraphs_scann = min(100000, len(subset_head_predictions))
+            #topk_subgraphs_scann = min(100000, len(subset_head_predictions))
             #if topk_subgraphs_scann == 1000:
             #    hitsHead -= 1
 
-            print("Searching in {}".format(topk_subgraphs_scann))
-            head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
-            print("Actual neighbours returned :  ",len(np.squeeze(head_neighbours)))
+            #print("Searching in {}".format(topk_subgraphs_scann))
+            #head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            #print("Actual neighbours returned :  ",len(np.squeeze(head_neighbours)))
             #print("Actual neighbours returned :  ",(np.squeeze(head_neighbours)))
-            if head in np.squeeze(head_neighbours):
-                print("ScaNN HEAD FOUND")
-                hits_head_scann += 1
+            #if head in np.squeeze(head_neighbours):
+            #    print("ScaNN HEAD FOUND")
+            #    hits_head_scann += 1
 
             subset_tail_predictions = set()
             for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
@@ -401,14 +401,14 @@ class SubgraphPredictor():
                 hitsTail += 1
                 tail_subgraph_comparisons += len(subset_tail_predictions)
             #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
-            topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
+            #topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
             #if topk_subgraphs_scann == 1000:
             #    hitsTail -= 1
 
-            tail_neighbours, tail_distances = searcher.search_batched(answer_embedding_tail.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
-            if tail in np.squeeze(tail_neighbours):
-                print("ScaNN TAIL FOUND")
-                hits_tail_scann += 1
+            #tail_neighbours, tail_distances = searcher.search_batched(answer_embedding_tail.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            #if tail in np.squeeze(tail_neighbours):
+            #    print("ScaNN TAIL FOUND")
+            #    hits_tail_scann += 1
             time_end = timeit.default_timer()
 
         # calculate recall
@@ -423,8 +423,8 @@ class SubgraphPredictor():
             print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
             float(tail_normal_comparisons)*100)
 
-        print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
-        print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
+        #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
+        #print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
         #print("Time: ", end - start)
 
     #def predict_internal(self, ent, rel, ans, tester):
