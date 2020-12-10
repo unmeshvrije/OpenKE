@@ -1,0 +1,8 @@
+-   Embeddings for fb15k237 and complex are taken from https://github.com/uma-pi1/kge#results-and-pretrained-models on 10/12/2020.
+    They are stored in embeddings/fb15k237-complex.pt
+
+-   The script create_queries.py takes in input a list of facts (can be the train/valid/test triples) and
+    creates two files with all possible head and tail queries. The queries are stored in the 'queries' subfolder
+
+
+
