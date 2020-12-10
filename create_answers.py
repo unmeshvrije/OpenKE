@@ -1,8 +1,10 @@
 import torch
-import kge.model
+from kge.model import KgeModel
+from kge.util.io import load_checkpoint
 import json
 import os
 import argparse
+import pickle
 from tqdm import tqdm
 
 def parse_args():
@@ -24,13 +26,13 @@ args = parse_args()
 '''
 model_path = args.result_dir + '/' + args.db + "/embeddings/" + args.db + "-" + args.model + ".pt"
 queries_full_path = args.result_dir + '/' + args.db + '/queries/' + args.db + '-' + args.mode + '-' + args.type_prediction + '.json'
-model = kge.model.KgeModel()
-model.load_from_checkpoint(model_path)
+checkpoint = load_checkpoint(model_path)
+model = KgeModel.create_from(checkpoint)
 
 '''
     1. Setup  out directories
 '''
-answers_dir =  args.result_dir + args.db + "/answers/"
+answers_dir =  args.result_dir + '/' + args.db + "/answers/"
 os.makedirs(answers_dir, exist_ok = True)
 ent_queries = []
 rel_queries = []
@@ -72,12 +74,10 @@ if args.mode == 'test':
 '''
 E = model._entity_embedder._embeddings_all()
 R = model._relation_embedder._embeddings_all()
-ent_dim = len(E[0].tolist())
-rel_dim = len(R[0].tolist())
 suf = ""
 if args.mode == "test":
     suf = "-fil"
-answers_filename = args.db + "-answers-" + args.model + "-" + args.mode + "-" + args.topk + "-" + args.type_predictions + suf + ".pkl"
+answers_filename = args.db + "-answers-" + args.model + "-" + args.mode + "-" + str(args.topk) + "-" + args.type_prediction + suf + ".pkl"
 
 '''
     3. predictions
@@ -90,20 +90,25 @@ if args.type_prediction == 'tail':
 else:
     scores = model.score_po(r, e)
 o = torch.argsort(scores, dim=-1, descending = True)                # index of highest-scoring objects
-scores_sp_sorted, indices = torch.sort(scores, dim = -1, descending = True)  # sorted scores
 
+out = []
+assert(len(ent_queries) == len(records))
 for index in tqdm(range(0, len(ent_queries))):
     ent = e[index].item()
     rel  = r[index].item()
+    raw_answers = []
     filtered_answers = []
-    if args.mode == "train":
-        for oi in o[index][:topk]:
+    for oi in o[index]:
+        if len(raw_answers) < topk:
+            raw_answers.append(oi.item())
+        if (ent, rel, oi.item()) not in known_answers:
             filtered_answers.append(oi.item())
-    else:
-        for oi in o[index]:
-            if (ent, rel, oi.item()) not in known_answers:
-                filtered_answers.append(oi.item())
-                if len(filtered_answers) == topk:
-                    break
+            if len(filtered_answers) == topk:
+                break
     assert(len(filtered_answers) == topk)
-
+    q = records[index]
+    q['answers_fil'] = filtered_answers
+    q['answers_raw'] = raw_answers
+    out.append(q)
+with open(answers_dir + '/' + answers_filename, 'wb') as fout:
+    pickle.dump(out, fout)

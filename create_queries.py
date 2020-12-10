@@ -35,5 +35,5 @@ out_file_tail = args.db + '-' + args.mode + '-tail.json'
 with open(output_dir + '/' + out_file_tail, 'wt') as fout:
     o = []
     for i, q in enumerate(queries_tail):
-        o.append({'type' : 0, 'ent' : q[0], 'rel' : q[1] })
+        o.append({'type' : 1, 'ent' : q[0], 'rel' : q[1] })
     json.dump(o, fout)
