@@ -144,3 +144,5 @@ venv.bak/
 
 **/*.sh
 tryme/
+.idea
+.DS_Store
