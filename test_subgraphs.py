@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
     return parser.parse_args()
 
+print("Parsing arguments", flush=True)
 args = parse_args()
 
 result_dir =  args.result_dir + args.db + "/out/"
@@ -37,10 +38,13 @@ emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_file = args.subemb_file
 db_path = "./benchmarks/" + args.db + "/"
+print("Initializing Subgraph predictor", flush=True)
 mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
 
+print("Setting test triples", flush=True)
 mys.set_test_triples(queries_file_path, args.num_test_queries)
 # entity dict is the id to string dictionary for entities
+print("Initializing entity dict", flush=True)
 mys.init_entity_dict(args.ent_dict, args.rel_dict)
 
 # set log file
@@ -48,6 +52,7 @@ base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
 logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 
+print("Calling predict", flush=True)
 mys.predict()
 '''
 raw_result, fil_result = mys.results()
