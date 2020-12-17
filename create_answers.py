@@ -5,12 +5,14 @@ import json
 import os
 import argparse
 import pickle
+from support.utils import *
 from tqdm import tqdm
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--known_answers_train_file', dest='known_answers_train_file', type=str)
-    parser.add_argument('--known_answers_valid_file', dest='known_answers_valid_file', type=str)
+    parser.add_argument('--known_answers_train_file', default=None, dest='known_answers_train_file', type=str)
+    parser.add_argument('--known_answers_valid_file', default=None, dest='known_answers_valid_file', type=str)
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10)
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237")
@@ -24,8 +26,8 @@ args = parse_args()
 '''
     0. Load the model
 '''
-model_path = args.result_dir + '/' + args.db + "/embeddings/" + args.db + "-" + args.model + ".pt"
-queries_full_path = args.result_dir + '/' + args.db + '/queries/' + args.db + '-' + args.mode + '-' + args.type_prediction + '.json'
+model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
+queries_full_path = args.result_dir + '/' + args.db + '/queries/' + get_filename_queries(args.db, args.mode, args.type_prediction)
 checkpoint = load_checkpoint(model_path)
 model = KgeModel.create_from(checkpoint)
 
@@ -72,12 +74,10 @@ if args.mode == 'test':
 '''
     2. Make the predictions
 '''
-E = model._entity_embedder._embeddings_all()
-R = model._relation_embedder._embeddings_all()
 suf = ""
 if args.mode == "test":
     suf = "-fil"
-answers_filename = args.db + "-answers-" + args.model + "-" + args.mode + "-" + str(args.topk) + "-" + args.type_prediction + suf + ".pkl"
+answers_filename = get_filename_answers(args.db, args.model, args.mode, args.topk, args.type_prediction, suf)
 
 '''
     3. predictions

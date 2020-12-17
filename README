@@ -1,0 +1,27 @@
+*** Embeddings ***
+
+-   Embeddings for fb15k237 and complex are taken from https://github.com/uma-pi1/kge#results-and-pretrained-models on 10/12/2020.
+    They are stored in embeddings/fb15k237-complex.pt
+    Embeddings for fb15k237 and transe are taken from https://github.com/uma-pi1/kge#results-and-pretrained-models on 10/12/2020.
+    They are stored in embeddings/fb15k237-transe.pt
+    Embeddings for fb15k237 and rotate were trained by Unmesh. They are stored in embeddings/fb15k237-rotate.pt
+
+*** Python scripts ***
+
+-   The script create_queries.py takes in input a list of facts (can be the train/valid/test triples) and
+    creates two files with all possible head and tail queries. The queries are stored in the 'queries' subfolder
+
+-   The script create_answers.py takes the output of create_queries.py as input and return the filtered and raw top k
+    answers for each query. The output files are stored in the subfolder "answers"
+
+-   The script create_answer_annotations.py ...
+
+-   The script create_training_data.py ...
+
+-   The script create_model.py ...
+
+*** Gold data ***
+
+-   The jupyter notebook "annotate_gold_standard" is used to annotate answers with true labels.
+    The annotations are stored in the subfolder "annotations"
+
