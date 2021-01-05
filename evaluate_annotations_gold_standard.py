@@ -5,7 +5,7 @@ from support.utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -28,7 +28,9 @@ gold_filename = get_filename_gold(args.db, args.topk)
 with open(gold_dir + gold_filename, 'rt') as fin:
     gold_annotations = json.load(fin)
 filter_queries = {}
-n_annotations = 0
+n_gold_annotations = 0
+n_true_gold_annotations = 0
+n_false_gold_annotations = 0
 if args.type_prediction == 'head':
     accepted_query_type = 0
 else:
@@ -39,15 +41,31 @@ for id, item in gold_annotations.items():
     if type == accepted_query_type and item['valid_annotations'] == True:
         ent = query['ent']
         rel = query['rel']
-        filter_queries[(ent, rel)] = item['annotated_answers']
-        n_annotations += len(item['annotated_answers'])
+        ans = []
+        for a in item['annotated_answers']:
+            methods = a['methods']
+            for m in methods:
+                if m == args.model:
+                    ans.append(a)
+                    if a['checked']:
+                        n_true_gold_annotations += 1
+                    else:
+                        n_false_gold_annotations += 1
+                    break
+        assert(len(ans) == args.topk)
+        filter_queries[(ent, rel)] = ans
+        n_gold_annotations += len(ans)
 
 # Compute the various metrics
 print("*********")
-print("Dataset: {}". format(args.db))
-print("Classifier: {}". format(args.classifier))
-print("Type prediction: {}". format(args.type_prediction))
+print("Dataset\t\t\t: {}". format(args.db))
+print("Classifier\t\t: {}". format(args.classifier))
+print("Type prediction\t: {}". format(args.type_prediction))
 matched_answers = 0
+true_positives = 0
+false_positives = 0
+false_negatives = 0
+true_negatives = 0
 for query_answers in annotated_answers:
     ent = query_answers['query']['ent']
     rel = query_answers['query']['rel']
@@ -63,7 +81,22 @@ for query_answers in annotated_answers:
                 if true_answer['entity_id'] == entity_id:
                     found = True
                     matched_answers += checked == true_answer['checked']
+                    if checked == True and true_answer['checked'] == True:
+                        true_positives += 1
+                    elif checked == True:
+                        false_positives += 1
+                    elif true_answer['checked'] == True:
+                        false_negatives += 1
+                    else:
+                        true_negatives += 1
                     break
             assert(found)
-print("Accuracy: {}".format(matched_answers / n_annotations))
+acc = matched_answers / n_gold_annotations
+rec = true_positives / (true_positives + false_negatives)
+prec = true_positives / (true_positives + false_positives)
+f1 = 2 * (prec * rec) / (prec + rec)
+print("Accuracy\t\t: {:.3f}".format(acc))
+print("Recall\t\t\t: {:.3f}".format(rec))
+print("Precision\t\t: {:.3f}".format(prec))
+print("F1\t\t\t\t: {:.3f}".format(f1))
 print("*********")

@@ -1,13 +1,12 @@
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
-from classifier_mlp import Classifier_MLP
 from support.utils import *
 from support.embedding_model import  Embedding_Model
 import pickle
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp','mlp_multi'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -32,7 +31,11 @@ embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 
 # Load the classifier
 if args.classifier == 'mlp':
+    from classifier_mlp import Classifier_MLP
     classifier = Classifier_MLP(dataset, args.type_prediction, args.result_dir, embedding_model)
+elif args.classifier == 'mlp_multi':
+    from classifier_mlp_multi import Classifier_MLP_Multi
+    classifier = Classifier_MLP_Multi(dataset, args.type_prediction, args.result_dir, embedding_model)
 else:
     raise Exception('Not supported')
 

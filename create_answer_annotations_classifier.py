@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -45,6 +45,19 @@ if args.classifier == 'mlp':
                                 embedding_model,
                                 None,
                                 model_dir + '/' + model_filename)
+elif args.classifier == 'mlp_multi':
+    from classifier_mlp_multi import Classifier_MLP_Multi
+    model_dir = args.result_dir + '/' + args.db + '/models/'
+    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    classifier = Classifier_MLP_Multi(dataset,
+                                args.type_prediction,
+                                args.result_dir,
+                                embedding_model,
+                                None,
+                                model_dir + '/' + model_filename)
+elif args.classifier == 'random':
+    from classifier_random import Classifier_Random
+    classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 
