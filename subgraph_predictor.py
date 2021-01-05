@@ -31,13 +31,9 @@ class SubgraphPredictor():
         self.sub_emb_file_path = sub_emb_file_path
         self.training_file_path = training_file_path
         self.subgraph_threshold_percentage = subgraph_threshold_percentage
-        print("init embedding", flush=True)
         self.init_embeddings(emb_model)
-        print("init subgraphs", flush=True)
         self.init_subgraphs()
-        print("init sub embeddings", flush=True)
         self.init_sub_embeddings()
-        print("all well until here !", flush=True)
         self.init_training_triples()
 
         self.init_train_dataloader(db_path)
@@ -75,6 +71,7 @@ class SubgraphPredictor():
             neg_ent = 25,
             neg_rel = 0
             )
+
     def print_answer_entities(self):
         if self.logfile == None:
             return
@@ -106,8 +103,6 @@ class SubgraphPredictor():
         triples = read_triples(self.training_file_path)
         # triples are in the form (h,t,r)
         # For type_prediction : head, we sort by tail
-        for i in tqdm(range(0, len(triples))):
-            print("{}, {}, {}".format(triples[i][0], triples[i][1], triples[i][2]), flush=True)
         self.training_triples_head_predictions = sorted(triples, key = lambda l : (l[2], l[1]))
         self.training_triples_tail_predictions = sorted(triples, key = lambda l : (l[2], l[0])) #TODO: is this correct ?
         '''
@@ -158,11 +153,9 @@ class SubgraphPredictor():
 
     def init_embeddings(self, emb_model):
         if emb_model == "complex":
-            print("loading from checkpoint...", self.emb_file_path, flush=True)
             model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
             E_temp = model._entity_embedder._embeddings_all()
             R_temp = model._relation_embedder._embeddings_all()
-            print("converting to CUDA", flush=True)
             self.E = torch.Tensor(E_temp.tolist()).to('cuda')
             self.R = torch.Tensor(R_temp.tolist()).to('cuda')
         else:
@@ -316,7 +309,6 @@ class SubgraphPredictor():
                 if answer in self.subgraphs[sub_indexes[j]].data['entities']:
                     found_index = j
                     break
-            #print(" j = ", j)
             j //= 2
 
         return found_index if found_index > 0 else int(0.1 * len(sub_indexes))
@@ -333,12 +325,10 @@ class SubgraphPredictor():
         max_subset_size_head = 0
         max_subset_size_tail = 0
         dim = self.E.size()[1]
-        #print("dim = ", dim)
         all_tail_answer_embeddings = torch.empty(0, dim).to('cuda')
         all_head_answer_embeddings = torch.empty(0, dim).to('cuda')
 
         dataset = self.E.cpu().numpy()
-        #print("dataset shape : ", dataset.shape)
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
         #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
@@ -346,7 +336,6 @@ class SubgraphPredictor():
             print("ERROR: set_test_triples() is not called.")
             return
 
-        print("Starting the main loop", flush=True)
         for index in tqdm(range(0, len(self.test_triples))):
             head = int(self.test_triples[index][0])
             tail = int(self.test_triples[index][1])
