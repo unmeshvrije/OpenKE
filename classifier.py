@@ -12,7 +12,7 @@ class Classifier(ABC):
         pass
 
     @abstractmethod
-    def predict(self, answers):
+    def predict(self, query_with_answers):
         """
         The goal of this method is to label some answers. Given a query and a potential answer (completion),
         this method will assigns to it either a 1, -1, or 0 to indicate that the answer is true, false, or unknown,

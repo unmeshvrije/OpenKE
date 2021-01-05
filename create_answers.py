@@ -23,19 +23,11 @@ def parse_args():
 
 args = parse_args()
 
-'''
-    0. Load the model
-'''
 model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
 queries_full_path = args.result_dir + '/' + args.db + '/queries/' + get_filename_queries(args.db, args.mode, args.type_prediction)
 checkpoint = load_checkpoint(model_path)
 model = KgeModel.create_from(checkpoint)
 
-'''
-    1. Setup  out directories
-'''
-answers_dir =  args.result_dir + '/' + args.db + "/answers/"
-os.makedirs(answers_dir, exist_ok = True)
 ent_queries = []
 rel_queries = []
 with open(queries_full_path, "rt") as fin:
@@ -71,25 +63,14 @@ if args.mode == 'test':
             elif args.type_prediction == 'tail':
                 known_answers.add((h,r,t))
 
-'''
-    2. Make the predictions
-'''
-suf = ""
-if args.mode == "test":
-    suf = "-fil"
-answers_filename = get_filename_answers(args.db, args.model, args.mode, args.topk, args.type_prediction, suf)
-
-'''
-    3. predictions
-'''
 topk = args.topk
 e = torch.Tensor(ent_queries).long()
 r = torch.Tensor(rel_queries).long()
 if args.type_prediction == 'tail':
-    scores = model.score_sp(e, r)                                       # scores of all objects for (s,p,?)
+    scores = model.score_sp(e, r)
 else:
     scores = model.score_po(r, e)
-o = torch.argsort(scores, dim=-1, descending = True)                # index of highest-scoring objects
+o = torch.argsort(scores, dim=-1, descending = True)
 
 out = []
 assert(len(ent_queries) == len(records))
@@ -110,5 +91,9 @@ for index in tqdm(range(0, len(ent_queries))):
     q['answers_fil'] = filtered_answers
     q['answers_raw'] = raw_answers
     out.append(q)
+
+answers_dir =  args.result_dir + '/' + args.db + "/answers/"
+os.makedirs(answers_dir, exist_ok = True)
+answers_filename = get_filename_answers(args.db, args.model, args.mode, args.topk, args.type_prediction)
 with open(answers_dir + '/' + answers_filename, 'wb') as fout:
     pickle.dump(out, fout)

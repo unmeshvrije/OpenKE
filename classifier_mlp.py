@@ -7,10 +7,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-#from keras.models import Sequential
-#from keras.layers import Dense
-#from keras.layers import Dropout
-
 from support.embedding_model import Embedding_Model
 
 class MLP_Dataset(Dataset):
@@ -36,15 +32,17 @@ class MLP_model(nn.Module):
         super(MLP_model, self).__init__()
         self.mlp = nn.Sequential(
             nn.Linear(n_features, n_hidden_units),
-            nn.Dropout(0.2),
+            nn.Dropout(dropout),
             nn.Linear(n_hidden_units, n_hidden_units),
-            nn.Dropout(0.2),
+            nn.Dropout(dropout),
             nn.Linear(n_hidden_units, 1),
             nn.Sigmoid()
         )
+
     def forward(self, x):
         out = self.mlp(x)
         return out
+
 
 class Classifier_MLP(supervised_classifier.Supervised_Classifier):
     def __init__(self,
@@ -52,12 +50,21 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                  type_prediction : {'head', 'tail'},
                  results_dir,
                  embedding_model : Embedding_Model,
-                 n_units = 100,
-                 dropout = 0.2):
-        super(Classifier_MLP, self).__init__(dataset, type_prediction, results_dir, embedding_model)
+                 hyper_params = None,
+                 model_path = None):
+        if hyper_params is None:
+            hyper_params = { "n_units" : 100, "dropout" : 0.2}
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        super(Classifier_MLP, self).__init__(dataset, type_prediction, results_dir,
+                                             embedding_model, hyper_params, model_path)
+        if model_path is not None:
+            self.get_model().eval()
+
+    def init_model(self, embedding_model, hyper_params):
+        n_units = hyper_params['n_units']
+        dropout = hyper_params['dropout']
         n_features = embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
-        self.net = MLP_model(n_features, n_units, dropout).to(self.device)
+        self.set_model(MLP_model(n_features, n_units, dropout).to(self.device))
 
     def get_name(self):
         return "MLP"
@@ -90,35 +97,14 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                 out.append(data_entry)
         return out
 
-#    def train(self, training_data, model_path, batch_size=100, epochs=10):
-#        n_units = 1000
-#        dropout = 0.2
-#        n_epochs = 10
-#
-#        dim1 = len(training_data)
-#        dim2 = len(training_data[0]['X'])
-#        x_train = np.zeros(shape=(dim1, dim2), dtype=np.float32)
-#        y_train = np.zeros(shape=(dim1, 1), dtype=np.float32)
-#        for idx, a in enumerate(training_data):
-#            x_train[idx] = a['X']
-#            y_train[idx][0] = a['Y']
-#
-#        model = Sequential()
-#        model.add(Dense(n_units, input_shape=(batch_size, dim2)))
-#        model.add(Dropout(dropout))
-#        model.add(Dense(n_units))
-#        model.add(Dropout(dropout))
-#        model.add(Dense(1, activation='sigmoid'))
-#        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-#        model.fit(x_train, y_train, epochs=n_epochs, batch_size=batch_size, verbose=2)
-
     def train(self, training_data, model_path, batch_size=100, epochs=10):
         # Load input data
+        self.get_model().train()
         training_data_set = MLP_Dataset(training_data)
         train_data_loader = DataLoader(training_data_set, batch_size=batch_size, shuffle=True)
 
         criterion = nn.BCELoss()
-        optimizer = optim.Adam(self.net.parameters())
+        optimizer = optim.Adam(self.get_model().parameters())
         for epoch in range(epochs):  # loop over the dataset multiple times
             print("Start epoch {}".format(epoch))
             running_loss = 0.0
@@ -127,7 +113,7 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                 inputs.to(self.device)
                 labels.to(self.device)
                 optimizer.zero_grad()
-                outputs = self.net(inputs)
+                outputs = self.get_model()(inputs)
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
@@ -138,7 +124,27 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
         # Save model
-        torch.save(self.net, model_path)
+        self.save_model(model_path)
 
-    def predict(self, answers):
-        pass
+    def predict(self, query_with_answers):
+        ent = query_with_answers['ent']
+        rel = query_with_answers['rel']
+        typ = query_with_answers['type']
+        assert (typ == 1 or self.type_prediction == 'head')
+        assert (typ == 0 or self.type_prediction == 'tail')
+        emb_e = self.embedding_model.get_embedding_entity(ent)
+        emb_r = self.embedding_model.get_embedding_relation(rel)
+        annotated_answers = []
+        for answer in query_with_answers['answers_fil']:
+            # Construct the input features for the model
+            emb_a = self.embedding_model.get_embedding_entity(answer)
+            if self.type_prediction == 'head':
+                X = np.concatenate([emb_a, emb_r, emb_e])
+            else:
+                X = np.concatenate([emb_e, emb_r, emb_a])
+            # Do the prediction
+            out = self.get_model()(torch.Tensor(X))
+            score = out.item()
+            checked = score > 0.5
+            annotated_answers.append({'entity_id' : answer, 'checked' : checked, 'score': score})
+        return annotated_answers
