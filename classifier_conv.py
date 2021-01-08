@@ -9,7 +9,7 @@ import torch.optim as optim
 
 from support.embedding_model import Embedding_Model
 
-class LSTM_Dataset(Dataset):
+class Conv_Dataset(Dataset):
     def __init__(self, dataset):
         dim1 = len(dataset)
         dim2 = len(dataset[0]['X'])
@@ -28,23 +28,26 @@ class LSTM_Dataset(Dataset):
         y = self.Y[index]
         return x, y
 
-class LSTM_model(nn.Module):
+class Conv_Model(nn.Module):
     def __init__(self, n_features, n_hidden_units, dropout):
-        super(LSTM_model, self).__init__()
-
-        self.lstm = nn.LSTM(input_size= n_features, hidden_size = n_hidden_units, num_layers = 1)
+        super(Conv_Model, self).__init__()
+        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=4)
+        self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.dropout = nn.Dropout(dropout)
-        self.linear = nn.Linear(n_hidden_units, 1)
+        self.fc1 = torch.nn.Linear(570, 10)
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
-        out, hidden = self.lstm(x)
+        x = x.view(x.shape[0], 1, x.shape[1], x.shape[2])
+        out = self.conv1(x)
+        out = self.pool(out)
         out = self.dropout(out)
-        out = self.linear(out)
+        out = out.view(out.shape[0], -1)
+        out = self.fc1(out)
         out = self.sig(out)
         return out
 
-class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
+class Classifier_Conv(supervised_classifier.Supervised_Classifier):
     def __init__(self,
                  dataset,
                  type_prediction : {'head', 'tail'},
@@ -55,7 +58,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         if hyper_params is None:
             hyper_params = { "n_units" : 100, "dropout" : 0.2}
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        super(Classifier_LSTM, self).__init__(dataset, type_prediction, results_dir,
+        super(Classifier_Conv, self).__init__(dataset, type_prediction, results_dir,
                                              embedding_model, hyper_params, model_path)
         if model_path is not None:
             self.get_model().eval()
@@ -64,10 +67,10 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         n_units = hyper_params['n_units']
         dropout = hyper_params['dropout']
         self.n_features = embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
-        self.set_model(LSTM_model(self.n_features, n_units, dropout).to(self.device))
+        self.set_model(Conv_Model(self.n_features, n_units, dropout).to(self.device))
 
     def get_name(self):
-        return "LSTM"
+        return "ConvNN"
 
     def create_training_data(self, queries_with_annotated_answers):
         out = []
@@ -103,7 +106,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
     def train(self, training_data, model_path, batch_size=100, epochs=10):
         # Load input data
         self.get_model().train()
-        training_data_set = LSTM_Dataset(training_data)
+        training_data_set = Conv_Dataset(training_data)
         train_data_loader = DataLoader(training_data_set, batch_size=batch_size, shuffle=True)
 
         criterion = nn.BCELoss()

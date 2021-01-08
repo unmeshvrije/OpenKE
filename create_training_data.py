@@ -4,12 +4,13 @@ from support.embedding_model import Embedding_Model
 from classifier_mlp import Classifier_MLP
 from classifier_mlp_multi import Classifier_MLP_Multi
 from classifier_lstm import Classifier_LSTM
+from classifier_conv import Classifier_Conv
 from support.utils import *
 import pickle
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -39,6 +40,8 @@ if args.classifier == 'mlp_multi':
     classifier = Classifier_MLP_Multi(dataset, args.type_prediction, args.result_dir, embedding_model)
 elif args.classifier == 'lstm':
     classifier = Classifier_LSTM(dataset, args.type_prediction, args.result_dir, embedding_model)
+elif args.classifier == 'conv':
+    classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model)
 else:
     raise Exception('Not supported')
 

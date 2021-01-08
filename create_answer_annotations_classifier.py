@@ -8,7 +8,8 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj'])
+    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -65,9 +66,29 @@ elif args.classifier == 'lstm':
                                 embedding_model,
                                 None,
                                 model_dir + '/' + model_filename)
+elif args.classifier == 'conv':
+    from classifier_conv import Classifier_Conv
+    model_dir = args.result_dir + '/' + args.db + '/models/'
+    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    classifier = Classifier_Conv(dataset,
+                                args.type_prediction,
+                                args.result_dir,
+                                embedding_model,
+                                None,
+                                model_dir + '/' + model_filename)
 elif args.classifier == 'random':
     from classifier_random import Classifier_Random
     classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
+elif args.classifier == 'min':
+    from classifier_majmin import Classifier_MajMin
+    signals = args.name_signals.split(",")
+    classifier = Classifier_MajMin(dataset, args.type_prediction, args.topk, args.result_dir,
+                                   embedding_model, signals, True)
+elif args.classifier == 'maj':
+    from classifier_majmin import Classifier_MajMin
+    signals = args.name_signals.split(",")
+    classifier = Classifier_MajMin(dataset, args.type_prediction, args.topk, args.result_dir,
+                                   embedding_model, signals, False)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 
