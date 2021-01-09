@@ -100,7 +100,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
             out.append(data_entry)
         return out
 
-    def train(self, training_data, model_path, batch_size=100, epochs=10):
+    def train(self, training_data, valid_data, model_path, batch_size=100, epochs=10):
         # Load input data
         self.get_model().train()
         training_data_set = LSTM_Dataset(training_data)
@@ -128,7 +128,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
         # Save model
-        self.save_model(model_path)
+        self.save_model(model_path, epoch)
 
     def predict(self, query_with_answers):
         ent = query_with_answers['ent']

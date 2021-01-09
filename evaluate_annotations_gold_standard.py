@@ -5,7 +5,7 @@ from support.utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -100,3 +100,13 @@ print("Recall\t\t\t: {:.3f}".format(rec))
 print("Precision\t\t: {:.3f}".format(prec))
 print("F1\t\t\t\t: {:.3f}".format(f1))
 print("*********")
+
+results = { "F1" : f1, "REC" : rec, "PREC" : prec, "dataset" : args.db, "classifier" : args.classifier,
+            "type_prediction" : args.type_prediction}
+suf = '-' + args.classifier
+results_filename = args.result_dir + '/' + args.db +\
+                   '/results/' +\
+                   get_filename_results(args.db, args.model, args.mode, args.topk, args.type_prediction, suf)
+fout = open(results_filename, 'wt')
+json.dump(results, fout)
+fout.close()

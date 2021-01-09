@@ -97,7 +97,7 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                 out.append(data_entry)
         return out
 
-    def train(self, training_data, model_path, batch_size=100, epochs=10):
+    def train(self, training_data, valid_data, model_path, batch_size=100, epochs=10):
         # Load input data
         self.get_model().train()
         training_data_set = MLP_Dataset(training_data)
@@ -123,6 +123,8 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
+            # TODO: Test the performance on the valid dataset
+
         # Save model
         self.save_model(model_path)
 

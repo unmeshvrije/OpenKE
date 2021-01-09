@@ -100,7 +100,7 @@ class Classifier_MLP_Multi(supervised_classifier.Supervised_Classifier):
             out.append(data_entry)
         return out
 
-    def train(self, training_data, model_path, batch_size=100, epochs=10):
+    def train(self, training_data, valid_data, model_path, batch_size=100, epochs=10):
         # Load input data
         self.get_model().train()
         training_data_set = MLP_Multi_Dataset(training_data)
@@ -108,6 +108,7 @@ class Classifier_MLP_Multi(supervised_classifier.Supervised_Classifier):
 
         criterion = nn.BCELoss()
         optimizer = optim.Adam(self.get_model().parameters())
+        best_acc = 0
         for epoch in range(epochs):  # loop over the dataset multiple times
             print("Start epoch {}".format(epoch))
             running_loss = 0.0
@@ -127,8 +128,11 @@ class Classifier_MLP_Multi(supervised_classifier.Supervised_Classifier):
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
-        # Save model
-        self.save_model(model_path)
+            test_acc = self.validate(valid_data)
+            is_best = test_acc > best_acc
+            best_acc = max(test_acc, best_acc)
+            if is_best:
+                self.save_model(model_path, epoch)
 
     def predict(self, query_with_answers):
         ent = query_with_answers['ent']

@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
@@ -83,12 +83,16 @@ elif args.classifier == 'min':
     from classifier_majmin import Classifier_MajMin
     signals = args.name_signals.split(",")
     classifier = Classifier_MajMin(dataset, args.type_prediction, args.topk, args.result_dir,
-                                   embedding_model, signals, True)
+                                   args.model, signals, True)
 elif args.classifier == 'maj':
     from classifier_majmin import Classifier_MajMin
     signals = args.name_signals.split(",")
     classifier = Classifier_MajMin(dataset, args.type_prediction, args.topk, args.result_dir,
-                                   embedding_model, signals, False)
+                                   args.model, signals, False)
+elif args.classifier == 'snorkel':
+    from classifier_snorkel import Classifier_Snorkel
+    signals = args.name_signals.split(",")
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, args.model, signals, False)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 

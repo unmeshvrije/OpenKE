@@ -3,6 +3,8 @@ from support.dataset_fb15k237 import Dataset_FB15k237
 from support.utils import *
 from support.embedding_model import  Embedding_Model
 import pickle
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
@@ -50,5 +52,9 @@ model_dir = args.result_dir + '/' + args.db + '/models'
 model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
 model_full_path_name = model_dir + '/' + model_filename
 
+# Take 10% out and use it for validation
+n_data_points = len(training_data)
+training_data, valid_data = train_test_split(training_data, test_size=0.05)
+
 # Train a model
-classifier.train(training_data, model_full_path_name)
+classifier.train(training_data, valid_data, model_full_path_name)

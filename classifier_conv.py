@@ -29,19 +29,17 @@ class Conv_Dataset(Dataset):
         return x, y
 
 class Conv_Model(nn.Module):
-    def __init__(self, n_features, n_hidden_units, dropout):
+    def __init__(self):
         super(Conv_Model, self).__init__()
-        self.conv1 = torch.nn.Conv2d(1, 1, kernel_size=4)
+        self.conv1 = torch.nn.Conv2d(1, 10, kernel_size=4)
         self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.dropout = nn.Dropout(dropout)
-        self.fc1 = torch.nn.Linear(570, 10)
+        self.fc1 = torch.nn.Linear(5700, 10)
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
         x = x.view(x.shape[0], 1, x.shape[1], x.shape[2])
         out = self.conv1(x)
         out = self.pool(out)
-        out = self.dropout(out)
         out = out.view(out.shape[0], -1)
         out = self.fc1(out)
         out = self.sig(out)
@@ -56,7 +54,7 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
                  hyper_params = None,
                  model_path = None):
         if hyper_params is None:
-            hyper_params = { "n_units" : 100, "dropout" : 0.2}
+            hyper_params = { }
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         super(Classifier_Conv, self).__init__(dataset, type_prediction, results_dir,
                                              embedding_model, hyper_params, model_path)
@@ -64,10 +62,10 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
             self.get_model().eval()
 
     def init_model(self, embedding_model, hyper_params):
-        n_units = hyper_params['n_units']
-        dropout = hyper_params['dropout']
+        #n_units = hyper_params['n_units']
+        #dropout = hyper_params['dropout']
         self.n_features = embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
-        self.set_model(Conv_Model(self.n_features, n_units, dropout).to(self.device))
+        self.set_model(Conv_Model().to(self.device))
 
     def get_name(self):
         return "ConvNN"
@@ -103,7 +101,7 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
             out.append(data_entry)
         return out
 
-    def train(self, training_data, model_path, batch_size=100, epochs=10):
+    def train(self, training_data, valid_data, model_path, batch_size=100, epochs=10):
         # Load input data
         self.get_model().train()
         training_data_set = Conv_Dataset(training_data)
@@ -111,6 +109,7 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
 
         criterion = nn.BCELoss()
         optimizer = optim.Adam(self.get_model().parameters())
+        best_acc = 0
         for epoch in range(epochs):  # loop over the dataset multiple times
             print("Start epoch {}".format(epoch))
             running_loss = 0.0
@@ -130,8 +129,13 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
+            test_acc = self.validate(valid_data)
+            is_best = test_acc > best_acc
+            best_acc = max(test_acc, best_acc)
+            if is_best:
+                self.save_model(model_path, epoch)
         # Save model
-        self.save_model(model_path)
+        self.save_model(model_path, epoch)
 
     def predict(self, query_with_answers):
         ent = query_with_answers['ent']

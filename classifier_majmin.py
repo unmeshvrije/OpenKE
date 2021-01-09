@@ -11,7 +11,7 @@ class Classifier_MajMin(supervised_classifier.Supervised_Classifier):
                  type_prediction : {'head', 'tail'},
                  topk,
                  results_dir,
-                 embedding_model : Embedding_Model,
+                 model_name,
                  classifiers,
                  is_min_voting = False,
                  hyper_params = None,
@@ -21,10 +21,9 @@ class Classifier_MajMin(supervised_classifier.Supervised_Classifier):
         self.dataset_name = dataset.get_name()
         self.is_min_voting = is_min_voting
         self.classifiers_annotations = None
-        self.model_name = embedding_model.get_type()
+        self.model_name = model_name
         self.type_prediction = type_prediction
-        super(Classifier_MajMin, self).__init__(dataset, type_prediction, results_dir,
-                                             embedding_model, hyper_params, model_path)
+        super(Classifier_MajMin, self).__init__(dataset, type_prediction, results_dir, None, hyper_params, model_path)
 
     def init_model(self, embedding_model, hyper_params):
         pass
