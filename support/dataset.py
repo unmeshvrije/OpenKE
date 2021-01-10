@@ -12,9 +12,13 @@ class Dataset:
         pass
 
     @abstractmethod
-    def get_known_answers_for_tl(self, t, r):
+    def get_known_answers_for_tr(self, t, r):
         pass
 
     @abstractmethod
     def exists_htr(self, h, t, r):
+        pass
+
+    @abstractmethod
+    def get_neighbours(self, e) -> set():
         pass

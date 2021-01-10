@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
@@ -79,6 +79,9 @@ elif args.classifier == 'conv':
 elif args.classifier == 'random':
     from classifier_random import Classifier_Random
     classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
+elif args.classifier == 'path':
+    from classifier_path import Classifier_Path
+    classifier = Classifier_Path(dataset, args.type_prediction, args.result_dir)
 elif args.classifier == 'min':
     from classifier_majmin import Classifier_MajMin
     signals = args.name_signals.split(",")

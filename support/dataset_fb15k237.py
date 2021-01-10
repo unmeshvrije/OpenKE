@@ -18,8 +18,14 @@ class Dataset_FB15k237(Dataset):
         path = 'benchmarks/fb15k237'
         training_data_path = path + '/train2id.txt'
         training_data = self._load_dataset(training_data_path)
+        valid_data_path = path + '/valid2id.txt'
+        valid_data = self._load_dataset(valid_data_path)
+        # add valid data to the set of training data
+        for v in valid_data:
+            training_data.append(v)
         self.known_answers_hr = {}
         self.known_answers_tr = {}
+        self.neighbours = {}
         self.facts = set(training_data)
         for t in training_data:
             q_hr = (t[0], t[2])
@@ -32,12 +38,15 @@ class Dataset_FB15k237(Dataset):
                 self.known_answers_tr[q_tr].append(t[0])
             else:
                 self.known_answers_tr[q_tr] = [t[0]]
+            if t[0] not in self.neighbours:
+                self.neighbours[t[0]] = set()
+            self.neighbours[t[0]].add(t[1])
+            if t[1] not in self.neighbours:
+                self.neighbours[t[1]] = set()
+            self.neighbours[t[1]].add(t[0])
 
-        # Load data
-        #valid_data_path = path + '/valid2id.txt'
-        #test_data_path = path + '/test2id.txt'
-        #valid_data = self._load_dataset(valid_data_path)
-        #self.test_data = self._load_dataset(test_data_path)
+        # test_data_path = path + '/test2id.txt'
+        # self.test_data = self._load_dataset(test_data_path)
 
     def get_known_answers_for_hr(self, h, r):
         q = (h, r)
@@ -46,7 +55,7 @@ class Dataset_FB15k237(Dataset):
         else:
             return []
 
-    def get_known_answers_for_tl(self, t, r):
+    def get_known_answers_for_tr(self, t, r):
         q = (t, r)
         if q in self.known_answers_tr:
             return self.known_answers_tr[q]
@@ -55,3 +64,9 @@ class Dataset_FB15k237(Dataset):
 
     def exists_htr(self, h, t, r):
         return (h,t,r) in self.facts
+
+    def get_neighbours(self, e):
+        if e not in self.neighbours:
+            return set()
+        else:
+            return self.neighbours[e]
