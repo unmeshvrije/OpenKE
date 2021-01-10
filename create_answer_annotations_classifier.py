@@ -92,7 +92,10 @@ elif args.classifier == 'maj':
 elif args.classifier == 'snorkel':
     from classifier_snorkel import Classifier_Snorkel
     signals = args.name_signals.split(",")
-    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, args.model, signals, False)
+    model_dir = args.result_dir + '/' + args.db + '/models/'
+    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir,
+                                    signals, embedding_model_typ, model_dir + '/' + model_filename)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 

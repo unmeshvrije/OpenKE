@@ -8,7 +8,8 @@ from sklearn.model_selection import train_test_split
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp','mlp_multi','lstm','conv'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp','mlp_multi','lstm','conv', 'snorkel'])
+    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -17,6 +18,9 @@ def parse_args():
     return parser.parse_args()
 
 args = parse_args()
+
+#How much data should I use as validation dataset?
+use_valid_data = 0.05
 
 # Load the dataset
 dataset = None
@@ -29,7 +33,8 @@ if args.db == 'fb15k237':
 
 # Load the embedding model
 embedding_model_typ = args.model
-embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
+if args.classifier != 'snorkel':
+    embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 
 # Load the classifier
 if args.classifier == 'mlp':
@@ -44,6 +49,11 @@ elif args.classifier == 'lstm':
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model)
+elif args.classifier == 'snorkel':
+    from classifier_snorkel import Classifier_Snorkel
+    signals = args.name_signals.split(",")
+    use_valid_data = 0 # With snorkel, I don't need validation data
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
 else:
     raise Exception('Not supported')
 
@@ -53,8 +63,11 @@ model_filename = get_filename_classifier_model(args.db, args.classifier, args.to
 model_full_path_name = model_dir + '/' + model_filename
 
 # Take 10% out and use it for validation
-n_data_points = len(training_data)
-training_data, valid_data = train_test_split(training_data, test_size=0.05)
+if use_valid_data == 0.0:
+    valid_data = None
+else:
+    n_data_points = len(training_data)
+    training_data, valid_data = train_test_split(training_data, test_size=use_valid_data)
 
 # Train a model
 classifier.train(training_data, valid_data, model_full_path_name)

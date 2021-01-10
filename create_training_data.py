@@ -1,16 +1,12 @@
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
-from support.embedding_model import Embedding_Model
-from classifier_mlp import Classifier_MLP
-from classifier_mlp_multi import Classifier_MLP_Multi
-from classifier_lstm import Classifier_LSTM
-from classifier_conv import Classifier_Conv
 from support.utils import *
 import pickle
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv', 'snorkel'])
+    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -31,17 +27,27 @@ if args.db == 'fb15k237':
 
 # Load the embedding model
 embedding_model_typ = args.model
-embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
+if args.classifier != 'snorkel':
+    from support.embedding_model import Embedding_Model
+    embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 
 # Load the classifier
 if args.classifier == 'mlp':
+    from classifier_mlp import Classifier_MLP
     classifier = Classifier_MLP(dataset, args.type_prediction, args.result_dir, embedding_model)
 if args.classifier == 'mlp_multi':
+    from classifier_mlp_multi import Classifier_MLP_Multi
     classifier = Classifier_MLP_Multi(dataset, args.type_prediction, args.result_dir, embedding_model)
 elif args.classifier == 'lstm':
+    from classifier_lstm import Classifier_LSTM
     classifier = Classifier_LSTM(dataset, args.type_prediction, args.result_dir, embedding_model)
 elif args.classifier == 'conv':
+    from classifier_conv import Classifier_Conv
     classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model)
+elif args.classifier == 'snorkel':
+    from classifier_snorkel import Classifier_Snorkel
+    signals = args.name_signals.split(",")
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
 else:
     raise Exception('Not supported')
 
