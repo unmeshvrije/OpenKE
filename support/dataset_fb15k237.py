@@ -48,6 +48,12 @@ class Dataset_FB15k237(Dataset):
         # test_data_path = path + '/test2id.txt'
         # self.test_data = self._load_dataset(test_data_path)
 
+    def get_hr_subgraphs(self):
+        return self.known_answers_hr
+
+    def get_tr_subgraphs(self):
+        return self.known_answers_tr
+
     def get_known_answers_for_hr(self, h, r):
         q = (h, r)
         if q in self.known_answers_hr:
@@ -70,3 +76,6 @@ class Dataset_FB15k237(Dataset):
             return set()
         else:
             return self.neighbours[e]
+
+    def get_facts(self):
+        return self.facts

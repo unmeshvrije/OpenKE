@@ -67,7 +67,7 @@ class SubgraphFactory():
         return subgraphs
 
     # sub_type can be SPO or POS
-    def make_subgraphs_per_type(self,sub_type):
+    def make_subgraphs_per_type(self, sub_type):
 
         E = self.E
         min_subgraph_size = self.min_subgraph_size
@@ -135,6 +135,5 @@ class SubgraphFactory():
         print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], self.get_Nsubgraphs()))
 
     def make_subgraphs(self):
-
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)

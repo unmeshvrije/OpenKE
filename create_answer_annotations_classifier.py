@@ -8,14 +8,18 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
-    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
+    parser.add_argument('--db', dest ='db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--mode', dest='mode', type=str, default="test", choices=['train', 'valid', 'test'])
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
     parser.add_argument('--type_prediction', dest='type_prediction', type=str, default="head", choices=['head', 'tail'])
+
+    # Parameters for the various classifiers
+    parser.add_argument('--sub_k', dest='sub_k', type=int, default=3)
+
     return parser.parse_args()
 
 args = parse_args()
@@ -82,6 +86,9 @@ elif args.classifier == 'random':
 elif args.classifier == 'path':
     from classifier_path import Classifier_Path
     classifier = Classifier_Path(dataset, args.type_prediction, args.result_dir)
+elif args.classifier == 'sub':
+    from classifier_subgraphs import Classifier_Subgraphs
+    classifier = Classifier_Subgraphs(dataset, args.type_prediction, embedding_model, args.result_dir, args.sub_k)
 elif args.classifier == 'min':
     from classifier_majmin import Classifier_MajMin
     signals = args.name_signals.split(",")

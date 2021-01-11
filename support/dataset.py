@@ -16,9 +16,21 @@ class Dataset:
         pass
 
     @abstractmethod
+    def get_hr_subgraphs(self):
+        pass
+
+    @abstractmethod
+    def get_tr_subgraphs(self):
+        pass
+
+    @abstractmethod
     def exists_htr(self, h, t, r):
         pass
 
     @abstractmethod
     def get_neighbours(self, e) -> set():
+        pass
+
+    @abstractmethod
+    def get_facts(self):
         pass

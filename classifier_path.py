@@ -1,11 +1,6 @@
 import classifier
 import random
 
-class Path:
-    def __init__(self):
-        self.nodes = None
-        self.edges = None
-
 class Classifier_Path(classifier.Classifier):
     def __init__(self,
                  dataset,
