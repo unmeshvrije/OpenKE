@@ -15,6 +15,12 @@ def parse_args():
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
     parser.add_argument('--type_prediction', dest='type_prediction', type=str, default="head", choices=['head', 'tail'])
+
+    parser.add_argument('--snorkel_low_threshold', dest='snorkel_low_threshold', type=str,
+                        default="0.2,0.2,0.2,0,0")
+    parser.add_argument('--snorkel_high_threshold', dest='snorkel_high_threshold', type=str,
+                        default="0.6,0.6,0.6,0.5,0.5")
+
     return parser.parse_args()
 
 args = parse_args()

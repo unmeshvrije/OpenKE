@@ -81,9 +81,9 @@ for index in tqdm(range(0, len(ent_queries))):
     filtered_answers = []
     for oi in o[index]:
         if len(raw_answers) < topk:
-            raw_answers.append(oi.item())
+            raw_answers.append({'entity_id' : oi.item(), 'score' : scores[index][oi.item()].item()})
         if (ent, rel, oi.item()) not in known_answers:
-            filtered_answers.append(oi.item())
+            filtered_answers.append({'entity_id' : oi.item(), 'score' : scores[index][oi.item()].item()})
             if len(filtered_answers) == topk:
                 break
     assert(len(filtered_answers) == topk)

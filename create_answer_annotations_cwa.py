@@ -37,7 +37,9 @@ for idx in tqdm(range(0, len(answers))):
     answers_raw = a['answers_raw']
     ent = a['ent']
     rel = a['rel']
-    for entity_id in answers_raw:
+    for entity in answers_raw:
+        entity_id = entity['entity_id']
+        score = entity['score']
         # Check if exists
         exists = False
         if args.type_prediction == 'head':
@@ -45,7 +47,7 @@ for idx in tqdm(range(0, len(answers))):
         else:
             assert(args.type_prediction == 'tail')
             exists = dataset.exists_htr(ent, entity_id, rel)
-        a_out.append({'entity_id': entity_id, 'checked': exists})
+        a_out.append({'entity_id': entity_id, 'checked': exists, 'score' : score})
     out = {}
     out['query'] = { 'type' : a['type'], 'rel' : a['rel'], 'ent': a['ent'] }
     out['valid_annotations'] = True

@@ -86,7 +86,7 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
     print("F1\t\t\t\t: {:.3f}".format(f1))
     print("*********")
     results = {"F1": f1, "REC": rec, "PREC": prec, "dataset": db, "classifier": classifier,
-               "type_prediction": type_prediction}
+               "type_prediction": type_prediction, "accuracy" : acc}
     return results
 
 
