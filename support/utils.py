@@ -34,13 +34,69 @@ def get_filename_gold(db, topk):
 def get_filename_results(db, model, mode, topk, type_prediction, suf = ''):
     return db + "-gold-results-" + model + "-" + mode + "-" + str(topk) + "-" + type_prediction + suf + ".json"
 
+def compute_metrics(classifier, type_prediction, db, annotated_answers, true_answers):
+    matched_answers = 0
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    true_negatives = 0
+    n_gold_annotations = 0
+    for query_answers in annotated_answers:
+        ent = query_answers['query']['ent']
+        rel = query_answers['query']['rel']
+        if (ent, rel) in true_answers:
+            true_annotated_answers = true_answers[(ent, rel)]
+            assert (query_answers['valid_annotations'])
+            assert (query_answers['annotator'] == classifier)
+            for ans in query_answers['annotated_answers']:
+                entity_id = ans['entity_id']
+                checked = ans['checked']
+                found = False
+                for true_answer in true_annotated_answers:
+                    if true_answer['entity_id'] == entity_id:
+                        found = True
+                        n_gold_annotations += 1
+                        matched_answers += checked == true_answer['checked']
+                        if checked == True and true_answer['checked'] == True:
+                            true_positives += 1
+                        elif checked == True:
+                            false_positives += 1
+                        elif true_answer['checked'] == True:
+                            false_negatives += 1
+                        else:
+                            true_negatives += 1
+                        break
+                assert (found)
+    acc = matched_answers / n_gold_annotations
+    if true_positives + false_negatives == 0:
+        rec = 0
+    else:
+        rec = true_positives / (true_positives + false_negatives)
+    if true_positives + false_positives == 0:
+        prec = 0
+    else:
+        prec = true_positives / (true_positives + false_positives)
+    if prec == 0 and rec == 0:
+        f1 = 0
+    else:
+        f1 = 2 * (prec * rec) / (prec + rec)
+    print("Accuracy\t\t: {:.3f}".format(acc))
+    print("Recall\t\t\t: {:.3f}".format(rec))
+    print("Precision\t\t: {:.3f}".format(prec))
+    print("F1\t\t\t\t: {:.3f}".format(f1))
+    print("*********")
+    results = {"F1": f1, "REC": rec, "PREC": prec, "dataset": db, "classifier": classifier,
+               "type_prediction": type_prediction}
+    return results
 
-def load_classifier_annotations(classifiers, result_dir, dataset_name, embedding_model_name, mode, topk, type_prediction):
+
+def load_classifier_annotations(classifiers, result_dir, dataset_name, embedding_model_name, mode, topk,
+                                type_prediction, return_scores = False):
     classifiers_annotations = {}
     for idx, classifier in enumerate(classifiers):
         print("  Loading annotations from classifier {} ...".format(classifier))
         suf = '-' + classifier
-        file_name = get_filename_answer_annotations(dataset_name, embedding_model_name, "test", topk,
+        file_name = get_filename_answer_annotations(dataset_name, embedding_model_name, mode, topk,
                                                     type_prediction, suf)
         file_path = result_dir + '/' + dataset_name + '/annotations/' + file_name
         classifier_annotations = pickle.load(open(file_path, 'rb'))
@@ -59,10 +115,16 @@ def load_classifier_annotations(classifiers, result_dir, dataset_name, embedding
             for answer in a['annotated_answers']:
                 if answer['entity_id'] not in answer_set:
                     assert (idx == 0)
-                    answer_set[answer['entity_id']] = [answer['checked']]
+                    if return_scores:
+                        answer_set[answer['entity_id']] = [answer['score']]
+                    else:
+                        answer_set[answer['entity_id']] = [answer['checked']]
                 else:
                     assert (idx != 0)
-                    answer_set[answer['entity_id']].append(answer['checked'])
+                    if return_scores:
+                        answer_set[answer['entity_id']].append(answer['score'])
+                    else:
+                        answer_set[answer['entity_id']].append(answer['checked'])
     for key, ans in classifiers_annotations.items():
         assert (len(ans) == topk)
     return classifiers_annotations

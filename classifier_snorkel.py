@@ -16,7 +16,8 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                  results_dir,
                  classifiers,
                  embedding_model_name,
-                 model_path = None):
+                 model_path = None,
+                 abstain_scores = None):
         self.classifiers = classifiers
         self.topk = topk
         self.dataset_name = dataset.get_name()
@@ -26,6 +27,9 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         self.snorkel_model = None
         self.result_dir = results_dir
         self.test_annotations = None
+        self.abstain_scores = abstain_scores
+        if self.abstain_scores is not None:
+            assert(len(self.abstain_scores) == len(classifiers))
         if model_path is not None:
             print("Loading existing model {} ...".format(model_path))
             label_model = LabelModel(verbose=True)
@@ -37,21 +41,32 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
 
     def _annotate_labels(self, labels):
         l = []
-        for a in labels:
-            if a == False:
-                l.append(FALSE)
-            else:
-                l.append(TRUE)
+        if self.abstain_scores is None:
+            for a in labels:
+                if a == False:
+                    l.append(FALSE)
+                else:
+                    l.append(TRUE)
+        else:
+            for i, a in enumerate(labels):
+                low_score, hi_score = self.abstain_scores[i]
+                if a < low_score:
+                    l.append(FALSE)
+                elif a >= hi_score:
+                    l.append(TRUE)
+                else:
+                    l.append(ABSTAIN)
         return l
 
     def create_training_data(self, queries_with_answers):
         classifiers_annotations = load_classifier_annotations(self.classifiers,
-                                                                   self.result_dir,
-                                                                   self.dataset_name,
-                                                                   self.embedding_model_name,
-                                                                   "train",
-                                                                   self.topk,
-                                                                   self.type_prediction)
+                                                                    self.result_dir,
+                                                                    self.dataset_name,
+                                                                    self.embedding_model_name,
+                                                                    "train",
+                                                                    self.topk,
+                                                                    self.type_prediction,
+                                                                    return_scores=True)
         training_data = []
         print("  Creating training data ...")
         for keys, annotations in tqdm(classifiers_annotations.items()):
@@ -59,6 +74,19 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                 l = self._annotate_labels(annotation)
                 training_data.append(l)
         training_data = np.asarray(training_data)
+        count_true = np.zeros(len(self.classifiers), dtype=int)
+        count_false = np.zeros(len(self.classifiers), dtype=int)
+        count_abstain = np.zeros(len(self.classifiers), dtype=int)
+        for t in training_data:
+            for i, a in enumerate(t):
+                if a == TRUE:
+                    count_true[i] += 1
+                elif a == FALSE:
+                    count_false[i] += 1
+                else:
+                    count_abstain[i] += 1
+        for i, classifier in enumerate(self.classifiers):
+            print("Classifier {} TRUE {} FALSE {} ABSTAIN {}".format(classifier, count_true[i], count_false[i], count_abstain[i]))
         return training_data
 
     def get_name(self):
@@ -72,12 +100,13 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
     def predict(self, query_with_answers):
         if self.test_annotations is None:
             self.test_annotations = load_classifier_annotations(self.classifiers,
-                                                                       self.result_dir,
-                                                                       self.dataset_name,
-                                                                       self.embedding_model_name,
-                                                                       "test",
-                                                                       self.topk,
-                                                                       self.type_prediction)
+                                                                        self.result_dir,
+                                                                        self.dataset_name,
+                                                                        self.embedding_model_name,
+                                                                        "test",
+                                                                        self.topk,
+                                                                        self.type_prediction,
+                                                                        return_scores=True)
 
         # for q in query_with_answers:
         ent = query_with_answers['ent']

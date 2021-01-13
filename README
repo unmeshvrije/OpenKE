@@ -1,4 +1,4 @@
-*** Embeddings ***
+    *** Embeddings ***
 
 -   Embeddings for fb15k237 and complex are taken from https://github.com/uma-pi1/kge#results-and-pretrained-models on 10/12/2020.
     They are stored in embeddings/fb15k237-complex.pt

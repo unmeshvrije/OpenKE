@@ -9,7 +9,6 @@ from tqdm import tqdm
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
     parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub'])
-    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest ='db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -18,6 +17,9 @@ def parse_args():
     parser.add_argument('--type_prediction', dest='type_prediction', type=str, default="head", choices=['head', 'tail'])
 
     # Parameters for the various classifiers
+    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv,path,sub")
+    parser.add_argument('--snorkel_low_threshold', dest='snorkel_low_threshold', type=str, default="0.2,0.2,0.2,0,0")
+    parser.add_argument('--snorkel_high_threshold', dest='snorkel_high_threshold', type=str, default="0.6,0.6,0.6,0.6,0.5")
     parser.add_argument('--sub_k', dest='sub_k', type=int, default=3)
 
     return parser.parse_args()
@@ -102,10 +104,16 @@ elif args.classifier == 'maj':
 elif args.classifier == 'snorkel':
     from classifier_snorkel import Classifier_Snorkel
     signals = args.name_signals.split(",")
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir,
-                                    signals, embedding_model_typ, model_dir + '/' + model_filename)
+                                    signals, embedding_model_typ, model_path=model_dir + '/' + model_filename, abstain_scores=thresholds)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 

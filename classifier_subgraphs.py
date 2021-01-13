@@ -41,5 +41,8 @@ class Classifier_Subgraphs(classifier.Classifier):
         annotated_answers = []
         for answer in query_with_answers['answers_fil']:
             checked = answer in acceptable_answers
-            annotated_answers.append({'entity_id': answer, 'checked': checked, 'score': 1})
+            score = 0
+            if checked:
+                score = 1
+            annotated_answers.append({'entity_id': answer, 'checked': checked, 'score': score})
         return annotated_answers

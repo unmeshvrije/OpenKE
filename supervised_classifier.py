@@ -29,6 +29,9 @@ class Supervised_Classifier(Classifier):
     def set_model(self, model):
         self.model = model
 
+    def start_predict(self):
+        self.get_model().eval()
+
     def save_model(self, model_path, epoch):
         print("Saving model after epoch {}".format(epoch))
         torch.save(self.get_model(), model_path)

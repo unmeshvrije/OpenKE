@@ -22,3 +22,6 @@ class Classifier(ABC):
         :return: The answers in input are labeled with three values: 1 (true), -1 (false), 0 (abstain)
         """
         pass
+
+    def start_predict(self):
+        pass

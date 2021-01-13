@@ -29,11 +29,13 @@ class Classifier_Path(classifier.Classifier):
             neighbour_answer = self.dataset.get_neighbours(answer)
             common_neighbours = neighbour_entity.intersection(neighbour_answer)
             found = False
+            score = 0
             for common_neighbour in common_neighbours:
                 neighbour2 = self.dataset.get_neighbours(common_neighbour)
                 intersection = known_answers.intersection(neighbour2)
                 if len(intersection) > 0:
                     found = True
+                    score = 1
                     break
-            annotated_answers.append({'entity_id': answer, 'checked': found, 'score': 1})
+            annotated_answers.append({'entity_id': answer, 'checked': found, 'score': score})
         return annotated_answers

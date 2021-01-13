@@ -6,12 +6,18 @@ import pickle
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
     parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv', 'snorkel', 'trans'])
-    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv")
+    parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv,path,sub")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
     parser.add_argument('--type_prediction', dest='type_prediction', type=str, default="head", choices=['head', 'tail'])
+
+    parser.add_argument('--snorkel_low_threshold', dest='snorkel_low_threshold', type=str,
+                        default="0.2,0.2,0.2,0,0")
+    parser.add_argument('--snorkel_high_threshold', dest='snorkel_high_threshold', type=str,
+                        default="0.6,0.6,0.6,0.5,0.5")
+
     return parser.parse_args()
 
 args = parse_args()
@@ -50,7 +56,13 @@ elif args.classifier == 'trans':
 elif args.classifier == 'snorkel':
     from classifier_snorkel import Classifier_Snorkel
     signals = args.name_signals.split(",")
-    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ, abstain_scores=thresholds)
 else:
     raise Exception('Not supported')
 

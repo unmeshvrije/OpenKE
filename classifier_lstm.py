@@ -128,7 +128,8 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
         # Save model
-        self.save_model(model_path, epoch)
+        if model_path is not None:
+            self.save_model(model_path, epoch)
 
     def predict(self, query_with_answers):
         ent = query_with_answers['ent']
