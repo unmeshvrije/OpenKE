@@ -3,6 +3,7 @@ from support.embedding_model import Embedding_Model
 from support.dataset_fb15k237 import Dataset_FB15k237
 from classifier_subgraphs import Classifier_Subgraphs
 import pickle
+import json
 from support.utils import *
 from sklearn.model_selection import train_test_split
 import datetime
@@ -16,9 +17,9 @@ def parse_args():
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
-    parser.add_argument('--tune_lstm', dest='tune_lstm', type=str, default=False)
-    parser.add_argument('--tune_mlp_multi', dest='tune_mlp_multi', type=str, default=False)
-    parser.add_argument('--tune_sub', dest='tune_sub', type=str, default=False)
+    parser.add_argument('--tune_lstm', dest='tune_lstm', type=bool, default=False)
+    parser.add_argument('--tune_mlp_multi', dest='tune_mlp_multi', type=bool, default=False)
+    parser.add_argument('--tune_sub', dest='tune_sub', type=bool, default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -29,10 +30,10 @@ tune_mlp_multi = args.tune_mlp_multi
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
-lstm_nhid = [5, 10, 20, 50, 100, 200, 500, 1000]
+lstm_nhid = [ 10, 100, 1000 ]
 lstm_dropout = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
-mlp_nhid = [5, 10, 20, 50, 100, 200, 500, 1000]
-mlp_dropout = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
+mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
+mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for sub_k in sub_ks:
@@ -87,10 +88,10 @@ def tune_lstm_classifier(training_data, type_prediction, dataset, embedding_mode
             results['lstm_dropout'] = dropout
             # Store the output
             suf = '-lstm-hid-' + str(hidden_units) + '-dropout-' + str(dropout)
-            answers_annotations_filename = out_dir + get_filename_answer_annotations(args.db, args.model, 'valid', args.topk, type_prediction, suf)
-            with open(answers_annotations_filename, 'wb') as fout:
-                pickle.dump(output, fout)
-                fout.close()
+            results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+            fout = open(results_filename, 'wt')
+            json.dump(results, fout)
+            fout.close()
 
 def tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for hidden_units in mlp_nhid:
@@ -117,15 +118,15 @@ def tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model
                 out['date'] = str(datetime.datetime.now())
                 out['annotated_answers'] = predicted_answers
                 output.append(out)
-            results = compute_metrics('lstm', type_prediction, args.db, output, gold_valid_data)
+            results = compute_metrics('mlp_multi', type_prediction, args.db, output, gold_valid_data)
             results['mlp_multi_hiddenunits'] = hidden_units
             results['mlp_multi_dropout'] = dropout
-            # Store the output
+            # Store the stats
             suf = '-mlp-multi-hid-' + str(hidden_units) + '-dropout-' + str(dropout)
-            answers_annotations_filename = out_dir + get_filename_answer_annotations(args.db, args.model, 'valid', args.topk, type_prediction, suf)
-            with open(answers_annotations_filename, 'wb') as fout:
-                pickle.dump(output, fout)
-                fout.close()
+            results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+            fout = open(results_filename, 'wt')
+            json.dump(results, fout)
+            fout.close()
 
 
 # Load dataset
@@ -156,7 +157,7 @@ for type_prediction in ['head', 'tail']:
         rel = v['query']['rel']
         typ = v['query']['type']
         gold_valid_data[(ent, rel)] = [a for a in v['annotated_answers']]
-        valid_data_to_test.append({ 'ent' : ent, 'rel' : rel, 'type' : typ, 'answers_fil' : [a['entity_id'] for a in v['annotated_answers']]})
+        valid_data_to_test.append({ 'ent' : ent, 'rel' : rel, 'type' : typ, 'answers_fil' : [a for a in v['annotated_answers']]})
 
     # 1- Subgraph classifier
     if tune_sub:

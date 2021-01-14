@@ -21,6 +21,10 @@ def parse_args():
     parser.add_argument('--snorkel_low_threshold', dest='snorkel_low_threshold', type=str, default="0.2,0.2,0.2,0,0")
     parser.add_argument('--snorkel_high_threshold', dest='snorkel_high_threshold', type=str, default="0.6,0.6,0.6,0.6,0.5")
     parser.add_argument('--sub_k', dest='sub_k', type=int, default=3)
+    parser.add_argument('--mlp_n_hidden_units', dest='mlp_n_hidden_units', type=int, default=100)
+    parser.add_argument('--mlp_dropout', dest='mlp_dropout', type=float, default=0.2)
+    parser.add_argument('--lstm_n_hidden_units', dest='lstm_n_hidden_units', type=int, default=100)
+    parser.add_argument('--lstm_dropout', dest='lstm_dropout', type=float, default=0.2)
 
     return parser.parse_args()
 
@@ -46,32 +50,35 @@ if args.classifier == 'mlp':
     from classifier_mlp import Classifier_MLP
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    hyper_params = {"n_units": args.mlp_n_hidden_units, "dropout": args.mlp_dropout}
     classifier = Classifier_MLP(dataset,
                                 args.type_prediction,
                                 args.result_dir,
                                 embedding_model,
-                                None,
-                                model_dir + '/' + model_filename)
+                                hyper_params=hyper_params,
+                                model_path=model_dir + '/' + model_filename)
 elif args.classifier == 'mlp_multi':
     from classifier_mlp_multi import Classifier_MLP_Multi
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    hyper_params = {"n_units": args.mlp_n_hidden_units, "dropout": args.mlp_dropout}
     classifier = Classifier_MLP_Multi(dataset,
                                 args.type_prediction,
                                 args.result_dir,
                                 embedding_model,
-                                None,
-                                model_dir + '/' + model_filename)
+                                hyper_params=hyper_params,
+                                model_path=model_dir + '/' + model_filename)
 elif args.classifier == 'lstm':
     from classifier_lstm import Classifier_LSTM
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    hyper_params = {"n_units": args.lstm_n_hidden_units, "dropout": args.lstm_dropout}
     classifier = Classifier_LSTM(dataset,
                                 args.type_prediction,
                                 args.result_dir,
                                 embedding_model,
-                                None,
-                                model_dir + '/' + model_filename)
+                                hyper_params=hyper_params,
+                                model_path=model_dir + '/' + model_filename)
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     model_dir = args.result_dir + '/' + args.db + '/models/'

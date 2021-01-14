@@ -63,7 +63,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
     def init_model(self, embedding_model, hyper_params):
         n_units = hyper_params['n_units']
         dropout = hyper_params['dropout']
-        self.n_features = embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
+        self.n_features = 1 + embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
         self.set_model(LSTM_model(self.n_features, n_units, dropout).to(self.device))
 
     def get_name(self):
@@ -83,12 +83,13 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
             Y = np.zeros(shape=(len(answers)), dtype=np.int)
             for i, answer in enumerate(answers):
                 a = answer['entity_id']
+                score = answer['score']
                 emb_a = self.embedding_model.get_embedding_entity(a)
                 #X
                 if self.type_prediction == 'head':
-                    X[i] = np.concatenate([emb_a, emb_r, emb_e])
+                    X[i] = np.concatenate([[score], emb_a, emb_r, emb_e])
                 else:
-                    X[i] = np.concatenate([emb_e, emb_r, emb_a])
+                    X[i] = np.concatenate([[score], emb_e, emb_r, emb_a])
                 #Y
                 if answer['checked']:
                     Y[i] = 1
@@ -108,6 +109,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
 
         criterion = nn.BCELoss()
         optimizer = optim.Adam(self.get_model().parameters())
+        best_acc = 0
         for epoch in range(epochs):  # loop over the dataset multiple times
             print("Start epoch {}".format(epoch))
             running_loss = 0.0
@@ -127,8 +129,14 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
+            if valid_data is not None:
+                test_acc = self.validate(valid_data)
+                is_best = test_acc > best_acc
+                best_acc = max(test_acc, best_acc)
+                if is_best:
+                    self.save_model(model_path, epoch)
         # Save model
-        if model_path is not None:
+        if valid_data is None and model_path is not None:
             self.save_model(model_path, epoch)
 
     def predict(self, query_with_answers):
@@ -139,17 +147,19 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         assert (typ == 0 or self.type_prediction == 'tail')
         emb_e = self.embedding_model.get_embedding_entity(ent)
         emb_r = self.embedding_model.get_embedding_relation(rel)
-        n_features = len(emb_e) * 2 + len(emb_r)
+        n_features = 1 + len(emb_e) * 2 + len(emb_r)
         answers = query_with_answers['answers_fil']
         X = np.zeros(shape=(len(answers), n_features), dtype=np.float)
         annotated_answers = []
-        for i, answer in enumerate(answers):
+        for i, a in enumerate(answers):
+            answer = a['entity_id']
+            score = a['score']
             emb_a = self.embedding_model.get_embedding_entity(answer)
             # X
             if self.type_prediction == 'head':
-                X[i] = np.concatenate([emb_a, emb_r, emb_e])
+                X[i] = np.concatenate([[score], emb_a, emb_r, emb_e])
             else:
-                X[i] = np.concatenate([emb_e, emb_r, emb_a])
+                X[i] = np.concatenate([[score], emb_e, emb_r, emb_a])
         # Do the prediction
         XS = torch.Tensor(X)
         XS = XS.view(1, X.shape[0], X.shape[1])
@@ -158,5 +168,5 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         for i, answer in enumerate(answers):
             score = out[i].item()
             checked = score > 0.5
-            annotated_answers.append({'entity_id': answer, 'checked': checked, 'score': score})
+            annotated_answers.append({'entity_id': answer['entity_id'], 'checked': checked, 'score': score})
         return annotated_answers

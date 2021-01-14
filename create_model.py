@@ -3,7 +3,6 @@ from support.dataset_fb15k237 import Dataset_FB15k237
 from support.utils import *
 from support.embedding_model import  Embedding_Model
 import pickle
-import numpy as np
 from sklearn.model_selection import train_test_split
 
 def parse_args():
@@ -20,12 +19,16 @@ def parse_args():
                         default="0.2,0.2,0.2,0,0")
     parser.add_argument('--snorkel_high_threshold', dest='snorkel_high_threshold', type=str,
                         default="0.6,0.6,0.6,0.5,0.5")
+    parser.add_argument('--mlp_n_hidden_units', dest='mlp_n_hidden_units', type=int, default=100)
+    parser.add_argument('--mlp_dropout', dest='mlp_dropout', type=float, default=0.2)
+    parser.add_argument('--lstm_n_hidden_units', dest='lstm_n_hidden_units', type=int, default=100)
+    parser.add_argument('--lstm_dropout', dest='lstm_dropout', type=float, default=0.2)
 
     return parser.parse_args()
 
 args = parse_args()
 
-#How much data should I use as validation dataset?
+# How much data should I use as validation dataset?
 use_valid_data = 0.05
 
 # Load the dataset
@@ -45,13 +48,16 @@ if args.classifier != 'snorkel':
 # Load the classifier
 if args.classifier == 'mlp':
     from classifier_mlp import Classifier_MLP
-    classifier = Classifier_MLP(dataset, args.type_prediction, args.result_dir, embedding_model)
+    hyper_params = { "n_units" : args.mlp_n_hidden_units, "dropout" : args.mlp_dropout }
+    classifier = Classifier_MLP(dataset, args.type_prediction, args.result_dir, embedding_model, hyper_params=hyper_params)
 elif args.classifier == 'mlp_multi':
     from classifier_mlp_multi import Classifier_MLP_Multi
-    classifier = Classifier_MLP_Multi(dataset, args.type_prediction, args.result_dir, embedding_model)
+    hyper_params = {"n_units": args.mlp_n_hidden_units, "dropout": args.mlp_dropout}
+    classifier = Classifier_MLP_Multi(dataset, args.type_prediction, args.result_dir, embedding_model, hyper_params=hyper_params)
 elif args.classifier == 'lstm':
     from classifier_lstm import Classifier_LSTM
-    classifier = Classifier_LSTM(dataset, args.type_prediction, args.result_dir, embedding_model)
+    hyper_params = {"n_units": args.lstm_n_hidden_units, "dropout": args.lstm_dropout}
+    classifier = Classifier_LSTM(dataset, args.type_prediction, args.result_dir, embedding_model, hyper_params=hyper_params)
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model)

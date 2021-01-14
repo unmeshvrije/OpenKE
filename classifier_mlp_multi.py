@@ -129,11 +129,14 @@ class Classifier_MLP_Multi(supervised_classifier.Supervised_Classifier):
                     print('[%d, %5d] loss: %.3f' %
                           (epoch + 1, i + 1, running_loss / 2000))
                     running_loss = 0.0
-            test_acc = self.validate(valid_data)
-            is_best = test_acc > best_acc
-            best_acc = max(test_acc, best_acc)
-            if is_best:
-                self.save_model(model_path, epoch)
+            if valid_data is not None:
+                test_acc = self.validate(valid_data)
+                is_best = test_acc > best_acc
+                best_acc = max(test_acc, best_acc)
+                if is_best:
+                    self.save_model(model_path, epoch)
+        if valid_data is None and model_path is not None:
+            self.save_model(model_path, epochs)
 
     def predict(self, query_with_answers):
         ent = query_with_answers['ent']

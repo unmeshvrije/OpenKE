@@ -1,9 +1,9 @@
+import torch
 from kge.model import KgeModel
 from kge.util.io import load_checkpoint
 import numpy as np
 from support.dataset import Dataset
 from .utils import *
-import torch
 
 from enum import Enum
 SubgraphType = Enum('SubgraphType', 'SPO POS')

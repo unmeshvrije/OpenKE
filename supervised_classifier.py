@@ -16,6 +16,8 @@ class Supervised_Classifier(Classifier):
                  path_model = None):
         super(Supervised_Classifier, self).__init__(dataset, type_prediction, results_dir)
         self.embedding_model = embedding_model
+        self.hyper_params = hyper_params
+        print("Hyper-parameters:", hyper_params)
         if path_model is None:
             print("Creating a new model ...")
             self.init_model(embedding_model, hyper_params)
