@@ -25,6 +25,8 @@ def parse_args():
     parser.add_argument('--mlp_dropout', dest='mlp_dropout', type=float, default=0.2)
     parser.add_argument('--lstm_n_hidden_units', dest='lstm_n_hidden_units', type=int, default=100)
     parser.add_argument('--lstm_dropout', dest='lstm_dropout', type=float, default=0.2)
+    parser.add_argument('--conv_kern_size1', dest='conv_kern_size1', type=int, default=4)
+    parser.add_argument('--conv_kern_size2', dest='conv_kern_size2', type=int, default=2)
 
     return parser.parse_args()
 
@@ -83,13 +85,14 @@ elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    hyper_params = {"kernel_size1": args.conv_kern_size1, "kernel_size2": args.conv_kern_size2, "topk" : args.topk}
     classifier = Classifier_Conv(dataset,
                                 args.type_prediction,
                                 args.result_dir,
                                 embedding_model,
                                 args.topk,
-                                None,
-                                model_dir + '/' + model_filename)
+                                hyper_params=hyper_params,
+                                model_path=model_dir + '/' + model_filename)
 elif args.classifier == 'random':
     from classifier_random import Classifier_Random
     classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
