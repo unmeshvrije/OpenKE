@@ -22,5 +22,5 @@ class Classifier_Random(classifier.Classifier):
         annotated_answers = []
         for answer in query_with_answers['answers_fil']:
             checked = random.randint(0, 2)
-            annotated_answers.append({'entity_id' : answer, 'checked' : checked, 'score': checked})
+            annotated_answers.append({'entity_id' : answer['entity_id'], 'checked' : checked, 'score': checked})
         return annotated_answers
