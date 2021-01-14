@@ -51,7 +51,7 @@ embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 if args.classifier == 'mlp':
     from classifier_mlp import Classifier_MLP
     model_dir = args.result_dir + '/' + args.db + '/models/'
-    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     hyper_params = {"n_units": args.mlp_n_hidden_units, "dropout": args.mlp_dropout}
     classifier = Classifier_MLP(dataset,
                                 args.type_prediction,
@@ -62,7 +62,7 @@ if args.classifier == 'mlp':
 elif args.classifier == 'mlp_multi':
     from classifier_mlp_multi import Classifier_MLP_Multi
     model_dir = args.result_dir + '/' + args.db + '/models/'
-    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     hyper_params = {"n_units": args.mlp_n_hidden_units, "dropout": args.mlp_dropout}
     classifier = Classifier_MLP_Multi(dataset,
                                 args.type_prediction,
@@ -73,7 +73,7 @@ elif args.classifier == 'mlp_multi':
 elif args.classifier == 'lstm':
     from classifier_lstm import Classifier_LSTM
     model_dir = args.result_dir + '/' + args.db + '/models/'
-    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     hyper_params = {"n_units": args.lstm_n_hidden_units, "dropout": args.lstm_dropout}
     classifier = Classifier_LSTM(dataset,
                                 args.type_prediction,
@@ -84,7 +84,7 @@ elif args.classifier == 'lstm':
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     model_dir = args.result_dir + '/' + args.db + '/models/'
-    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     hyper_params = {"kernel_size1": args.conv_kern_size1, "kernel_size2": args.conv_kern_size2, "topk" : args.topk}
     classifier = Classifier_Conv(dataset,
                                 args.type_prediction,
@@ -122,7 +122,7 @@ elif args.classifier == 'snorkel':
         h = highs[i]
         thresholds.append((float(l), float(h)))
     model_dir = args.result_dir + '/' + args.db + '/models/'
-    model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir,
                                     signals, embedding_model_typ, model_path=model_dir + '/' + model_filename, abstain_scores=thresholds)
 else:

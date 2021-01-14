@@ -16,11 +16,11 @@ def get_filename_answer_annotations(db, model, mode, topk, type_prediction, suf 
 def get_filename_training_data(db, classifier, topk, type_prediction):
     return db + '-' + classifier + '-' + str(topk) + '-' + type_prediction + ".pkl"
 
-def get_filename_classifier_model(db, classifier, topk, type_prediction, extra_params=""):
+def get_filename_classifier_model(db, model, classifier, topk, type_prediction, extra_params=""):
     if extra_params == '':
-        return db + '-' + classifier + '-' + str(topk) + '-' + type_prediction + ".pt"
+        return db + '-' + model + '-' + classifier + '-' + str(topk) + '-' + type_prediction + ".pt"
     else:
-        return db + '-' + classifier + '-' + str(topk) + '-' + type_prediction + '-' + extra_params + ".pt"
+        return db + '-' + model + '-' + classifier + '-' + str(topk) + '-' + type_prediction + '-' + extra_params + ".pt"
 
 def get_filename_classifier_labels(db, classifier, topk, type_prediction, extra_params=""):
     if extra_params == "":

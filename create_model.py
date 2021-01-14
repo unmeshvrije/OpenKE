@@ -77,7 +77,7 @@ else:
 
 # Get the output file for the model
 model_dir = args.result_dir + '/' + args.db + '/models'
-model_filename = get_filename_classifier_model(args.db, args.classifier, args.topk, args.type_prediction)
+model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
 model_full_path_name = model_dir + '/' + model_filename
 
 # Take 10% out and use it for validation

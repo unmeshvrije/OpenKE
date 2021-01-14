@@ -119,7 +119,7 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         # Check that the output matches the filtered answers
         filtered_answers = set()
         for a in query_with_answers['answers_fil']:
-            filtered_answers.add(a)
+            filtered_answers.add(a['entity_id'])
 
         annotated_answers = []
         for entity_id, labels in self.test_annotations[(ent, rel)].items():

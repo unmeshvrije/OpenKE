@@ -48,7 +48,7 @@ class Classifier_MajMin(supervised_classifier.Classifier):
         # Check that the output matches the filtered answers
         filtered_answers = set()
         for a in  query_with_answers['answers_fil']:
-            filtered_answers.add(a)
+            filtered_answers.add(a['entity_id'])
 
         annotated_answers = []
         threshold_for_true = 0 # If min voting is active, one true label is enough
