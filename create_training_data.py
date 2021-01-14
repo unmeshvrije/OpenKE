@@ -49,7 +49,7 @@ elif args.classifier == 'lstm':
     classifier = Classifier_LSTM(dataset, args.type_prediction, args.result_dir, embedding_model)
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
-    classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model)
+    classifier = Classifier_Conv(dataset, args.type_prediction, args.result_dir, embedding_model, args.topk)
 elif args.classifier == 'trans':
     from classifier_transformer import Classifier_Transformer
     classifier = Classifier_Transformer(dataset, args.type_prediction, args.result_dir, embedding_model)
