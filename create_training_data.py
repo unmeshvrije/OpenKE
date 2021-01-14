@@ -70,6 +70,6 @@ training_data = classifier.create_training_data(annotations)
 
 # Save the training data on a file
 training_data_dir = args.result_dir + '/' + args.db + '/training_data/'
-training_data_filename = get_filename_training_data(args.db, args.classifier, args.topk, args.type_prediction)
+training_data_filename = get_filename_training_data(args.db, args.model, args.classifier, args.topk, args.type_prediction)
 with open(training_data_dir + '/' + training_data_filename, 'wb') as fout:
     pickle.dump(training_data, fout)

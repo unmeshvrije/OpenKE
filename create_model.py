@@ -38,7 +38,7 @@ dataset = None
 training_data_dir = args.result_dir + '/' + args.db + '/training_data/'
 if args.db == 'fb15k237':
     dataset = Dataset_FB15k237()
-    annotations_filename = get_filename_training_data(args.db, args.classifier, args.topk, args.type_prediction)
+    annotations_filename = get_filename_training_data(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     with open(training_data_dir + '/' + annotations_filename, 'rb') as fin:
         training_data = pickle.load(fin)
 
