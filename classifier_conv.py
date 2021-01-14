@@ -29,11 +29,12 @@ class Conv_Dataset(Dataset):
         return x, y
 
 class Conv_Model(nn.Module):
-    def __init__(self):
+    def __init__(self, topk, kernel_size1, kernel_size2):
         super(Conv_Model, self).__init__()
-        self.conv1 = torch.nn.Conv2d(1, 10, kernel_size=4)
-        self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.fc1 = torch.nn.Linear(5700, 10)
+        self.topk = topk
+        self.conv1 = torch.nn.Conv2d(1, topk, kernel_size=kernel_size1)
+        self.pool = torch.nn.MaxPool2d(kernel_size=kernel_size2, stride=2, padding=0)
+        self.fc1 = None
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
@@ -41,6 +42,8 @@ class Conv_Model(nn.Module):
         out = self.conv1(x)
         out = self.pool(out)
         out = out.view(out.shape[0], -1)
+        if self.fc1 is None:
+            self.fc1 = torch.nn.Linear(out.shape[1], self.topk)
         out = self.fc1(out)
         out = self.sig(out)
         return out
@@ -51,10 +54,11 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
                  type_prediction : {'head', 'tail'},
                  results_dir,
                  embedding_model : Embedding_Model,
+                 topk,
                  hyper_params = None,
                  model_path = None):
         if hyper_params is None:
-            hyper_params = { }
+            hyper_params = { "kernel_size1" : 4, "kernel_size2" : 2, "topk" : topk }
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         super(Classifier_Conv, self).__init__(dataset, type_prediction, results_dir,
                                              embedding_model, hyper_params, model_path)
@@ -62,10 +66,11 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
             self.get_model().eval()
 
     def init_model(self, embedding_model, hyper_params):
-        #n_units = hyper_params['n_units']
-        #dropout = hyper_params['dropout']
+        kernel_size1 = hyper_params['kernel_size1']
+        kernel_size2 = hyper_params['kernel_size2']
+        topk = hyper_params['topk']
         self.n_features = embedding_model.get_size_embedding_entity() * 2 + embedding_model.get_size_embedding_relation()
-        self.set_model(Conv_Model().to(self.device))
+        self.set_model(Conv_Model(topk, kernel_size1, kernel_size2).to(self.device))
 
     def get_name(self):
         return "ConvNN"
@@ -149,7 +154,8 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
         answers = query_with_answers['answers_fil']
         X = np.zeros(shape=(len(answers), n_features), dtype=np.float)
         annotated_answers = []
-        for i, answer in enumerate(answers):
+        for i, a in enumerate(answers):
+            answer = a['entity_id']
             emb_a = self.embedding_model.get_embedding_entity(answer)
             # X
             if self.type_prediction == 'head':
@@ -164,5 +170,5 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
         for i, answer in enumerate(answers):
             score = out[i].item()
             checked = score > 0.5
-            annotated_answers.append({'entity_id': answer, 'checked': checked, 'score': score})
+            annotated_answers.append({'entity_id': answer['entity_id'], 'checked': checked, 'score': score})
         return annotated_answers
