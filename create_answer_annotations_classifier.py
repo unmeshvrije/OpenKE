@@ -87,6 +87,7 @@ elif args.classifier == 'conv':
                                 args.type_prediction,
                                 args.result_dir,
                                 embedding_model,
+                                args.topk,
                                 None,
                                 model_dir + '/' + model_filename)
 elif args.classifier == 'random':

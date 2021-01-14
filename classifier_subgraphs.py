@@ -39,7 +39,8 @@ class Classifier_Subgraphs(classifier.Classifier):
                 acceptable_answers.add(s)
 
         annotated_answers = []
-        for answer in query_with_answers['answers_fil']:
+        for a in query_with_answers['answers_fil']:
+            answer = a['entity_id']
             checked = answer in acceptable_answers
             score = 0
             if checked:
