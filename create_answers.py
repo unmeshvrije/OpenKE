@@ -5,6 +5,7 @@ import json
 import os
 import argparse
 import pickle
+import numpy as np
 from support.utils import *
 from tqdm import tqdm
 
@@ -23,11 +24,19 @@ def parse_args():
 
 args = parse_args()
 
-model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
-queries_full_path = args.result_dir + '/' + args.db + '/queries/' + get_filename_queries(args.db, args.mode, args.type_prediction)
-checkpoint = load_checkpoint(model_path)
-model = KgeModel.create_from(checkpoint)
+if args.model != "rotate":
+    model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
+    checkpoint = load_checkpoint(model_path)
+    model = KgeModel.create_from(checkpoint)
+else:
+    from kge.model.rotate import RotatEScorer
+    model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model, suf='.ckpt')
+    model = torch.load(model_path, map_location=torch.device('cpu'))
+    E = model['ent_embeddings.weight']
+    R = model['rel_embeddings.weight']
 
+
+queries_full_path = args.result_dir + '/' + args.db + '/queries/' + get_filename_queries(args.db, args.mode, args.type_prediction)
 ent_queries = []
 rel_queries = []
 with open(queries_full_path, "rt") as fin:
@@ -66,10 +75,27 @@ if args.mode == 'test':
 topk = args.topk
 e = torch.Tensor(ent_queries).long()
 r = torch.Tensor(rel_queries).long()
-if args.type_prediction == 'tail':
-    scores = model.score_sp(e, r)
+if args.model != 'rotate':
+    if args.type_prediction == 'tail':
+        scores = model.score_sp(e, r)
+    else:
+        scores = model.score_po(r, e)
 else:
-    scores = model.score_po(r, e)
+    from kge.config import Config
+    config = Config()
+    config.set("l_norm", 2, create=True)
+    scorer = RotatEScorer(config, None)
+    scores = [] # I compute the scores one by one due to the main memory constraints
+    for i in tqdm(range(0, len(e), 10)):
+        ent = E[e[i:i+10]]
+        rel = R[r[i:i+10]]
+        if args.type_prediction == 'tail':
+            score = scorer.score_emb(ent, rel, E, combine="sp_")
+        else:
+            score = scorer.score_emb(E, rel, ent, combine="_po")
+        scores.append(score[0].numpy())
+scores = np.asarray(scores)
+scores = torch.Tensor(scores)
 o = torch.argsort(scores, dim=-1, descending = True)
 
 out = []

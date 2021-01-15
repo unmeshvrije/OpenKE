@@ -4,8 +4,8 @@ from tqdm import tqdm
 def get_filename_queries(db, mode, type_prediction):
     return db + '-' + mode + '-' + type_prediction + '.json'
 
-def get_filename_model(db, model):
-    return db + "-" + model + ".pt"
+def get_filename_model(db, model, suf = '.pt'):
+    return db + "-" + model + suf
 
 def get_filename_answers(db, model, mode, topk, type_prediction, suf = ''):
     return db + "-answers-" + model + "-" + mode + "-" + str(topk) + "-" + type_prediction + suf + ".pkl"
