@@ -16,11 +16,19 @@ class Embedding_Model:
         self.dataset = dataset
         # Load the model
         db = dataset.get_name()
-        path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ)
-        checkpoint = load_checkpoint(path)
-        self.model = KgeModel.create_from(checkpoint)
-        self.E = self.model._entity_embedder._embeddings_all().data
-        self.R = self.model._relation_embedder._embeddings_all().data
+        if typ == 'rotate':
+            suf = '.ckpt'
+            path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
+            model = torch.load(path, map_location=torch.device('cpu'))
+            self.E = model['ent_embeddings.weight']
+            self.R = model['rel_embeddings.weight']
+        else:
+            suf = '.pt'
+            path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
+            checkpoint = load_checkpoint(path)
+            self.model = KgeModel.create_from(checkpoint)
+            self.E = self.model._entity_embedder._embeddings_all().data
+            self.R = self.model._relation_embedder._embeddings_all().data
         self.n = len(self.E)
         self.r = len(self.R)
 
