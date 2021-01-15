@@ -29,12 +29,12 @@ for type_prediction in ['head', 'tail']:
 print("Type prediction: HEAD")
 print("Method\t\t\t\t\tPrecision\t\t\t\t\tRecall\t\t\tF1\t\t\t\t\tAccuracy")
 for r in results['head']:
-    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], -1))
+    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
 
 print("Type prediction: TAIL")
 print("Method\t\t\t\t\tPrecision\t\t\t\t\tRecall\t\t\tF1\t\t\t\t\tAccuracy")
 for r in results['tail']:
-    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], -1))
+    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
 
 
 
