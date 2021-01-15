@@ -4,6 +4,8 @@ from kge.util.io import load_checkpoint
 import numpy as np
 from support.dataset import Dataset
 from .utils import *
+from openke.module.model import RotatE
+from openke.data import TrainDataLoader
 
 from enum import Enum
 SubgraphType = Enum('SubgraphType', 'SPO POS')
@@ -22,6 +24,24 @@ class Embedding_Model:
             model = torch.load(path, map_location=torch.device('cpu'))
             self.E = model['ent_embeddings.weight']
             self.R = model['rel_embeddings.weight']
+            db_path = dataset.get_path()
+            self.train_dataloader = TrainDataLoader(
+                in_path=db_path,
+                nbatches=100,
+                threads=8,
+                sampling_mode="normal",
+                bern_flag=1,
+                filter_flag=1,
+                neg_ent=25,
+                neg_rel=0
+            )
+            N_DIM = 200
+            self.model = RotatE(
+                ent_tot=self.train_dataloader.get_ent_tot(),
+                rel_tot=self.train_dataloader.get_rel_tot(),
+                dim=N_DIM,
+                margin=6.0,
+                epsilon=2.0)
         else:
             suf = '.pt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
@@ -29,6 +49,7 @@ class Embedding_Model:
             self.model = KgeModel.create_from(checkpoint)
             self.E = self.model._entity_embedder._embeddings_all().data
             self.R = self.model._relation_embedder._embeddings_all().data
+
         self.n = len(self.E)
         self.r = len(self.R)
 
@@ -39,10 +60,10 @@ class Embedding_Model:
         return self.dataset.get_name()
 
     def num_entities(self):
-        return self.model.num_entities()
+        return self.n #self.model.num_entities()
 
     def num_relations(self):
-        return self.model.num_relations()
+        return self.r #self.model.num_relations()
 
     def get_embedding_entity(self, entity_id):
         return self.E[entity_id].numpy()
@@ -80,19 +101,31 @@ class Embedding_Model:
 
     def get_most_similar_subgraphs(self, sub_type, ent, rel, k=10):
         # Create a model with the subgraphs
-        scorer = self.model.get_scorer()
-        e = self.E[ent].view(1, -1)
-        r = self.R[rel].view(1, -1)
-        T = torch.Tensor(self.avg_subgraphs)
-        if sub_type == SubgraphType.SPO:
-            combine = 'sp_'
-            scores = scorer.score_emb(e, r, T, combine)
+        if self.typ != 'rotate':
+            scorer = self.model.get_scorer()
+            e = self.E[ent].view(1, -1)
+            r = self.R[rel].view(1, -1)
+            T = torch.Tensor(self.avg_subgraphs)
+            if sub_type == SubgraphType.SPO:
+                combine = 'sp_'
+                scores = scorer.score_emb(e, r, T, combine)
+            else:
+                combine = '_po'
+                scores = scorer.score_emb(T, r, e, combine)
+            o = torch.argsort(scores, dim=-1, descending=True)
+            best_subgraphs = o[0][:k]
         else:
-            combine = '_po'
-            scores = scorer.score_emb(T, r, e, combine)
-        o = torch.argsort(scores, dim=-1, descending=True)
-        # TODO: Retain the first k graphs where k is dynamically computed
-        best_subgraphs = o[0][:k]
+            new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
+            new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
+            new_S = torch.Tensor(self.avg_subgraphs)
+            if sub_type == SubgraphType.POS:
+                type_prediction = 'head'
+            else:
+                type_prediction = 'tail'
+            subgraph_scores = self.model._calc(new_S, new_E, new_R, type_prediction + '_batch')
+            o = np.argsort(subgraph_scores)
+            best_subgraphs = o[:k]
+
         out = []
         for b in best_subgraphs:
             out.append(self.subgraphs[b])

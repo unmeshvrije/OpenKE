@@ -7,6 +7,9 @@ class Dataset:
     def get_name(self):
         return self.name
 
+    def get_path(self):
+        return "./benchmarks/" + self.name + '/'
+
     @abstractmethod
     def get_known_answers_for_hr(self, h, r):
         pass
