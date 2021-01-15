@@ -52,7 +52,6 @@ def convert(indata, is_test = True):
         entry['answers_raw'] = answers
         out_head.append(entry)
 
-
     queries_head = {}
     queries_tail = {}
     out_head = []
