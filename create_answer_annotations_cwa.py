@@ -1,6 +1,7 @@
 import argparse
 from support.utils import *
 from support.dataset_fb15k237 import Dataset_FB15k237
+from support.dataset_dbpedia50 import Dataset_dbpedia50
 import pickle
 import datetime
 from tqdm import tqdm
@@ -8,7 +9,7 @@ from tqdm import tqdm
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
-    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
+    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--mode', dest='mode', type=str, default="test", choices=['train', 'valid', 'test'])
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
@@ -20,6 +21,8 @@ args = parse_args()
 dataset = None
 if args.db == 'fb15k237':
     dataset = Dataset_FB15k237()
+elif args.db == 'dbpedia50':
+    dataset = Dataset_dbpedia50()
 else:
     raise Exception("DB {} not supported!".format(args.db))
 

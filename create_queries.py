@@ -49,6 +49,44 @@ if args.db == 'fb15k237':
                 queries_tail.add((h, r))
     else:
         raise Exception("Not supported")
+elif args.db == 'dbpedia50':
+    if args.mode == 'test':
+        input_file = 'benchmarks/dbpedia50/test2id.txt'
+        with open(input_file, 'rt') as fin:
+            _ = int(fin.readline())
+            for l in fin:
+                tkns = l.split(' ')
+                h = int(tkns[0])
+                t = int(tkns[1])
+                r = int(tkns[2])
+                queries_head.add((t, r))
+                queries_tail.add((h, r))
+
+    elif args.mode == 'train':
+        input_file = 'benchmarks/dbpedia50/train2id.txt'
+        with open(input_file, 'rt') as fin:
+            _ = int(fin.readline())
+            for l in fin:
+                tkns = l.split(' ')
+                h = int(tkns[0])
+                t = int(tkns[1])
+                r = int(tkns[2])
+                queries_head.add((t, r))
+                queries_tail.add((h, r))
+        input_file = 'benchmarks/dbpedia50/valid2id.txt'
+        with open(input_file, 'rt') as fin:
+            _ = int(fin.readline())
+            for l in fin:
+                tkns = l.split(' ')
+                h = int(tkns[0])
+                t = int(tkns[1])
+                r = int(tkns[2])
+                queries_head.add((t, r))
+                queries_tail.add((h, r))
+    else:
+        raise Exception("Not supported")
+else:
+    raise Exception("Not supported")
 
 
 queries_head = list(queries_head)

@@ -11,6 +11,7 @@ def convert(indata, is_test = True):
 
     i = 0
     out_head = []
+    out_training_head = []
     while i < len(x_head_fil):
         entry = None
         answers = []
@@ -32,6 +33,7 @@ def convert(indata, is_test = True):
 
     i = 0
     out_tail = []
+    out_training_tail = []
     while i < len(x_tail_fil):
         entry = None
         answers = []
@@ -50,15 +52,23 @@ def convert(indata, is_test = True):
         entry['answers_fil'] = answers
         entry['answers_raw'] = answers
         out_tail.append(entry)
-    return out_head, out_tail
+    return out_head, out_training_head, out_tail, out_training_tail
 
-old_test_file = sys.argv[1]
-testdata = pickle.load(open(old_test_file, 'rb'))
-out_head, out_tail = convert(testdata)
-new_file = sys.argv[2]
-new_file_head = new_file + 'head-fil.pkl'
+old_file = sys.argv[1]
+testdata = pickle.load(open(old_file, 'rb'))
+out_answer_head, out_training_head, out_answer_tail, out_training_tail = convert(testdata, is_test=False)
+new_answers_file = sys.argv[2]
+new_file_head = new_answers_file + 'head-fil.pkl'
 with open(new_file_head, 'wb') as fout:
-    pickle.dump(out_head, fout)
-new_file_tail = new_file + 'tail-fil.pkl'
+    pickle.dump(out_answer_head, fout)
+new_file_tail = new_answers_file + 'tail-fil.pkl'
 with open(new_file_tail, 'wb') as fout:
-    pickle.dump(out_tail, fout)
+    pickle.dump(out_answer_tail, fout)
+
+#new_training_data_file = sys.argv[3]
+#new_file_head = new_training_data_file + 'head-fil.pkl'
+#with open(new_file_head, 'wb') as fout:
+#    pickle.dump(out_training_head, fout)
+#new_file_tail = new_training_data_file + 'tail-fil.pkl'
+#with open(new_file_tail, 'wb') as fout:
+#    pickle.dump(out_training_tail, fout)
