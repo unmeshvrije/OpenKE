@@ -70,5 +70,5 @@ for i in range(len(true_y)):
 
 print('N. queries: ', len(queries))
 print('Annotated answers: ', cnt_answers)
-out_file = args.true_out_file + ".json"
+out_file = args.true_out_file + "-extended.json"
 json.dump(queries, open(out_file, 'wt'))
