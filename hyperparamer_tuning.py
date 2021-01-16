@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 import datetime
 from classifier_lstm import Classifier_LSTM
 from classifier_mlp_multi import Classifier_MLP_Multi
+from classifier_conv import Classifier_Conv
 
 
 def parse_args():
@@ -20,6 +21,7 @@ def parse_args():
     parser.add_argument('--tune_lstm', dest='tune_lstm', type=bool, default=False)
     parser.add_argument('--tune_mlp_multi', dest='tune_mlp_multi', type=bool, default=False)
     parser.add_argument('--tune_sub', dest='tune_sub', type=bool, default=False)
+    parser.add_argument('--tune_conv', dest='tune_conv', type=bool, default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -27,13 +29,16 @@ use_valid_data = 0.05
 tune_sub = args.tune_sub
 tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
+tune_conv = args.tune_conv
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
-lstm_nhid = [ 10, 100, 1000 ]
-lstm_dropout = [0, 0.1, 0.3, 0.5, 0.7, 0.9]
+lstm_nhid = [ 10, 100 ]
+lstm_dropout = [0, 0.1]
 mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
 mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
+conv_k1 = [ 4, 8, 16, 32 ]
+conv_k2 = [ 2, 4, 8]
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for sub_k in sub_ks:
@@ -56,6 +61,43 @@ def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_d
         answers_annotations_filename = out_dir + get_filename_answer_annotations(args.db, args.model, 'valid', args.topk, type_prediction, suf)
         with open(answers_annotations_filename, 'wb') as fout:
             pickle.dump(output, fout)
+            fout.close()
+
+def tune_conv_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
+    for k1 in conv_k1:
+        for k2 in conv_k2:
+            if k2 >= k1:
+                continue
+            print("Test {} CONV with kernsize1={} kernsize2={}".format(type_prediction, k1, k2))
+            hyper_params = {"n_units": k1, "dropout": k2}
+            classifier = Classifier_Conv(dataset, type_prediction, args.result_dir, embedding_model, args.topk, hyper_params, None)
+
+            # Create training data
+            td = classifier.create_training_data(training_data)
+
+            # Train a model
+            classifier.train(td, None, None)
+
+            # Test the model
+            classifier.start_predict()
+            output = []
+            for item in tqdm(valid_data_to_test):
+                predicted_answers = classifier.predict(item)
+                out = {}
+                out['query'] = item
+                out['valid_annotations'] = True
+                out['annotator'] = 'conv'
+                out['date'] = str(datetime.datetime.now())
+                out['annotated_answers'] = predicted_answers
+                output.append(out)
+            results = compute_metrics('conv', type_prediction, args.db, output, gold_valid_data)
+            results['conv_k1'] = k1
+            results['conv_k2'] = k2
+            # Store the output
+            suf = '-conv-k1-' + str(k1) + '-k2-' + str(k2)
+            results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+            fout = open(results_filename, 'wt')
+            json.dump(results, fout)
             fout.close()
 
 def tune_lstm_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
@@ -170,3 +212,7 @@ for type_prediction in ['head', 'tail']:
     # 3- MLP-based classifier
     if tune_mlp_multi:
         tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
+
+    # 4- Conv-based classifier
+    if tune_conv:
+        tune_conv_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
