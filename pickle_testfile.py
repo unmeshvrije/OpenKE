@@ -6,7 +6,7 @@ import json
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
-    parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
+    parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.', default = "/var/scratch2/uji300/OpenKE-results/dbpedia50/data/dbpedia50-transe-test-topk-10.pkl", required=True)
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = 'OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
@@ -14,8 +14,7 @@ def parse_args():
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('--pred', dest ='pred', type = str, required = True, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
-    parser.add_argument('--true-out', dest='true_out_file', type=str, help='File containing the true /expected answers.', default='OpenKE-results/fb15k237/out/fb15k237-transe-annotated-topk-10-tail.out')
-    parser.add_argument('--extended_answers', dest='ext_out_file', type=str, help='File where the extended test set should be stored (json)', required=True)
+    parser.add_argument('--true-out', dest='true_out_file', type=str, help='File containing the true /expected answers.', default='OpenKE-results/fb15k237/out/fb15k237-transe-annotated-topk-10-tail.out', required=True)
     return parser.parse_args()
 args = parse_args()
 
@@ -71,4 +70,5 @@ for i in range(len(true_y)):
 
 print('N. queries: ', len(queries))
 print('Annotated answers: ', cnt_answers)
-json.dump(queries, open(args.ext_out_file, 'wt'))
+out_file = args.true_out_file + ".json"
+json.dump(queries, open(out_file, 'wt'))
