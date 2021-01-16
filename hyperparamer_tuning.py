@@ -69,7 +69,7 @@ def tune_conv_classifier(training_data, type_prediction, dataset, embedding_mode
             if k2 >= k1:
                 continue
             print("Test {} CONV with kernsize1={} kernsize2={}".format(type_prediction, k1, k2))
-            hyper_params = {"n_units": k1, "dropout": k2}
+            hyper_params = {"kernel_size1": k1, "kernel_size2": k2}
             classifier = Classifier_Conv(dataset, type_prediction, args.result_dir, embedding_model, args.topk, hyper_params, None)
 
             # Create training data
