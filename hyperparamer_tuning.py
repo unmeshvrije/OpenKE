@@ -128,7 +128,7 @@ def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_m
                 classifier.start_predict()
                 output = []
                 for item in tqdm(valid_data_to_test):
-                    predicted_answers = classifier.predict(item)
+                    predicted_answers = classifier.predict(item, provenance_test="train")
                     out = {}
                     out['query'] = item
                     out['valid_annotations'] = True

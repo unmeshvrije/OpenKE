@@ -98,13 +98,13 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         if model_path is not None:
             self.model.save(model_path)
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, provenance_test = "test"):
         if self.test_annotations is None:
             self.test_annotations = load_classifier_annotations(self.classifiers,
                                                                         self.result_dir,
                                                                         self.dataset_name,
                                                                         self.embedding_model_name,
-                                                                        "test",
+                                                                        provenance_test,
                                                                         self.topk,
                                                                         self.type_prediction,
                                                                         return_scores=True)
