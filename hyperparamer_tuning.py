@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('--tune_sub', dest='tune_sub', type=bool, default=False)
     parser.add_argument('--tune_conv', dest='tune_conv', type=bool, default=False)
     parser.add_argument('--tune_snorkel', dest='tune_snorkel', type=bool, default=False)
+    parser.add_argument('--do_ablation_study', dest='do_ablation_study', type=bool, default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -33,6 +34,7 @@ tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
 tune_conv = args.tune_conv
 tune_snorkel = args.tune_snorkel
+do_ablation_study = args.do_ablation_study
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
@@ -220,6 +222,48 @@ def tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model
             json.dump(results, fout)
             fout.close()
 
+def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
+    for i in range(len(snorkel_classifiers)):
+        classifiers = []
+        excluded = None
+        for j in range(len(snorkel_classifiers)):
+            if j != i:
+                classifiers.append(snorkel_classifiers[j])
+            else:
+                excluded = snorkel_classifiers[j]
+        print("Test {} SNORKEL with classifiers {}".format(classifiers))
+        abstain_scores = []
+        abstain_scores.append((0.2, 0.6))
+        abstain_scores.append((0.2, 0.6))
+        abstain_scores.append((0.2, 0.6))
+        abstain_scores.append((0, 0.5))
+        abstain_scores.append((0, 0.5))
+        classifier = Classifier_Snorkel(dataset, type_prediction, args.topk, args.result_dir, classifiers,
+                                        args.model, model_path=None, abstain_scores=abstain_scores)
+        # Create training data
+        td = classifier.create_training_data(training_data)
+        # Train a model
+        classifier.train(td, None, None)
+        # Test the model
+        classifier.start_predict()
+        output = []
+        for item in tqdm(valid_data_to_test):
+            predicted_answers = classifier.predict(item, provenance_test="train")
+            out = {}
+            out['query'] = item
+            out['valid_annotations'] = True
+            out['annotator'] = 'snorkel'
+            out['date'] = str(datetime.datetime.now())
+            out['annotated_answers'] = predicted_answers
+            output.append(out)
+        results = compute_metrics('snorkel', type_prediction, args.db, output, gold_valid_data)
+        results['snorkel_classifiers'] = str(classifiers)
+        # Store the output
+        suf = '-ablation-no-{}'.format(excluded)
+        results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+        fout = open(results_filename, 'wt')
+        json.dump(results, fout)
+        fout.close()
 
 # Load dataset
 dataset = None
@@ -270,3 +314,7 @@ for type_prediction in ['head', 'tail']:
     # 5- Snorkel-based classifier
     if tune_snorkel:
         tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
+
+    # 6- Snorkel ablation study
+    if do_ablation_study:
+        do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
