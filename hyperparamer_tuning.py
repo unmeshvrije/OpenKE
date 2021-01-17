@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument('--tune_mlp_multi', dest='tune_mlp_multi', type=bool, default=False)
     parser.add_argument('--tune_sub', dest='tune_sub', type=bool, default=False)
     parser.add_argument('--tune_conv', dest='tune_conv', type=bool, default=False)
+    parser.add_argument('--tune_snorkel', dest='tune_snorkel', type=bool, default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -31,6 +32,7 @@ tune_sub = args.tune_sub
 tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
 tune_conv = args.tune_conv
+tune_snorkel = args.snorkel
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
@@ -264,3 +266,8 @@ for type_prediction in ['head', 'tail']:
     # 4- Conv-based classifier
     if tune_conv:
         tune_conv_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
+
+    # 5- Snorkel-based classifier
+    if tune_snorkel:
+        tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test,
+                             gold_valid_data, out_dir)
