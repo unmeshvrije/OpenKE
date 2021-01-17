@@ -32,7 +32,7 @@ tune_sub = args.tune_sub
 tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
 tune_conv = args.tune_conv
-tune_snorkel = args.snorkel
+tune_snorkel = args.tune_snorkel
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
