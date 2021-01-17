@@ -45,6 +45,13 @@ class Dataset_FB15k237(Dataset):
                 self.neighbours[t[1]] = set()
             self.neighbours[t[1]].add(t[0])
 
+        entity_dict_path = path + '/entity2id.txt'
+        with open(entity_dict_path, 'rt') as fin:
+            self.n_entities = int(fin.readline())
+        relation_dict_path = path + '/relation2id.txt'
+        with open(relation_dict_path, 'rt') as fin:
+            self.n_relations = int(fin.readline())
+
         # test_data_path = path + '/test2id.txt'
         # self.test_data = self._load_dataset(test_data_path)
 
@@ -79,3 +86,9 @@ class Dataset_FB15k237(Dataset):
 
     def get_facts(self):
         return self.facts
+
+    def get_n_entities(self):
+        return self.n_entities
+
+    def get_n_relations(self):
+        return self.n_relations

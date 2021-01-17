@@ -6,6 +6,7 @@ from support.dataset import Dataset
 from .utils import *
 from openke.module.model import RotatE
 from openke.data import TrainDataLoader
+import os
 
 from enum import Enum
 SubgraphType = Enum('SubgraphType', 'SPO POS')
@@ -21,37 +22,64 @@ class Embedding_Model:
         if typ == 'rotate':
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
-            model = torch.load(path, map_location=torch.device('cpu'))
-            self.E = model['ent_embeddings.weight']
-            self.R = model['rel_embeddings.weight']
-            db_path = dataset.get_path()
-            self.train_dataloader = TrainDataLoader(
-                in_path=db_path,
-                nbatches=100,
-                threads=8,
-                sampling_mode="normal",
-                bern_flag=1,
-                filter_flag=1,
-                neg_ent=25,
-                neg_rel=0
-            )
-            N_DIM = 200
-            self.model = RotatE(
-                ent_tot=self.train_dataloader.get_ent_tot(),
-                rel_tot=self.train_dataloader.get_rel_tot(),
-                dim=N_DIM,
-                margin=6.0,
-                epsilon=2.0)
+            if os.path.exists(path):
+                self.model = torch.load(path, map_location=torch.device('cpu'))
+                self.E = self.model['ent_embeddings.weight']
+                self.R = self.model['rel_embeddings.weight']
+                db_path = dataset.get_path()
+                self.train_dataloader = TrainDataLoader(
+                    in_path=db_path,
+                    nbatches=100,
+                    threads=8,
+                    sampling_mode="normal",
+                    bern_flag=1,
+                    filter_flag=1,
+                    neg_ent=25,
+                    neg_rel=0
+                )
+                N_DIM = 200
+                self.model = RotatE(
+                    ent_tot=self.train_dataloader.get_ent_tot(),
+                    rel_tot=self.train_dataloader.get_rel_tot(),
+                    dim=N_DIM,
+                    margin=6.0,
+                    epsilon=2.0)
+            else:
+                self.model = None
+                self.E = None
+                self.R = None
         else:
             suf = '.pt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
-            checkpoint = load_checkpoint(path)
-            self.model = KgeModel.create_from(checkpoint)
-            self.E = self.model._entity_embedder._embeddings_all().data
-            self.R = self.model._relation_embedder._embeddings_all().data
+            if os.path.exists(path):
+                checkpoint = load_checkpoint(path)
+                self.model = KgeModel.create_from(checkpoint)
+                self.E = self.model._entity_embedder._embeddings_all().data
+                self.R = self.model._relation_embedder._embeddings_all().data
+            else:
+                self.E = None
+                self.R = None
+                self.model = None
 
-        self.n = len(self.E)
-        self.r = len(self.R)
+        if self.model is None:
+            self.n = dataset.get_n_entities()
+            self.r = dataset.get_n_relations()
+            if typ == 'rotate':
+                self.dim_e = 400
+                self.dim_r = 200
+            elif typ == 'transe':
+                self.dim_e = 200
+                self.dim_r = 200
+            elif typ == 'complex':
+                self.dim_e = 256
+                self.dim_r = 256
+            else:
+                raise Exception("Not supported")
+        else:
+            self.n = len(self.E)
+            self.r = len(self.R)
+            self.dim_e = len(self.E[0])
+            self.dim_r = len(self.R[0])
 
     def get_type(self):
         return self.typ
@@ -60,10 +88,10 @@ class Embedding_Model:
         return self.dataset.get_name()
 
     def num_entities(self):
-        return self.n #self.model.num_entities()
+        return self.n
 
     def num_relations(self):
-        return self.r #self.model.num_relations()
+        return self.r
 
     def get_embedding_entity(self, entity_id):
         return self.E[entity_id].numpy()
@@ -72,10 +100,10 @@ class Embedding_Model:
         return self.R[relation_id].numpy()
 
     def get_size_embedding_entity(self):
-        return len(self.E[0])
+        return self.dim_e
 
     def get_size_embedding_relation(self):
-        return len(self.R[0])
+        return self.dim_r
 
     def _make_subgraph_embeddings_per_type(self, dataset : Dataset, sub_type, tau = 10):
         if sub_type == SubgraphType.SPO:

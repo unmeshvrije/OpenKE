@@ -37,3 +37,11 @@ class Dataset:
     @abstractmethod
     def get_facts(self):
         pass
+
+    @abstractmethod
+    def get_n_entities(self):
+        pass
+
+    @abstractmethod
+    def get_n_relations(self):
+        pass
