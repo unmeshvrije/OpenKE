@@ -1,5 +1,6 @@
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
+from support.dataset_dbpedia50 import Dataset_dbpedia50
 from support.utils import *
 import pickle
 
@@ -8,7 +9,7 @@ def parse_args():
     parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv', 'snorkel', 'trans'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv,path,sub")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
-    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
+    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
     parser.add_argument('--type_prediction', dest='type_prediction', type=str, default="head", choices=['head', 'tail'])
@@ -27,9 +28,11 @@ dataset = None
 annotations_dir = args.result_dir + '/' + args.db + '/annotations/'
 if args.db == 'fb15k237':
     dataset = Dataset_FB15k237()
-    annotations_filename = get_filename_answer_annotations(args.db, args.model, 'train', args.topk, args.type_prediction)
-    with open(annotations_dir + '/' + annotations_filename, 'rb') as fin:
-        annotations = pickle.load(fin)
+elif args.db == 'dbpedia50':
+    dataset = Dataset_dbpedia50()
+annotations_filename = get_filename_answer_annotations(args.db, args.model, 'train', args.topk, args.type_prediction)
+with open(annotations_dir + '/' + annotations_filename, 'rb') as fin:
+    annotations = pickle.load(fin)
 
 # Load the embedding model
 embedding_model_typ = args.model
