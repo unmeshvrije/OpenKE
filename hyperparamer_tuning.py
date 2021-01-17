@@ -116,7 +116,7 @@ def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_m
                 abstain_scores.append((l3, h3))
                 abstain_scores.append((0, 0.5))
                 abstain_scores.append((0, 0.5))
-                classifier = Classifier_Snorkel(dataset, type_prediction,  args.topk, args.result_dir, snorkel_classifiers, args.model, model_path=None, abstain_scores=())
+                classifier = Classifier_Snorkel(dataset, type_prediction,  args.topk, args.result_dir, snorkel_classifiers, args.model, model_path=None, abstain_scores=abstain_scores)
 
                 # Create training data
                 td = classifier.create_training_data(training_data)
