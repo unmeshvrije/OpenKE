@@ -93,9 +93,10 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         return "Snorkel"
 
     def train(self, training_data, valid_data, model_path):
-        label_model = LabelModel(verbose=True)
-        label_model.fit(training_data, n_epochs=500, optimizer="adam")
-        label_model.save(model_path)
+        self.model = LabelModel(verbose=True)
+        self.model.fit(training_data, n_epochs=500, optimizer="adam")
+        if model_path is not None:
+            self.model.save(model_path)
 
     def predict(self, query_with_answers):
         if self.test_annotations is None:
