@@ -223,23 +223,27 @@ def tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model
             fout.close()
 
 def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
+    abstain_scores = []
+    abstain_scores.append((0.2, 0.6))
+    abstain_scores.append((0.2, 0.6))
+    abstain_scores.append((0.2, 0.6))
+    abstain_scores.append((0, 0.5))
+    abstain_scores.append((0, 0.5))
     for i in range(len(snorkel_classifiers)):
         classifiers = []
+        a_scores = []
         excluded = None
         for j in range(len(snorkel_classifiers)):
             if j != i:
                 classifiers.append(snorkel_classifiers[j])
+                a_scores.append(abstain_scores[j])
             else:
                 excluded = snorkel_classifiers[j]
-        print("Test {} SNORKEL with classifiers {}".format(classifiers))
-        abstain_scores = []
-        abstain_scores.append((0.2, 0.6))
-        abstain_scores.append((0.2, 0.6))
-        abstain_scores.append((0.2, 0.6))
-        abstain_scores.append((0, 0.5))
-        abstain_scores.append((0, 0.5))
+        print("Test {} SNORKEL with classifiers {}".format(type_prediction, classifiers))
+
+
         classifier = Classifier_Snorkel(dataset, type_prediction, args.topk, args.result_dir, classifiers,
-                                        args.model, model_path=None, abstain_scores=abstain_scores)
+                                        args.model, model_path=None, abstain_scores=a_scores)
         # Create training data
         td = classifier.create_training_data(training_data)
         # Train a model
