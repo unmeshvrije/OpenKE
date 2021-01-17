@@ -10,6 +10,7 @@ import datetime
 from classifier_lstm import Classifier_LSTM
 from classifier_mlp_multi import Classifier_MLP_Multi
 from classifier_conv import Classifier_Conv
+from classifier_snorkel import Classifier_Snorkel
 
 
 def parse_args():
@@ -39,6 +40,8 @@ mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
 mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
 conv_k1 = [ 4, 8, 16, 32 ]
 conv_k2 = [ 2, 4, 8]
+snorkel_tau = [ (0.1,0.6), (0.1,0.7), (0.1,0.8), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
+snorkel_classifiers = 'mlp_multi,lstm,conv,path,sub'
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for sub_k in sub_ks:
@@ -99,6 +102,51 @@ def tune_conv_classifier(training_data, type_prediction, dataset, embedding_mode
             fout = open(results_filename, 'wt')
             json.dump(results, fout)
             fout.close()
+
+def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
+    for l1, h1 in snorkel_tau:
+        for l2, h2 in snorkel_tau:
+            for l3, h3 in snorkel_tau:
+                print("Test {} SNORKEL with l={},{},{} h={},{},{}".format(type_prediction, l1, l2, l3, h1, h2, h3))
+                abstain_scores = []
+                abstain_scores.append((l1, h1))
+                abstain_scores.append((l2, h2))
+                abstain_scores.append((l3, h3))
+                abstain_scores.append((0, 0.5))
+                abstain_scores.append((0, 0.5))
+                classifier = Classifier_Snorkel(dataset, type_prediction,  args.topk, args.result_dir, snorkel_classifiers, args.model, model_path=None, abstain_scores=())
+
+                # Create training data
+                td = classifier.create_training_data(training_data)
+
+                # Train a model
+                classifier.train(td, None, None)
+
+                # Test the model
+                classifier.start_predict()
+                output = []
+                for item in tqdm(valid_data_to_test):
+                    predicted_answers = classifier.predict(item)
+                    out = {}
+                    out['query'] = item
+                    out['valid_annotations'] = True
+                    out['annotator'] = 'snorkel'
+                    out['date'] = str(datetime.datetime.now())
+                    out['annotated_answers'] = predicted_answers
+                    output.append(out)
+                results = compute_metrics('snorkel', type_prediction, args.db, output, gold_valid_data)
+                results['snorkel_l1'] = l1
+                results['snorkel_h1'] = h1
+                results['snorkel_l2'] = l2
+                results['snorkel_h2'] = h2
+                results['snorkel_l3'] = l3
+                results['snorkel_h3 '] = h3
+                # Store the output
+                suf = '-snorkel-k1-{}-{}-{}-{}-{}-{}'.format(l1, h1, l2, h2, l3, h3)
+                results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+                fout = open(results_filename, 'wt')
+                json.dump(results, fout)
+                fout.close()
 
 def tune_lstm_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for hidden_units in lstm_nhid:
