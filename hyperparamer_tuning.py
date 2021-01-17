@@ -252,7 +252,7 @@ def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding
         classifier.start_predict()
         output = []
         for item in tqdm(valid_data_to_test):
-            predicted_answers = classifier.predict(item, provenance_test="train")
+            predicted_answers = classifier.predict(item)
             out = {}
             out['query'] = item
             out['valid_annotations'] = True
@@ -279,6 +279,37 @@ else:
 # Load embedding model
 embedding_model_typ = args.model
 embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
+
+# Load test answers (used only for the ablation study)
+suf = ''
+test_answers_filename = args.result_dir + '/' + args.db + '/answers/' + get_filename_answers(args.db, args.model, "test", args.topk, args.type_prediction, suf)
+test_queries_with_answers = pickle.load(open(test_answers_filename, 'rb'))
+
+# Load the gold standard
+gold_dir = args.result_dir + '/' + args.db + '/annotations/'
+gold_filename = get_filename_gold(args.db, args.topk)
+with open(gold_dir + gold_filename, 'rt') as fin:
+    gold_annotations = json.load(fin)
+filter_queries = {}
+if args.type_prediction == 'head':
+    accepted_query_type = 0
+else:
+    accepted_query_type = 1
+for id, item in gold_annotations.items():
+    query = item['query']
+    type = query['type']
+    if type == accepted_query_type and item['valid_annotations'] == True:
+        ent = query['ent']
+        rel = query['rel']
+        ans = []
+        for a in item['annotated_answers']:
+            methods = a['methods']
+            for m in methods:
+                if m == args.model:
+                    ans.append(a)
+                    break
+        assert(len(ans) == args.topk)
+        filter_queries[(ent, rel)] = ans
 
 out_dir = args.result_dir + '/' + args.db + '/paramtuning/'
 for type_prediction in ['head', 'tail']:
@@ -321,4 +352,4 @@ for type_prediction in ['head', 'tail']:
 
     # 6- Snorkel ablation study
     if do_ablation_study:
-        do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
+        do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, test_queries_with_answers, filter_queries, out_dir)
