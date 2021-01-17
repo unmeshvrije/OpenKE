@@ -269,6 +269,35 @@ def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding
         json.dump(results, fout)
         fout.close()
 
+    print("Test {} SNORKEL with classifiers {}".format(type_prediction, snorkel_classifiers))
+
+    classifier = Classifier_Snorkel(dataset, type_prediction, args.topk, args.result_dir, snorkel_classifiers,
+                                    args.model, model_path=None, abstain_scores=abstain_scores)
+    # Create training data
+    td = classifier.create_training_data(training_data)
+    # Train a model
+    classifier.train(td, None, None)
+    # Test the model
+    classifier.start_predict()
+    output = []
+    for item in tqdm(valid_data_to_test):
+        predicted_answers = classifier.predict(item)
+        out = {}
+        out['query'] = item
+        out['valid_annotations'] = True
+        out['annotator'] = 'snorkel'
+        out['date'] = str(datetime.datetime.now())
+        out['annotated_answers'] = predicted_answers
+        output.append(out)
+    results = compute_metrics('snorkel', type_prediction, args.db, output, gold_valid_data)
+    results['snorkel_classifiers'] = str(snorkel_classifiers)
+    # Store the output
+    suf = '-ablation-all'
+    results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
+    fout = open(results_filename, 'wt')
+    json.dump(results, fout)
+    fout.close()
+
 # Load dataset
 dataset = None
 if args.db == 'fb15k237':
