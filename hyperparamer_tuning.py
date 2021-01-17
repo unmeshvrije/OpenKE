@@ -280,43 +280,46 @@ else:
 embedding_model_typ = args.model
 embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 
-# Load test answers (used only for the ablation study)
-suf = ''
-test_answers_filename = args.result_dir + '/' + args.db + '/answers/' + get_filename_answers(args.db, args.model, "test", args.topk, args.type_prediction, suf)
-test_queries_with_answers = pickle.load(open(test_answers_filename, 'rb'))
-
-# Load the gold standard
-gold_dir = args.result_dir + '/' + args.db + '/annotations/'
-gold_filename = get_filename_gold(args.db, args.topk)
-with open(gold_dir + gold_filename, 'rt') as fin:
-    gold_annotations = json.load(fin)
-filter_queries = {}
-if args.type_prediction == 'head':
-    accepted_query_type = 0
-else:
-    accepted_query_type = 1
-for id, item in gold_annotations.items():
-    query = item['query']
-    type = query['type']
-    if type == accepted_query_type and item['valid_annotations'] == True:
-        ent = query['ent']
-        rel = query['rel']
-        ans = []
-        for a in item['annotated_answers']:
-            methods = a['methods']
-            for m in methods:
-                if m == args.model:
-                    ans.append(a)
-                    break
-        assert(len(ans) == args.topk)
-        filter_queries[(ent, rel)] = ans
-
 out_dir = args.result_dir + '/' + args.db + '/paramtuning/'
 for type_prediction in ['head', 'tail']:
     # Load some answers (*from the training set*. This is data annotated under closed world assumption)
     annotations_filename = get_filename_answer_annotations(args.db, args.model, 'train', args.topk, type_prediction)
     annotations_path = args.result_dir + '/' + args.db + '/annotations/' + annotations_filename
     queries_with_answers = pickle.load(open(annotations_path, 'rb'))
+
+    # Load test answers (used only for the ablation study)
+    suf = ''
+    test_answers_filename = args.result_dir + '/' + args.db + '/answers/' + get_filename_answers(args.db, args.model,
+                                                                                                 "test", args.topk,
+                                                                                                 type_prediction,
+                                                                                                 suf)
+    test_queries_with_answers = pickle.load(open(test_answers_filename, 'rb'))
+
+    # Load the gold standard
+    gold_dir = args.result_dir + '/' + args.db + '/annotations/'
+    gold_filename = get_filename_gold(args.db, args.topk)
+    with open(gold_dir + gold_filename, 'rt') as fin:
+        gold_annotations = json.load(fin)
+    filter_queries = {}
+    if type_prediction == 'head':
+        accepted_query_type = 0
+    else:
+        accepted_query_type = 1
+    for id, item in gold_annotations.items():
+        query = item['query']
+        type = query['type']
+        if type == accepted_query_type and item['valid_annotations'] == True:
+            ent = query['ent']
+            rel = query['rel']
+            ans = []
+            for a in item['annotated_answers']:
+                methods = a['methods']
+                for m in methods:
+                    if m == args.model:
+                        ans.append(a)
+                        break
+            assert (len(ans) == args.topk)
+            filter_queries[(ent, rel)] = ans
 
     # Split them between train and validation set
     n_data_points = len(queries_with_answers)
