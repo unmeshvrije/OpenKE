@@ -34,7 +34,7 @@ def get_filename_gold(db, topk):
 def get_filename_results(db, model, mode, topk, type_prediction, suf = ''):
     return db + "-gold-results-" + model + "-" + mode + "-" + str(topk) + "-" + type_prediction + suf + ".json"
 
-def compute_metrics(classifier, type_prediction, db, annotated_answers, true_answers):
+def compute_metrics(classifier, type_prediction, db, annotated_answers, true_answers, subset_k=None):
     matched_answers = 0
     true_positives = 0
     false_positives = 0
@@ -48,7 +48,9 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
             true_annotated_answers = true_answers[(ent, rel)]
             assert (query_answers['valid_annotations'])
             assert (query_answers['annotator'] == classifier)
-            for ans in query_answers['annotated_answers']:
+            for idx_ans, ans in enumerate(query_answers['annotated_answers']):
+                if subset_k is not None and idx_ans >= subset_k:
+                    break
                 entity_id = ans['entity_id']
                 checked = ans['checked']
                 found = False
