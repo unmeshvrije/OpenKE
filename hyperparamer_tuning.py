@@ -269,5 +269,4 @@ for type_prediction in ['head', 'tail']:
 
     # 5- Snorkel-based classifier
     if tune_snorkel:
-        tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test,
-                             gold_valid_data, out_dir)
+        tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
