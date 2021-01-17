@@ -310,7 +310,7 @@ def test_with_different_k(type_prediction, args, gold_valid_data, out_dir):
         annotated_answers = pickle.load(fin)
 
     for k in ks:
-        print("Test {} SNORKEL with classifiers {} and k={}".format(type_prediction, k))
+        print("Test {} SNORKEL with k={}".format(type_prediction, k))
         results = compute_metrics('snorkel', type_prediction, args.db, annotated_answers, gold_valid_data, subset_k=k)
         results['ablation-k'] = k
         # Store the output
