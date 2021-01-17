@@ -44,7 +44,7 @@ mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
 mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
 conv_k1 = [ 4, 8, 16, 32 ]
 conv_k2 = [ 2, 4, 8]
-snorkel_tau = [ (0.1,0.6), (0.1,0.7), (0.1,0.8), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
+snorkel_tau = [ (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
 snorkel_classifiers = ['mlp_multi','lstm','conv','path','sub']
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
