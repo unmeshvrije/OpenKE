@@ -11,6 +11,8 @@ from classifier_lstm import Classifier_LSTM
 from classifier_mlp_multi import Classifier_MLP_Multi
 from classifier_conv import Classifier_Conv
 from classifier_snorkel import Classifier_Snorkel
+from classifier_supensemble import Classifier_SuperEnsemble
+from classifier_threshold import Classifier_Threshold
 
 
 def parse_args():
@@ -26,6 +28,7 @@ def parse_args():
     parser.add_argument('--tune_snorkel', dest='tune_snorkel', type=bool, default=False)
     parser.add_argument('--do_ablation_study', dest='do_ablation_study', type=bool, default=False)
     parser.add_argument('--test_different_k', dest='test_different_k', type=bool, default=False)
+    parser.add_argument('--test_threshold_different_k', dest='test_threshold_different_k', type=bool, default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -37,6 +40,7 @@ tune_conv = args.tune_conv
 tune_snorkel = args.tune_snorkel
 do_ablation_study = args.do_ablation_study
 test_different_k = args.test_different_k
+test_threshold_different_k = args.test_threshold_different_k
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
@@ -48,7 +52,7 @@ conv_k1 = [ 4, 8, 16, 32 ]
 conv_k2 = [ 2, 4, 8]
 snorkel_tau = [ (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
 snorkel_classifiers = ['mlp_multi','lstm','conv','path','sub']
-ks = [1, 3, 5, 10]
+ks = [1, 2, 3, 5, 10]
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
     for sub_k in sub_ks:
@@ -320,6 +324,29 @@ def test_with_different_k(type_prediction, args, gold_valid_data, out_dir):
         json.dump(results, fout)
         fout.close()
 
+def test_threshold_with_different_k(type_prediction, args, gold_valid_data, out_dir):
+    for k in ks:
+        print("Test {} THREHOLD with k={}".format(type_prediction, k))
+        classifier = Classifier_Threshold(dataset, type_prediction, args.result_dir, k)
+        output = []
+        for item in tqdm(valid_data_to_test):
+            predicted_answers = classifier.predict(item)
+            out = {}
+            out['query'] = item
+            out['valid_annotations'] = True
+            out['annotator'] = 'threshold'
+            out['date'] = str(datetime.datetime.now())
+            out['annotated_answers'] = predicted_answers
+            output.append(out)
+        results = compute_metrics('threshold', type_prediction, args.db, output, gold_valid_data)
+        results['threshold-k'] = k
+        # Store the output
+        suf = '-threshold-k-' + str(k)
+        answers_annotations_filename = out_dir + get_filename_answer_annotations(args.db, args.model, 'valid', args.topk, type_prediction, suf)
+        with open(answers_annotations_filename, 'wb') as fout:
+            pickle.dump(output, fout)
+            fout.close()
+
 # Load dataset
 dataset = None
 if args.db == 'fb15k237':
@@ -408,6 +435,10 @@ for type_prediction in ['head', 'tail']:
     if do_ablation_study:
         do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, test_queries_with_answers, filter_queries, out_dir)
 
-    #7- Test different ks
+    #7- Test different snorkel with ks
     if test_different_k:
         test_with_different_k(type_prediction, args, filter_queries, out_dir)
+
+    #8- Test threshold classifier with different ks
+    if test_threshold_different_k:
+        test_threshold_with_different_k(type_prediction, args, gold_valid_data, out_dir)

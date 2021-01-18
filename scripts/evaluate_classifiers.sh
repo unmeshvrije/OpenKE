@@ -3,7 +3,7 @@
 cd ..
 source venv/bin/activate
 
-CLASSIFIERS="supensemble"
+CLASSIFIERS="threshold"
 BASEDIR="/Users/jacopo/Desktop/binary-embeddings/"
 DATASET="fb15k237"
 OUTDIR="${BASEDIR}/${DATASET}/results/"
@@ -14,21 +14,21 @@ EXEC_EVAL_GOLD="evaluate_annotations_gold_standard.py"
 EXEC_CREATE_TRAINING_DATA="create_training_data.py"
 EXEC_CREATE_MODEL="create_model.py"
 
-echo "Creating training data "
-for TYPPRED in "head" "tail"; do
-  for CLASSIFIER in `echo $CLASSIFIERS`; do
-    echo "Creating training data for $TYPPRED and $CLASSIFIER"
-    python3 $EXEC_CREATE_TRAINING_DATA --type_prediction $TYPPRED --classifier $CLASSIFIER --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
-  done
-done
+#echo "Creating training data "
+#for TYPPRED in "head" "tail"; do
+#  for CLASSIFIER in `echo $CLASSIFIERS`; do
+#    echo "Creating training data for $TYPPRED and $CLASSIFIER"
+#    python3 $EXEC_CREATE_TRAINING_DATA --type_prediction $TYPPRED --classifier $CLASSIFIER --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+#  done
+#done
 
-echo "Creating model "
-for TYPPRED in "head" "tail"; do
-  for CLASSIFIER in `echo $CLASSIFIERS`; do
-    echo "Creating model for $TYPPRED and $CLASSIFIER"
-    python3 $EXEC_CREATE_MODEL $PARAMS_MLP_TAIL --type_prediction $TYPPRED --classifier $CLASSIFIER --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
-  done
-done
+#echo "Creating model "
+#for TYPPRED in "head" "tail"; do
+#  for CLASSIFIER in `echo $CLASSIFIERS`; do
+#    echo "Creating model for $TYPPRED and $CLASSIFIER"
+#    python3 $EXEC_CREATE_MODEL $PARAMS_MLP_TAIL --type_prediction $TYPPRED --classifier $CLASSIFIER --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+#  done
+#done
 
 echo "Creating annotations "
 for TYPPRED in "head" "tail"; do
