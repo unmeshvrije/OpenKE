@@ -2,7 +2,7 @@ import supervised_classifier
 from support.utils import *
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
+from sklearn.svm import SVC
 import joblib
 
 FALSE=0
@@ -28,12 +28,15 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
             print("Loading existing model {} ...".format(model_path))
             model = joblib.load(model_path)
             self.set_model(model)
+        else:
+            self.init_model(embedding_model_name, None)
 
     def get_name(self):
         return "SupEnsemble"
 
     def init_model(self, embedding_model, hyper_params):
         self.model = RandomForestClassifier(max_depth=2, random_state=0)
+        #self.model = SVC()
 
     def create_training_data(self, queries_with_answers):
         classifiers_annotations = load_classifier_annotations(self.classifiers,
@@ -43,16 +46,38 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
                                                                     "train",
                                                                     self.topk,
                                                                     self.type_prediction,
-                                                                    return_scores=False)
-        training_data = []
+                                                                    return_scores=True)
         print("  Creating training data ...")
-        for keys, annotations in tqdm(classifiers_annotations.items()):
-            for answer, annotation in annotations.items():
-                training_data.append(annotation)
-        training_data = np.asarray(training_data)
+        training_data_X = []
+        training_data_Y = []
+        for query in queries_with_answers:
+            typ = query['query']['type']
+            ent = query['query']['ent']
+            rel = query['query']['rel']
+            ans = query['annotated_answers']
+            assert(query['valid_annotations'] == True)
+            assert((ent, rel) in classifiers_annotations)
+            answers_X = classifiers_annotations[(ent, rel)]
+            for _, a in enumerate(ans):
+                ans_id = a['entity_id']
+                if a['checked']:
+                    Y = 1
+                else:
+                    Y = 0
+                assert(ans_id in answers_X)
+                X = answers_X[ans_id]
+                #for i in range(len(X)):
+                #    if X[i] == True:
+                #        X[i] = 1
+                #    else:
+                #        X[i] = 0
+                training_data_X.append(X)
+                training_data_Y.append(Y)
+        training_data_X = np.asarray(training_data_X)
+        training_data_Y = np.asarray(training_data_Y)
         count_true = np.zeros(len(self.classifiers), dtype=int)
         count_false = np.zeros(len(self.classifiers), dtype=int)
-        for t in training_data:
+        for t in training_data_X:
             for i, a in enumerate(t):
                 if a == TRUE:
                     count_true[i] += 1
@@ -60,18 +85,19 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
                     count_false[i] += 1
         for i, classifier in enumerate(self.classifiers):
             print("Classifier {} TRUE {} FALSE {}".format(classifier, count_true[i], count_false[i]))
-        return training_data
+        return {'X' : training_data_X, 'Y' : training_data_Y }
 
     def train(self, training_data, valid_data, model_path):
-        X, y = make_classification(n_samples=1000,
-                                   n_features=4,
-                                   n_informative = 2,
-                                   n_redundant = 0,
-                                   random_state = 0,
-                                   shuffle = False)
-        self.model.fit(X, y)
+        #X, y = make_classification(n_samples=1000,
+        #                           n_features=4,
+        #                           n_informative = 2,
+        #                           n_redundant = 0,
+        #                           random_state = 0,
+        #                           shuffle = False)
+        X = training_data['X']
+        Y = training_data['Y']
+        self.model.fit(X, Y)
         if model_path is not None:
-            self.model.save(model_path)
             joblib.dump(self.model, model_path)
 
     def predict(self, query_with_answers, provenance_test="test"):
@@ -101,8 +127,14 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
         for entity_id, labels in self.test_annotations[(ent, rel)].items():
             assert (entity_id in filtered_answers)
             assert (len(labels) == len(self.classifiers))
-            l = labels.reshape(1, -1)
-            out = self.get_model().predict(l)
-            checked = out[0] == TRUE
-            annotated_answers.append({'entity_id': entity_id, 'checked': checked, 'score': 1})
+            #for i, _ in enumerate(labels):
+                #if labels[i] == True:
+                #    labels[i] = 1
+                #else:
+                #    labels[i] = 0
+            l = np.asarray(labels)
+            lr = l.reshape(1, -1)
+            out = self.get_model().predict(lr)
+            checked = out[0] == 1
+            annotated_answers.append({'entity_id': entity_id, 'checked': checked, 'score': out[0]})
         return annotated_answers

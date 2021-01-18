@@ -80,6 +80,7 @@ elif args.classifier == 'snorkel':
 elif args.classifier == 'supensemble':
     from classifier_supensemble import Classifier_SuperEnsemble
     signals = args.name_signals.split(",")
+    use_valid_data = 0  # I don't need validation data
     classifier = Classifier_SuperEnsemble(dataset, args.type_prediction, args.topk, args.result_dir, signals,
                                     embedding_model_typ)
 else:
