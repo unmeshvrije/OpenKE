@@ -4,7 +4,7 @@ from kge.util.io import load_checkpoint
 import numpy as np
 from support.dataset import Dataset
 from .utils import *
-from openke.module.model import RotatE
+from openke.module.model import RotatE, ComplEx, TransE
 from openke.data import TrainDataLoader
 import os
 
@@ -19,7 +19,15 @@ class Embedding_Model:
         self.dataset = dataset
         # Load the model
         db = dataset.get_name()
-        if typ == 'rotate':
+
+        suf = '.pt'
+        path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
+        if os.path.exists(path):
+            checkpoint = load_checkpoint(path)
+            self.model = KgeModel.create_from(checkpoint)
+            self.E = self.model._entity_embedder._embeddings_all().data
+            self.R = self.model._relation_embedder._embeddings_all().data
+        else:
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
             if os.path.exists(path):
@@ -37,29 +45,31 @@ class Embedding_Model:
                     neg_ent=25,
                     neg_rel=0
                 )
-                N_DIM = 200
-                self.model = RotatE(
-                    ent_tot=self.train_dataloader.get_ent_tot(),
-                    rel_tot=self.train_dataloader.get_rel_tot(),
-                    dim=N_DIM,
-                    margin=6.0,
-                    epsilon=2.0)
+                if typ == 'rotate':
+                    self.model = RotatE(
+                        ent_tot=self.train_dataloader.get_ent_tot(),
+                        rel_tot=self.train_dataloader.get_rel_tot(),
+                        dim=400,
+                        margin=6.0,
+                        epsilon=2.0)
+                elif typ == 'complex':
+                    self.model = ComplEx(
+                        ent_tot=self.train_dataloader.get_ent_tot(),
+                        rel_tot=self.train_dataloader.get_rel_tot(),
+                        dim=256
+                    )
+                else: #transe
+                    self.model = TransE(
+                        ent_tot=self.train_dataloader.get_ent_tot(),
+                        rel_tot=self.train_dataloader.get_rel_tot(),
+                        dim=200,
+                        p_norm=1,
+                        norm_flag=True
+                    )
             else:
                 self.model = None
                 self.E = None
                 self.R = None
-        else:
-            suf = '.pt'
-            path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
-            if os.path.exists(path):
-                checkpoint = load_checkpoint(path)
-                self.model = KgeModel.create_from(checkpoint)
-                self.E = self.model._entity_embedder._embeddings_all().data
-                self.R = self.model._relation_embedder._embeddings_all().data
-            else:
-                self.E = None
-                self.R = None
-                self.model = None
 
         if self.model is None:
             self.n = dataset.get_n_entities()
