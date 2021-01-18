@@ -29,28 +29,27 @@ for type_prediction in ['head', 'tail']:
 avg = {}
 
 print("Type prediction: HEAD")
-print("Method\t\t\t\t\tPrecision\t\t\t\t\tRecall\t\t\tF1\t\t\t\t\tAccuracy")
+print("Method\t& Precision\t& Recall\t& F1\t& Accuracy")
 for r in results['head']:
     if r['classifier'] not in avg:
-        avg[r['classifier']] = r
-    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
+        avg[r['classifier']] = [r]
+    print("{}\t&{:.3f}\t&{:.3f}\t&{:.3f}\t&{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
 
 print("Type prediction: TAIL")
-print("Method\t\t\t\t\tPrecision\t\t\t\t\tRecall\t\t\tF1\t\t\t\t\tAccuracy")
+print("Method\t& Precision\t& Recall\t& F1\t& Accuracy")
 for r in results['tail']:
-    if r['classifier'] not in avg:
-        avg[r['classifier']] = r
-    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
+    avg[r['classifier']].append(r)
+    print("{}\t&{:.3f}\t&{:.3f}\t&{:.3f}\t&{:.3f}".format(r['classifier'], r['PREC'], r['REC'], r['F1'], r['accuracy']))
 
 print("Type prediction: AVG")
-print("Method\t\t\t\t\tPrecision\t\t\t\t\tRecall\t\t\tF1\t\t\t\t\tAccuracy")
+print("Method\t& Precision\t& Recall\t& F1\t& Accuracy")
 for name, r in avg.items():
     assert(len(r) == 2)
     avg_prec = (r[0]['PREC'] + r[1]['PREC']) / 2
     avg_rec = (r[0]['REC'] + r[1]['REC']) / 2
     avg_acc = (r[0]['accuracy'] + r[1]['accuracy']) / 2
     avg_f1 = (r[0]['F1'] + r[1]['F1']) / 2
-    print("{}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}\t\t\t\t\t{:.3f}".format(r['classifier'], avg_prec, avg_rec, avg_f1, avg_acc))
+    print("{}\t&{:.3f}\t&{:.3f}\t&{:.3f}\t&{:.3f}".format(name, avg_prec, avg_rec, avg_f1, avg_acc))
 
 
 
