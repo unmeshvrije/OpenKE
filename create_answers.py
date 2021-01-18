@@ -1,6 +1,6 @@
 import torch
-from kge.model import KgeModel
-from kge.util.io import load_checkpoint
+from support.dataset_fb15k237 import Dataset_FB15k237
+from support.dataset_dbpedia50 import Dataset_dbpedia50
 import json
 import os
 import argparse
@@ -12,8 +12,6 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--known_answers_train_file', default=None, dest='known_answers_train_file', type=str)
-    parser.add_argument('--known_answers_valid_file', default=None, dest='known_answers_valid_file', type=str)
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10)
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237")
@@ -24,18 +22,30 @@ def parse_args():
 
 args = parse_args()
 
-if args.model != "rotate":
-    model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
-    checkpoint = load_checkpoint(model_path)
-    model = KgeModel.create_from(checkpoint)
-else:
-    raise Exception("Creating the answers with RotatE is not possible (bugs/unclaritis in libkge. We use different code and openke")
+#if args.model != "rotate":
+#    model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
+#    checkpoint = load_checkpoint(model_path)
+#    model = KgeModel.create_from(checkpoint)
+#else:
+#    raise Exception("Creating the answers with RotatE is not possible (bugs/unclaritis in libkge. We use different code and openke")
     #from kge.model.rotate import RotatEScorer
     #model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model, suf='.ckpt')
     #model = torch.load(model_path, map_location=torch.device('cpu'))
     #E = model['ent_embeddings.weight']
     #R = model['rel_embeddings.weight']
 
+# Load the dataset
+dataset = None
+annotations_dir = args.result_dir + '/' + args.db + '/annotations/'
+if args.db == 'fb15k237':
+    dataset = Dataset_FB15k237()
+elif args.db == 'dbpedia50':
+    dataset = Dataset_dbpedia50()
+
+# Load the embedding model
+embedding_model_typ = args.model
+from support.embedding_model import Embedding_Model
+embedding_model = Embedding_Model(args.result_dir, embedding_model_typ, dataset)
 
 queries_full_path = args.result_dir + '/' + args.db + '/queries/' + get_filename_queries(args.db, args.mode, args.type_prediction)
 ent_queries = []
@@ -48,54 +58,13 @@ with open(queries_full_path, "rt") as fin:
         assert(args.type_prediction == 'tail' or r['type'] == 0)
         assert (args.type_prediction == 'head' or r['type'] == 1)
 
-known_answers = set()
-if args.mode == 'test':
-    with open(args.known_answers_train_file, 'rt') as fin:
-        nfacts = int(fin.readline())
-        for l in fin:
-            tkns = l.split(' ')
-            h = int(tkns[0])
-            t = int(tkns[1])
-            r = int(tkns[2])
-            if args.type_prediction == 'head':
-                known_answers.add((t,r,h))
-            elif args.type_prediction == 'tail':
-                known_answers.add((h,r,t))
-    with open(args.known_answers_valid_file, 'rt') as fin:
-        nfacts = int(fin.readline())
-        for l in fin:
-            tkns = l.split(' ')
-            h = int(tkns[0])
-            t = int(tkns[1])
-            r = int(tkns[2])
-            if args.type_prediction == 'head':
-                known_answers.add((t,r,h))
-            elif args.type_prediction == 'tail':
-                known_answers.add((h,r,t))
-
 topk = args.topk
 e = torch.Tensor(ent_queries).long()
 r = torch.Tensor(rel_queries).long()
 if args.type_prediction == 'tail':
-    scores = model.score_sp(e, r)
+    scores = embedding_model.score_sp(e, r)
 else:
-    scores = model.score_po(r, e)
-#else:
-#    from kge.config import Config
-#    config = Config()
-#    config.set("l_norm", 2, create=True)
-#    scorer = RotatEScorer(config, None)
-#    scores = [] # I compute the scores one by one due to the main memory constraints
-#    for i in tqdm(range(0, len(e), 10)):
-#        ent = E[e[i:i+10]]
-#        rel = R[r[i:i+10]]
-#        if args.type_prediction == 'tail':
-#            score = scorer.score_emb(ent, rel, E, combine="sp_")
-#        else:
-#            score = scorer.score_emb(E, rel, ent, combine="_po")
-#        scores.append(score[0].numpy())
-#scores = np.asarray(scores)
-#scores = torch.Tensor(scores)
+    scores = embedding_model.score_po(r, e)
 o = torch.argsort(scores, dim=-1, descending = True)
 
 out = []
@@ -108,7 +77,11 @@ for index in tqdm(range(0, len(ent_queries))):
     for oi in o[index]:
         if len(raw_answers) < topk:
             raw_answers.append({'entity_id' : oi.item(), 'score' : scores[index][oi.item()].item()})
-        if (ent, rel, oi.item()) not in known_answers:
+        if args.type_prediction == 'head':
+            exists = dataset.exists_htr(oi.item(), ent, rel)
+        else:
+            exists = dataset.exists_htr(ent, oi.item(), rel)
+        if not exists: #ent, rel, oi.item()) not in known_answers:
             filtered_answers.append({'entity_id' : oi.item(), 'score' : scores[index][oi.item()].item()})
             if len(filtered_answers) == topk:
                 break

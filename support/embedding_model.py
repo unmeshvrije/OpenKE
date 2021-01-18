@@ -5,7 +5,7 @@ import numpy as np
 from support.dataset import Dataset
 from .utils import *
 from openke.module.model import RotatE, ComplEx, TransE
-from openke.data import TrainDataLoader
+from openke.data import TrainDataLoader, TestDataLoader
 import os
 
 from enum import Enum
@@ -19,6 +19,7 @@ class Embedding_Model:
         self.dataset = dataset
         # Load the model
         db = dataset.get_name()
+        self.use_libkge = False
 
         suf = '.pt'
         path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
@@ -27,6 +28,7 @@ class Embedding_Model:
             self.model = KgeModel.create_from(checkpoint)
             self.E = self.model._entity_embedder._embeddings_all().data
             self.R = self.model._relation_embedder._embeddings_all().data
+            self.use_libkge = True
         else:
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
@@ -45,11 +47,13 @@ class Embedding_Model:
                     neg_ent=25,
                     neg_rel=0
                 )
+                self.test_dataloader = TestDataLoader(in_path=db_path)
+
                 if typ == 'rotate':
                     self.model = RotatE(
                         ent_tot=self.train_dataloader.get_ent_tot(),
                         rel_tot=self.train_dataloader.get_rel_tot(),
-                        dim=400,
+                        dim=200,
                         margin=6.0,
                         epsilon=2.0)
                 elif typ == 'complex':
@@ -168,3 +172,35 @@ class Embedding_Model:
         for b in best_subgraphs:
             out.append(self.subgraphs[b])
         return out
+
+    def score_sp(self, ent, rel):
+        if self.use_libkge:
+            return self.model.score_sp(ent, rel)
+        else:
+            scores = np.zeros((len(rel), self.n), dtype=float)
+            for idx, r in enumerate(tqdm(rel)):
+                e = ent[idx]
+                T = self.E
+                R = self.R[r][np.newaxis, :]
+                H = self.E[e][np.newaxis, :]
+                mode = 'tail_batch'
+                s = self.model._calc(H, T, R, mode)
+                s = -s
+                scores[idx] = s.numpy()
+            return torch.from_numpy(scores)
+
+    def score_po(self, rel, ent):
+        if self.use_libkge:
+            return self.model.score_po(rel, ent)
+        else:
+            scores = np.zeros((len(rel), self.n), dtype=float)
+            for idx, r in enumerate(tqdm(rel)):
+                e = ent[idx]
+                H = self.E
+                R = self.R[r][np.newaxis, :]
+                T = self.E[e][np.newaxis, :]
+                mode = 'head_batch'
+                s = self.model._calc(H, T, R, mode)
+                s = -s
+                scores[idx] = s.numpy()
+            return torch.from_numpy(scores)
