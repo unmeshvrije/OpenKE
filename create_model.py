@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp','mlp_multi','lstm','conv', 'snorkel', 'trans'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp','mlp_multi','lstm','conv', 'snorkel', 'trans', 'supensemble'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv,path,sub")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
@@ -77,6 +77,11 @@ elif args.classifier == 'snorkel':
     signals = args.name_signals.split(",")
     use_valid_data = 0 # With snorkel, I don't need validation data
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
+elif args.classifier == 'supensemble':
+    from classifier_supensemble import Classifier_SuperEnsemble
+    signals = args.name_signals.split(",")
+    classifier = Classifier_SuperEnsemble(dataset, args.type_prediction, args.topk, args.result_dir, signals,
+                                    embedding_model_typ)
 else:
     raise Exception('Not supported')
 

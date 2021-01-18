@@ -1,13 +1,14 @@
 import supervised_classifier
-from snorkel.labeling.model.label_model import LabelModel
-import numpy as np
 from support.utils import *
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+import joblib
 
 FALSE=0
 TRUE=1
-ABSTAIN=-1
 
-class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
+class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
     def __init__(self,
                  dataset,
                  type_prediction : {'head', 'tail'},
@@ -15,8 +16,7 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                  results_dir,
                  classifiers,
                  embedding_model_name,
-                 model_path = None,
-                 abstain_scores = None):
+                 model_path=None):
         self.classifiers = classifiers
         self.topk = topk
         self.dataset_name = dataset.get_name()
@@ -24,36 +24,16 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         self.type_prediction = type_prediction
         self.result_dir = results_dir
         self.test_annotations = None
-        self.abstain_scores = abstain_scores
-        if self.abstain_scores is not None:
-            assert(len(self.abstain_scores) == len(classifiers))
         if model_path is not None:
             print("Loading existing model {} ...".format(model_path))
-            label_model = LabelModel(verbose=True)
-            label_model.load(model_path)
-            self.set_model(label_model)
+            model = joblib.load(model_path)
+            self.set_model(model)
+
+    def get_name(self):
+        return "SupEnsemble"
 
     def init_model(self, embedding_model, hyper_params):
-        pass
-
-    def _annotate_labels(self, labels):
-        l = []
-        if self.abstain_scores is None:
-            for a in labels:
-                if a == False:
-                    l.append(FALSE)
-                else:
-                    l.append(TRUE)
-        else:
-            for i, a in enumerate(labels):
-                low_score, hi_score = self.abstain_scores[i]
-                if a < low_score:
-                    l.append(FALSE)
-                elif a >= hi_score:
-                    l.append(TRUE)
-                else:
-                    l.append(ABSTAIN)
-        return l
+        self.model = RandomForestClassifier(max_depth=2, random_state=0)
 
     def create_training_data(self, queries_with_answers):
         classifiers_annotations = load_classifier_annotations(self.classifiers,
@@ -63,49 +43,47 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                                                                     "train",
                                                                     self.topk,
                                                                     self.type_prediction,
-                                                                    return_scores=True)
+                                                                    return_scores=False)
         training_data = []
         print("  Creating training data ...")
         for keys, annotations in tqdm(classifiers_annotations.items()):
             for answer, annotation in annotations.items():
-                l = self._annotate_labels(annotation)
-                training_data.append(l)
+                training_data.append(annotation)
         training_data = np.asarray(training_data)
         count_true = np.zeros(len(self.classifiers), dtype=int)
         count_false = np.zeros(len(self.classifiers), dtype=int)
-        count_abstain = np.zeros(len(self.classifiers), dtype=int)
         for t in training_data:
             for i, a in enumerate(t):
                 if a == TRUE:
                     count_true[i] += 1
-                elif a == FALSE:
-                    count_false[i] += 1
                 else:
-                    count_abstain[i] += 1
+                    count_false[i] += 1
         for i, classifier in enumerate(self.classifiers):
-            print("Classifier {} TRUE {} FALSE {} ABSTAIN {}".format(classifier, count_true[i], count_false[i], count_abstain[i]))
+            print("Classifier {} TRUE {} FALSE {}".format(classifier, count_true[i], count_false[i]))
         return training_data
 
-    def get_name(self):
-        return "Snorkel"
-
     def train(self, training_data, valid_data, model_path):
-        self.model = LabelModel(verbose=True)
-        self.model.fit(training_data, n_epochs=500, optimizer="adam")
+        X, y = make_classification(n_samples=1000,
+                                   n_features=4,
+                                   n_informative = 2,
+                                   n_redundant = 0,
+                                   random_state = 0,
+                                   shuffle = False)
+        self.model.fit(X, y)
         if model_path is not None:
             self.model.save(model_path)
+            joblib.dump(self.model, model_path)
 
-    def predict(self, query_with_answers, provenance_test = "test"):
+    def predict(self, query_with_answers, provenance_test="test"):
         if self.test_annotations is None:
             self.test_annotations = load_classifier_annotations(self.classifiers,
-                                                                        self.result_dir,
-                                                                        self.dataset_name,
-                                                                        self.embedding_model_name,
-                                                                        provenance_test,
-                                                                        self.topk,
-                                                                        self.type_prediction,
-                                                                        return_scores=True)
-
+                                                                self.result_dir,
+                                                                self.dataset_name,
+                                                                self.embedding_model_name,
+                                                                provenance_test,
+                                                                self.topk,
+                                                                self.type_prediction,
+                                                                return_scores=True)
         # for q in query_with_answers:
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
@@ -123,8 +101,7 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         for entity_id, labels in self.test_annotations[(ent, rel)].items():
             assert (entity_id in filtered_answers)
             assert (len(labels) == len(self.classifiers))
-            l = np.asarray(self._annotate_labels(labels))
-            l = l.reshape(1, -1)
+            l = labels.reshape(1, -1)
             out = self.get_model().predict(l)
             checked = out[0] == TRUE
             annotated_answers.append({'entity_id': entity_id, 'checked': checked, 'score': 1})
