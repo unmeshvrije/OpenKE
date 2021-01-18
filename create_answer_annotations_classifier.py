@@ -1,5 +1,6 @@
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
+from support.dataset_dbpedia50 import Dataset_dbpedia50
 from support.utils import *
 from support.embedding_model import Embedding_Model
 import pickle
@@ -8,9 +9,9 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub', 'threshold', 'supensemble'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
-    parser.add_argument('--db', dest ='db', type = str, default = "fb15k237", choices=['fb15k237'])
+    parser.add_argument('--db', dest ='db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--mode', dest='mode', type=str, default="test", choices=['train', 'valid', 'test'])
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])
@@ -27,6 +28,7 @@ def parse_args():
     parser.add_argument('--lstm_dropout', dest='lstm_dropout', type=float, default=0.2)
     parser.add_argument('--conv_kern_size1', dest='conv_kern_size1', type=int, default=4)
     parser.add_argument('--conv_kern_size2', dest='conv_kern_size2', type=int, default=2)
+    parser.add_argument('--threshold_k', dest='threshold_k', type=int, default=10)
 
     return parser.parse_args()
 
@@ -36,6 +38,8 @@ args = parse_args()
 dataset = None
 if args.db == 'fb15k237':
     dataset = Dataset_FB15k237()
+elif args.db == 'dbpedia50':
+    dataset = Dataset_dbpedia50()
 else:
     raise Exception("DB {} not supported!".format(args.db))
 
@@ -96,6 +100,9 @@ elif args.classifier == 'conv':
 elif args.classifier == 'random':
     from classifier_random import Classifier_Random
     classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
+elif args.classifier == 'threshold':
+    from classifier_threshold import Classifier_Threshold
+    classifier = Classifier_Threshold(dataset, args.type_prediction, args.result_dir, threshold=args.threshold_k)
 elif args.classifier == 'path':
     from classifier_path import Classifier_Path
     classifier = Classifier_Path(dataset, args.type_prediction, args.result_dir)
@@ -125,6 +132,13 @@ elif args.classifier == 'snorkel':
     model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir,
                                     signals, embedding_model_typ, model_path=model_dir + '/' + model_filename, abstain_scores=thresholds)
+elif args.classifier == 'supensemble':
+    from classifier_supensemble import Classifier_SuperEnsemble
+    signals = args.name_signals.split(",")
+    model_dir = args.result_dir + '/' + args.db + '/models/'
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
+    classifier = Classifier_SuperEnsemble(dataset, args.type_prediction, args.topk, args.result_dir, signals,
+                                          embedding_model_typ, model_path=model_dir + '/' + model_filename)
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 

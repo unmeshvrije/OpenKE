@@ -47,6 +47,12 @@ class Dataset_dbpedia50(Dataset):
 
         # test_data_path = path + '/test2id.txt'
         # self.test_data = self._load_dataset(test_data_path)
+        entity_dict_path = path + '/entity2id.txt'
+        with open(entity_dict_path, 'rt') as fin:
+            self.n_entities = int(fin.readline())
+        relation_dict_path = path + '/relation2id.txt'
+        with open(relation_dict_path, 'rt') as fin:
+            self.n_relations = int(fin.readline())
 
     def get_hr_subgraphs(self):
         return self.known_answers_hr
@@ -79,3 +85,9 @@ class Dataset_dbpedia50(Dataset):
 
     def get_facts(self):
         return self.facts
+
+    def get_n_entities(self):
+        return self.n_entities
+
+    def get_n_relations(self):
+        return self.n_relations

@@ -4,9 +4,9 @@ from support.utils import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub', 'threshold', 'supensemble'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
-    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237'])
+    parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
     parser.add_argument('--mode', dest='mode', type=str, default="test", choices=['train', 'valid', 'test'])
     parser.add_argument('--model', dest='model', type=str, default="transe", choices=['complex', 'rotate', 'transe'])

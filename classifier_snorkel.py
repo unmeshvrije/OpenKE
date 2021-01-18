@@ -1,6 +1,5 @@
 import supervised_classifier
 from snorkel.labeling.model.label_model import LabelModel
-from tqdm import tqdm
 import numpy as np
 from support.utils import *
 
@@ -21,10 +20,8 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         self.classifiers = classifiers
         self.topk = topk
         self.dataset_name = dataset.get_name()
-        self.classifiers_annotations = None
         self.embedding_model_name = embedding_model_name
         self.type_prediction = type_prediction
-        self.snorkel_model = None
         self.result_dir = results_dir
         self.test_annotations = None
         self.abstain_scores = abstain_scores
@@ -93,17 +90,18 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         return "Snorkel"
 
     def train(self, training_data, valid_data, model_path):
-        label_model = LabelModel(verbose=True)
-        label_model.fit(training_data, n_epochs=500, optimizer="adam")
-        label_model.save(model_path)
+        self.model = LabelModel(verbose=True)
+        self.model.fit(training_data, n_epochs=500, optimizer="adam")
+        if model_path is not None:
+            self.model.save(model_path)
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, provenance_test = "test"):
         if self.test_annotations is None:
             self.test_annotations = load_classifier_annotations(self.classifiers,
                                                                         self.result_dir,
                                                                         self.dataset_name,
                                                                         self.embedding_model_name,
-                                                                        "test",
+                                                                        provenance_test,
                                                                         self.topk,
                                                                         self.type_prediction,
                                                                         return_scores=True)
