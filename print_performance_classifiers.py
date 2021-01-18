@@ -11,7 +11,7 @@ def parse_args():
     return parser.parse_args()
 
 args = parse_args()
-classifiers = ['random', 'mlp_multi', 'lstm', 'conv', 'path', 'sub', 'min', 'maj', 'snorkel']
+classifiers = ['random', 'threshold', 'mlp_multi', 'lstm', 'conv', 'path', 'sub', 'min', 'maj', 'supensemble', 'snorkel' ]
 
 results_dir = args.result_dir + '/' + args.db + '/results/'
 
