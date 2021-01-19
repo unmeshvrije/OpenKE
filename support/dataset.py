@@ -45,3 +45,11 @@ class Dataset:
     @abstractmethod
     def get_n_relations(self):
         pass
+
+    @abstractmethod
+    def get_entity_text(self, id):
+        pass
+
+    @abstractmethod
+    def get_relation_text(self, id):
+        pass

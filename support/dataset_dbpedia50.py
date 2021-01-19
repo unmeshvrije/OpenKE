@@ -48,11 +48,24 @@ class Dataset_dbpedia50(Dataset):
         # test_data_path = path + '/test2id.txt'
         # self.test_data = self._load_dataset(test_data_path)
         entity_dict_path = path + '/entity2id.txt'
+        self.ent_id2txt = {}
         with open(entity_dict_path, 'rt') as fin:
             self.n_entities = int(fin.readline())
+            for l in fin:
+                tkns = l.split('\t')
+                id = int(tkns[1])
+                txt = tkns[0]
+                self.ent_id2txt[id] = txt
+
         relation_dict_path = path + '/relation2id.txt'
+        self.rel_id2txt = {}
         with open(relation_dict_path, 'rt') as fin:
             self.n_relations = int(fin.readline())
+            for l in fin:
+                tkns = l.split('\t')
+                id = int(tkns[1])
+                txt = tkns[0]
+                self.rel_id2txt[id] = txt
 
     def get_hr_subgraphs(self):
         return self.known_answers_hr
@@ -91,3 +104,9 @@ class Dataset_dbpedia50(Dataset):
 
     def get_n_relations(self):
         return self.n_relations
+
+    def get_entity_text(self, id):
+        return self.ent_id2txt[id]
+
+    def get_relation_text(self, id):
+        return self.rel_id2txt[id]

@@ -17,8 +17,45 @@ class Embedding_Model:
 
     # Sometimes the embedding model (libkge) uses a different dictionary than the dataset. In this case, I change the embeddings so that the correct ones are used
     def _fix_dictionary(self):
-        self.kge_dict_2_dataset = None
-        self.dataset_2_kge_dict = None
+        self.ent_map = None
+        self.rel_map = None
+        if self.use_libkge:
+            self.E = self.model._entity_embedder._embeddings_all().data
+            self.R = self.model._relation_embedder._embeddings_all().data
+            if self.n != self.model.dataset.num_entities() or self.r != self.model.dataset.num_relations():
+                # Build the mapping from our entities to KGE entities
+                self.ent_map = np.zeros(self.n, dtype=np.int64)
+                kge_map = {}
+                for i in range(self.model.dataset.num_entities()):
+                    txt = self.model.dataset.entity_strings(i)
+                    kge_map[txt] = i
+                for i in range(self.n):
+                    # Get text:
+                    txt = self.dataset.get_entity_text(i)
+                    if txt in kge_map:
+                        kge_id = kge_map[txt]
+                        self.ent_map[i] = kge_id
+                    else:
+                        print("Not found!")
+                #new_E = self.E[ent_map]
+
+                self.rel_map = np.zeros(self.r, dtype=np.int64)
+                kge_map = {}
+                for i in range(self.model.dataset.num_relations()):
+                    txt = self.model.dataset.relation_strings(i)
+                    kge_map[txt] = i
+                for i in range(self.r):
+                    # Get text:
+                    txt = self.dataset.get_relation_text(i)
+                    assert (txt in kge_map)
+                    kge_id = kge_map[txt]
+                    self.rel_map[i] = kge_id
+                #new_R = self.R[rel_map]
+                #self.E = new_E
+                #self.R = new_R
+        else:
+            self.E = self.model['ent_embeddings.weight']
+            self.R = self.model['rel_embeddings.weight']
 
 
     def __init__(self, results_dir, typ : {'transe', 'complex', 'rotate'}, dataset):
@@ -26,6 +63,8 @@ class Embedding_Model:
         self.dataset = dataset
         # Load the model
         db = dataset.get_name()
+        self.n = dataset.get_n_entities()
+        self.r = dataset.get_n_relations()
         self.use_libkge = False
 
         suf = '.pt'
@@ -33,19 +72,19 @@ class Embedding_Model:
         if os.path.exists(path):
             checkpoint = load_checkpoint(path)
             self.model = KgeModel.create_from(checkpoint)
-            self.E = self.model._entity_embedder._embeddings_all().data
-            self.R = self.model._relation_embedder._embeddings_all().data
-            self.n = len(self.E)
-            self.r = len(self.R)
+            #self.E = self.model._entity_embedder._embeddings_all().data
+            #self.R = self.model._relation_embedder._embeddings_all().data
+            self.dim_e = self.model.get_s_embedder().dim
+            assert(self.model.get_s_embedder().dim == self.model.get_o_embedder().dim)
+            self.dim_r = self.model.get_p_embedder().dim
             self.use_libkge = True
-            self._fix_dictionary()
         else:
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
             if os.path.exists(path):
                 self.model = torch.load(path, map_location=torch.device('cpu'))
-                self.E = self.model['ent_embeddings.weight']
-                self.R = self.model['rel_embeddings.weight']
+                #self.E = self.model['ent_embeddings.weight']
+                #self.R = self.model['rel_embeddings.weight']
                 db_path = dataset.get_path()
                 self.train_dataloader = TrainDataLoader(
                     in_path=db_path,
@@ -58,8 +97,8 @@ class Embedding_Model:
                     neg_rel=0
                 )
                 self.test_dataloader = TestDataLoader(in_path=db_path)
-                self.n = self.train_dataloader.get_ent_tot()
-                self.r = self.train_dataloader.get_rel_tot()
+                assert(self.n == self.train_dataloader.get_ent_tot())
+                assert(self.r == self.train_dataloader.get_rel_tot())
 
                 if typ == 'rotate':
                     self.model = RotatE(
@@ -82,29 +121,12 @@ class Embedding_Model:
                         p_norm=1,
                         norm_flag=True
                     )
-
+                self.dim_e = self.model.dim_e
+                self.dim_r = self.model.dim_r
             else:
                 self.model = None
-                self.E = None
-                self.R = None
-
-        if self.model is None:
-            self.n = dataset.get_n_entities()
-            self.r = dataset.get_n_relations()
-            if typ == 'rotate':
-                self.dim_e = 400
-                self.dim_r = 200
-            elif typ == 'transe':
-                self.dim_e = 200
-                self.dim_r = 200
-            elif typ == 'complex':
-                self.dim_e = 256
-                self.dim_r = 256
-            else:
-                raise Exception("Not supported")
-        else:
-            self.dim_e = len(self.E[0])
-            self.dim_r = len(self.R[0])
+        assert(self.model is not None)
+        self._fix_dictionary() # This method will create the E and R data structures
 
     def get_type(self):
         return self.typ
@@ -119,9 +141,13 @@ class Embedding_Model:
         return self.r
 
     def get_embedding_entity(self, entity_id):
+        if self.ent_map is not None:
+            entity_id = self.ent_map[entity_id]
         return self.E[entity_id].numpy()
 
     def get_embedding_relation(self, relation_id):
+        if self.rel_map is not None:
+            relation_id = self.rel_map[relation_id]
         return self.R[relation_id].numpy()
 
     def get_size_embedding_entity(self):
@@ -156,8 +182,8 @@ class Embedding_Model:
         # Create a model with the subgraphs
         if self.use_libkge:
             scorer = self.model.get_scorer()
-            e = self.E[ent].view(1, -1)
-            r = self.R[rel].view(1, -1)
+            e = self.get_embedding_entity(ent).view(1, -1)
+            r = self.get_embedding_relation(rel).view(1, -1)
             T = torch.Tensor(self.avg_subgraphs)
             if sub_type == SubgraphType.SPO:
                 combine = 'sp_'
@@ -168,8 +194,8 @@ class Embedding_Model:
             o = torch.argsort(scores, dim=-1, descending=True)
             best_subgraphs = o[0][:k]
         else:
-            new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
-            new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
+            new_E = torch.Tensor(self.get_embedding_entity(ent))[np.newaxis, :]
+            new_R = torch.Tensor(self.get_embedding_relation(rel))[np.newaxis, :]
             new_S = torch.Tensor(self.avg_subgraphs)
             if sub_type == SubgraphType.POS:
                 type_prediction = 'head'
@@ -186,14 +212,23 @@ class Embedding_Model:
 
     def score_sp(self, ent, rel):
         if self.use_libkge:
-            return self.model.score_sp(ent, rel)
+            if self.ent_map is not None:
+                ent = self.ent_map[ent]
+                ent = torch.Tensor(ent)
+            if self.rel_map is not None:
+                rel = self.rel_map[rel]
+                rel = torch.Tensor(rel)
+            scores = self.model.score_sp(ent, rel)
+            if self.ent_map is not None:
+                scores = torch.index_select(scores, 1, torch.from_numpy(self.ent_map))
+            return scores
         else:
             scores = np.zeros((len(rel), self.n), dtype=float)
             for idx, r in enumerate(tqdm(rel)):
                 e = ent[idx]
                 T = self.E
-                R = self.R[r][np.newaxis, :]
-                H = self.E[e][np.newaxis, :]
+                R = self.get_embedding_relation(r)[np.newaxis, :]
+                H = self.get_embedding_entity(e)[np.newaxis, :]
                 mode = 'tail_batch'
                 s = self.model._calc(H, T, R, mode)
                 s = -s
@@ -202,14 +237,23 @@ class Embedding_Model:
 
     def score_po(self, rel, ent):
         if self.use_libkge:
-            return self.model.score_po(rel, ent)
+            if self.ent_map is not None:
+                ent = self.ent_map[ent]
+                ent = torch.Tensor(ent)
+            if self.rel_map is not None:
+                rel = self.rel_map[rel]
+                rel = torch.Tensor(rel)
+            scores = self.model.score_po(rel, ent)
+            if self.ent_map is not None:
+                scores = torch.index_select(scores, 1, torch.from_numpy(self.ent_map))
+            return scores
         else:
             scores = np.zeros((len(rel), self.n), dtype=float)
             for idx, r in enumerate(tqdm(rel)):
                 e = ent[idx]
                 H = self.E
-                R = self.R[r][np.newaxis, :]
-                T = self.E[e][np.newaxis, :]
+                R = self.get_embedding_relation(r)[np.newaxis, :]
+                T = self.get_embedding_entity(e)[np.newaxis, :]
                 mode = 'head_batch'
                 s = self.model._calc(H, T, R, mode)
                 s = -s
