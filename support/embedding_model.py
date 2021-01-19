@@ -182,8 +182,8 @@ class Embedding_Model:
         # Create a model with the subgraphs
         if self.use_libkge:
             scorer = self.model.get_scorer()
-            e = self.get_embedding_entity(ent).view(1, -1)
-            r = self.get_embedding_relation(rel).view(1, -1)
+            e = torch.from_numpy(self.get_embedding_entity(ent)).view(1, -1)
+            r = torch.from_numpy(self.get_embedding_relation(rel)).view(1, -1)
             T = torch.Tensor(self.avg_subgraphs)
             if sub_type == SubgraphType.SPO:
                 combine = 'sp_'
