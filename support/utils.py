@@ -68,7 +68,16 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
                         else:
                             true_negatives += 1
                         break
-                assert (found)
+                if not found:
+                    if entity_id == ent:
+                        if checked:
+                            false_positives += 1
+                        else:
+                            true_negatives += 1
+                            matched_answers += 1
+                        found = True
+                assert(found)
+
     acc = matched_answers / n_gold_annotations
     if true_positives + false_negatives == 0:
         rec = 0
