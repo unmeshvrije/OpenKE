@@ -29,7 +29,7 @@ args = parse_args()
 N_DIM = 200 # Number of dimensions for embeddings
 
 # Paths
-db_path = "./benchmarks/" + args.db + "/"
+db_path = "../benchmarks/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(result_dir + "embeddings/", exist_ok = True)

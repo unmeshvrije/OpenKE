@@ -15,11 +15,11 @@ def parse_args():
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-entity.pkl',help = 'entity id dictionary.')
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/dbpedia50/misc/dbpedia50-id-to-relation.pkl',help = 'relation id dictionary.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test triples.',
-    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/test2id.txt')
+    default = '../benchmarks/dbpedia50/test2id.txt')
     parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing train triples.',
-    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/train2id.txt')
+    default = '../benchmarks/dbpedia50/train2id.txt')
     parser.add_argument('--validfile', dest ='valid_file', type = str, help = 'File containing valid triples.',
-    default = '/home/uji300/OpenKE/benchmarks/dbpedia50/valid2id.txt')
+    default = '../benchmarks/dbpedia50/valid2id.txt')
     parser.add_argument('--inputfile', required = True, dest ='input_file', type = str, help = 'File containing sample queries from TransE (train/test).',
     default = "/var/scratch2/uji300/OpenKE-results/dbpedia50/data/dbpedia50-transe-test-topk-10.json"
 )
@@ -49,7 +49,10 @@ log_dir =  args.result_dir + args.db + "/logs/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(log_dir, exist_ok = True)
 model_path = args.result_dir + args.db + "/embeddings/" + args.db + "-complex.pt"
-model = kge.model.KgeModel.load_from_checkpoint(model_path)
+#model = kge.model.KgeModel.load_from_checkpoint(model_path)
+from kge.util.io import load_checkpoint
+checkpoint = load_checkpoint(model_path)
+model = kge.model.KgeModel.create_from(checkpoint)
 '''
     2. Load string dictionaries
 '''
@@ -171,7 +174,6 @@ for r in records:
     #kge_to_openke_ent_dict[tail] = r['tail']
     rel  = kge_rel_dict[rel_dict[r['rel']]]
     #kge_to_openke_rel_dict[rel] = r['rel']
-
     if (head, rel) not in unique_pairs_hr:
         unique_pairs_hr.add((head, rel))
         heads_for_unique_tail_queries.append(head)
@@ -226,6 +228,8 @@ if args.logans:
 for index in tqdm(range(0, len(heads_for_unique_tail_queries))):
     head = s[index].item()
     rel  = p[index].item()
+    if head == 22761 and rel == 2:
+        print("Stop")
     h = model.dataset.entity_strings(s[index])
     r = model.dataset.relation_strings(p[index])
     filtered_answers = []

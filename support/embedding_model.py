@@ -14,6 +14,13 @@ from collections import namedtuple
 Subgraph = namedtuple("Subgraph", "type ent rel")
 
 class Embedding_Model:
+
+    # Sometimes the embedding model (libkge) uses a different dictionary than the dataset. In this case, I change the embeddings so that the correct ones are used
+    def _fix_dictionary(self):
+        self.kge_dict_2_dataset = None
+        self.dataset_2_kge_dict = None
+
+
     def __init__(self, results_dir, typ : {'transe', 'complex', 'rotate'}, dataset):
         self.typ = typ
         self.dataset = dataset
@@ -28,7 +35,10 @@ class Embedding_Model:
             self.model = KgeModel.create_from(checkpoint)
             self.E = self.model._entity_embedder._embeddings_all().data
             self.R = self.model._relation_embedder._embeddings_all().data
+            self.n = len(self.E)
+            self.r = len(self.R)
             self.use_libkge = True
+            self._fix_dictionary()
         else:
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
@@ -48,6 +58,8 @@ class Embedding_Model:
                     neg_rel=0
                 )
                 self.test_dataloader = TestDataLoader(in_path=db_path)
+                self.n = self.train_dataloader.get_ent_tot()
+                self.r = self.train_dataloader.get_rel_tot()
 
                 if typ == 'rotate':
                     self.model = RotatE(
@@ -70,6 +82,7 @@ class Embedding_Model:
                         p_norm=1,
                         norm_flag=True
                     )
+
             else:
                 self.model = None
                 self.E = None
@@ -90,8 +103,6 @@ class Embedding_Model:
             else:
                 raise Exception("Not supported")
         else:
-            self.n = len(self.E)
-            self.r = len(self.R)
             self.dim_e = len(self.E[0])
             self.dim_r = len(self.R[0])
 
@@ -143,7 +154,7 @@ class Embedding_Model:
 
     def get_most_similar_subgraphs(self, sub_type, ent, rel, k=10):
         # Create a model with the subgraphs
-        if self.typ != 'rotate':
+        if self.use_libkge:
             scorer = self.model.get_scorer()
             e = self.E[ent].view(1, -1)
             r = self.R[rel].view(1, -1)
