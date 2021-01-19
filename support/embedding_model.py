@@ -54,8 +54,8 @@ class Embedding_Model:
                 #self.E = new_E
                 #self.R = new_R
         else:
-            self.E = self.model['ent_embeddings.weight']
-            self.R = self.model['rel_embeddings.weight']
+            self.E = self.torch_model['ent_embeddings.weight']
+            self.R = self.torch_model['rel_embeddings.weight']
 
 
     def __init__(self, results_dir, typ : {'transe', 'complex', 'rotate'}, dataset):
@@ -82,7 +82,7 @@ class Embedding_Model:
             suf = '.ckpt'
             path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
             if os.path.exists(path):
-                self.model = torch.load(path, map_location=torch.device('cpu'))
+                self.torch_model = torch.load(path, map_location=torch.device('cpu'))
                 #self.E = self.model['ent_embeddings.weight']
                 #self.R = self.model['rel_embeddings.weight']
                 db_path = dataset.get_path()
@@ -121,8 +121,8 @@ class Embedding_Model:
                         p_norm=1,
                         norm_flag=True
                     )
-                self.dim_e = self.model.dim_e
-                self.dim_r = self.model.dim_r
+                self.dim_e = len(self.torch_model['ent_embeddings.weight'][0])
+                self.dim_r = len(self.torch_model['rel_embeddings.weight'][0])
             else:
                 self.model = None
         assert(self.model is not None)
@@ -227,8 +227,8 @@ class Embedding_Model:
             for idx, r in enumerate(tqdm(rel)):
                 e = ent[idx]
                 T = self.E
-                R = self.get_embedding_relation(r)[np.newaxis, :]
-                H = self.get_embedding_entity(e)[np.newaxis, :]
+                R = torch.from_numpy(self.get_embedding_relation(r))[np.newaxis, :]
+                H = torch.from_numpy(self.get_embedding_entity(e))[np.newaxis, :]
                 mode = 'tail_batch'
                 s = self.model._calc(H, T, R, mode)
                 s = -s
@@ -252,8 +252,8 @@ class Embedding_Model:
             for idx, r in enumerate(tqdm(rel)):
                 e = ent[idx]
                 H = self.E
-                R = self.get_embedding_relation(r)[np.newaxis, :]
-                T = self.get_embedding_entity(e)[np.newaxis, :]
+                R = torch.from_numpy(self.get_embedding_relation(r))[np.newaxis, :]
+                T = torch.from_numpy(self.get_embedding_entity(e))[np.newaxis, :]
                 mode = 'head_batch'
                 s = self.model._calc(H, T, R, mode)
                 s = -s
