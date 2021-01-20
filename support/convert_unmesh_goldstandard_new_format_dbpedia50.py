@@ -4,13 +4,13 @@ from datetime import datetime
 import sys
 
 
-base_dir = "/var/scratch2/uji300/ijcai2021/binary-embeddings/dbpedia50"
+base_dir = "dbpedia50"
 
-annotations_out = 'misc/annotations_unmesh_dbpedia50.json'
+annotations_out = 'misc/old_annotations.json'
 out = []
 for method  in ["transe", "complex", "rotate"]:
-    annotations_unmesh_head = "/var/scratch2/uji300/OpenKE-results/dbpedia50/out/dbpedia50-"+method+"-annotated-topk-10-head.out-extended.json"
-    annotations_unmesh_tail = "/var/scratch2/uji300/OpenKE-results/dbpedia50/out/dbpedia50-"+method+"-annotated-topk-10-tail.out-extended.json"
+    annotations_unmesh_head = "dbpedia50/out/dbpedia50-"+method+"-annotated-topk-10-head.out-extended.json"
+    annotations_unmesh_tail = "dbpedia50/out/dbpedia50-"+method+"-annotated-topk-10-tail.out-extended.json"
 
     annotations_head = json.load(open(annotations_unmesh_head, 'rt'))
     annotations_tail = json.load(open(annotations_unmesh_tail, 'rt'))

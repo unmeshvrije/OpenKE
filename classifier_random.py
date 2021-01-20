@@ -12,7 +12,7 @@ class Classifier_Random(classifier.Classifier):
     def get_name(self):
         return "Random"
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -20,7 +20,7 @@ class Classifier_Random(classifier.Classifier):
         assert (typ == 0 or self.type_prediction == 'tail')
 
         annotated_answers = []
-        for answer in query_with_answers['answers_fil']:
+        for answer in query_with_answers[type_answers]:
             checked = random.randint(0, 2)
             annotated_answers.append({'entity_id' : answer['entity_id'], 'checked' : checked, 'score': checked})
         return annotated_answers

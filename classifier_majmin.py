@@ -26,7 +26,7 @@ class Classifier_MajMin(supervised_classifier.Classifier):
         else:
             return "Maj"
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         # Load the answers provided by all classifiers
         if self.classifiers_annotations is None:
             self.classifiers_annotations = load_classifier_annotations(self.classifiers,
@@ -47,7 +47,7 @@ class Classifier_MajMin(supervised_classifier.Classifier):
 
         # Check that the output matches the filtered answers
         filtered_answers = set()
-        for a in  query_with_answers['answers_fil']:
+        for a in  query_with_answers[type_answers]:
             filtered_answers.add(a['entity_id'])
 
         annotated_answers = []

@@ -64,12 +64,10 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
                     Y = 1
                 else:
                     Y = 0
-                if ans_id in answers_X:
-                    X = answers_X[ans_id]
-                    training_data_X.append(X)
-                    training_data_Y.append(Y)
-                else:
-                    print("skipped")
+                assert(ans_id in answers_X)
+                X = answers_X[ans_id]
+                training_data_X.append(X)
+                training_data_Y.append(Y)
         training_data_X = np.asarray(training_data_X)
         training_data_Y = np.asarray(training_data_Y)
         count_true = np.zeros(len(self.classifiers), dtype=int)
@@ -97,7 +95,7 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
         if model_path is not None:
             joblib.dump(self.model, model_path)
 
-    def predict(self, query_with_answers, provenance_test="test"):
+    def predict(self, query_with_answers, type_answers, provenance_test="test"):
         if self.test_annotations is None:
             self.test_annotations = load_classifier_annotations(self.classifiers,
                                                                 self.result_dir,
@@ -117,7 +115,7 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
 
         # Check that the output matches the filtered answers
         filtered_answers = set()
-        for a in query_with_answers['answers_fil']:
+        for a in query_with_answers[type_answers]:
             filtered_answers.add(a['entity_id'])
 
         annotated_answers = []

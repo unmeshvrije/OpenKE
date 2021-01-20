@@ -7,6 +7,7 @@ from .utils import *
 from openke.module.model import RotatE, ComplEx, TransE
 from openke.data import TrainDataLoader, TestDataLoader
 import os
+from contextlib import redirect_stderr
 
 from enum import Enum
 SubgraphType = Enum('SubgraphType', 'SPO POS')
@@ -71,9 +72,12 @@ class Embedding_Model:
         path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
         if os.path.exists(path):
             checkpoint = load_checkpoint(path)
-            self.model = KgeModel.create_from(checkpoint)
-            #self.E = self.model._entity_embedder._embeddings_all().data
-            #self.R = self.model._relation_embedder._embeddings_all().data
+            # There is a very annoying set of warnings from torch when I load KGE. I remove them with the hack below
+
+            with open('/dev/null', 'w') as f:
+                with redirect_stderr(f):
+                    self.model = KgeModel.create_from(checkpoint)
+
             self.dim_e = self.model.get_s_embedder().dim
             assert(self.model.get_s_embedder().dim == self.model.get_o_embedder().dim)
             self.dim_r = self.model.get_p_embedder().dim

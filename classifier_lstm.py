@@ -139,7 +139,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         if valid_data is None and model_path is not None:
             self.save_model(model_path, epoch)
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -148,7 +148,7 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
         emb_e = self.embedding_model.get_embedding_entity(ent)
         emb_r = self.embedding_model.get_embedding_relation(rel)
         n_features = 1 + len(emb_e) * 2 + len(emb_r)
-        answers = query_with_answers['answers_fil']
+        answers = query_with_answers[type_answers]
         X = np.zeros(shape=(len(answers), n_features), dtype=np.float)
         annotated_answers = []
         for i, a in enumerate(answers):

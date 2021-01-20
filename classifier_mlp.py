@@ -128,7 +128,7 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
         # Save model
         self.save_model(model_path)
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -137,7 +137,7 @@ class Classifier_MLP(supervised_classifier.Supervised_Classifier):
         emb_e = self.embedding_model.get_embedding_entity(ent)
         emb_r = self.embedding_model.get_embedding_relation(rel)
         annotated_answers = []
-        for answer in query_with_answers['answers_fil']:
+        for answer in query_with_answers[type_answers]:
             # Construct the input features for the model
             emb_a = self.embedding_model.get_embedding_entity(answer)
             if self.type_prediction == 'head':

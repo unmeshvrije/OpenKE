@@ -2,13 +2,13 @@ import json
 import pickle
 from datetime import datetime
 
-base_dir = '/Users/jacopo/Desktop/binary-embeddings/fb15k237/'
-annotations_unmesh_transe_head = '/Users/jacopo/Desktop/material_submission2021-unmesh/data_unmesh/fb15k237/out/fb15k237-transe-annotated-topk-10-head-extended.json'
-annotations_unmesh_transe_tail = '/Users/jacopo/Desktop/material_submission2021-unmesh/data_unmesh/fb15k237/out/fb15k237-transe-annotated-topk-10-tail-extended.json'
+base_dir = 'binary-embeddings/fb15k237/'
+annotations_unmesh_transe_head = 'old_data/fb15k237/out/fb15k237-transe-annotated-topk-10-head-extended.json'
+annotations_unmesh_transe_tail = 'old_data/fb15k237/out/fb15k237-transe-annotated-topk-10-tail-extended.json'
 
 annotations_head = json.load(open(annotations_unmesh_transe_head, 'rt'))
 annotations_tail = json.load(open(annotations_unmesh_transe_tail, 'rt'))
-annotations_out = 'misc/annotations_transe_unmesh.json'
+annotations_out = 'misc/old_annotations.json'
 out = []
 for a in annotations_head:
     ent = a['e']

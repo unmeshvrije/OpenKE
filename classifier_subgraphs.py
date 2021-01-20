@@ -16,7 +16,7 @@ class Classifier_Subgraphs(classifier.Classifier):
     def get_name(self):
         return "Sub"
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -39,7 +39,7 @@ class Classifier_Subgraphs(classifier.Classifier):
                 acceptable_answers.add(s)
 
         annotated_answers = []
-        for a in query_with_answers['answers_fil']:
+        for a in query_with_answers[type_answers]:
             answer = a['entity_id']
             checked = answer in acceptable_answers
             score = 0

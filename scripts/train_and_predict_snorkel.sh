@@ -3,7 +3,7 @@
 cd ..
 source venv/bin/activate
 
-BASEDIR="/Users/jacopo/Desktop/binary-embeddings/"
+BASEDIR=$1
 DATASET="fb15k237"
 OUTDIR="${BASEDIR}/${DATASET}/results/"
 TOPK=10

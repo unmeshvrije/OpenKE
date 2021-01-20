@@ -11,7 +11,7 @@ class Classifier_Path(classifier.Classifier):
     def get_name(self):
         return "Path"
 
-    def predict(self, query_with_answers):
+    def predict(self, query_with_answers, type_answers):
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -25,7 +25,7 @@ class Classifier_Path(classifier.Classifier):
         else:
             known_answers = self.dataset.get_known_answers_for_tr(ent, rel)
         known_answers = set(known_answers)
-        for a in query_with_answers['answers_fil']:
+        for a in query_with_answers[type_answers]:
             answer = a['entity_id']
             neighbour_answer = self.dataset.get_neighbours(answer)
             common_neighbours = neighbour_entity.intersection(neighbour_answer)

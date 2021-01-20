@@ -142,12 +142,21 @@ elif args.classifier == 'supensemble':
 else:
     raise Exception("Classifier {} not supported!".format(args.classifier))
 
+# Determine the type of answers
+if args.mode == 'test':
+    type_answers = 'answers_fil'
+elif args.mode == 'train':
+    type_answers = 'answers_raw'
+else:
+    type_answers = None
+    raise Exception("Case not implemented")
+
 # Launch the predictions
 output = []
 for item in tqdm(queries_with_answers):
     ent = item['ent']
     rel = item['rel']
-    predicted_answers = classifier.predict(item)
+    predicted_answers = classifier.predict(item, type_answers)
     out = {}
     out['query'] = item
     out['valid_annotations'] = True
