@@ -92,3 +92,9 @@ class Dataset_FB15k237(Dataset):
 
     def get_n_relations(self):
         return self.n_relations
+
+    def get_entity_text(self, id):
+        raise Exception('Not implemented')
+
+    def get_relation_text(self, id):
+        raise Exception('Not implemented')

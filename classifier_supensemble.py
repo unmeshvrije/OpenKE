@@ -64,15 +64,12 @@ class Classifier_SuperEnsemble(supervised_classifier.Supervised_Classifier):
                     Y = 1
                 else:
                     Y = 0
-                assert(ans_id in answers_X)
-                X = answers_X[ans_id]
-                #for i in range(len(X)):
-                #    if X[i] == True:
-                #        X[i] = 1
-                #    else:
-                #        X[i] = 0
-                training_data_X.append(X)
-                training_data_Y.append(Y)
+                if ans_id in answers_X:
+                    X = answers_X[ans_id]
+                    training_data_X.append(X)
+                    training_data_Y.append(Y)
+                else:
+                    print("skipped")
         training_data_X = np.asarray(training_data_X)
         training_data_Y = np.asarray(training_data_Y)
         count_true = np.zeros(len(self.classifiers), dtype=int)
