@@ -2,6 +2,7 @@ import supervised_classifier
 from snorkel.labeling.model.label_model import LabelModel
 import numpy as np
 from support.utils import *
+import json
 
 FALSE=0
 TRUE=1
@@ -32,6 +33,9 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
             label_model = LabelModel(verbose=True)
             label_model.load(model_path)
             self.set_model(label_model)
+            with open(model_path + '.meta', 'rt') as fin:
+                a = json.load(fin)
+                self.classifiers = a['classifiers']
 
     def init_model(self, embedding_model, hyper_params):
         pass
@@ -82,18 +86,36 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                     count_false[i] += 1
                 else:
                     count_abstain[i] += 1
+        selected_classifiers = []
+        keep_columns = []
         for i, classifier in enumerate(self.classifiers):
+            if count_true[i] != 0 or (3 - len(selected_classifiers)) == (len(self.classifiers) - i):
+                selected_classifiers.append(classifier)
+                keep_columns.append(i)
+            else:
+                print("Dropping classifier {}".format(classifier))
             print("Classifier {} TRUE {} FALSE {} ABSTAIN {}".format(classifier, count_true[i], count_false[i], count_abstain[i]))
-        return training_data
+        if len(selected_classifiers) < len(self.classifiers):
+            new_training_data = np.zeros(shape=(len(training_data), len(selected_classifiers)), dtype=np.int)
+            for i, row in enumerate(training_data):
+                for j, idx in enumerate(keep_columns):
+                    new_training_data[i][j] = training_data[i][idx]
+            training_data = new_training_data
+        return {'classifiers' : selected_classifiers, 'retained_columns' : keep_columns, 'data' : training_data}
 
     def get_name(self):
         return "Snorkel"
 
     def train(self, training_data, valid_data, model_path):
         self.model = LabelModel(verbose=True)
-        self.model.fit(training_data, n_epochs=500, optimizer="adam")
+        data = training_data['data']
+        self.classifiers = training_data['classifiers']
+        self.model.fit(data, n_epochs=500, optimizer="adam")
         if model_path is not None:
             self.model.save(model_path)
+            with open(model_path + '.meta', 'wt') as fout:
+                json.dump({'classifiers' : self.classifiers, 'retained_columns' : training_data['keep_columns'] }, fout)
+                fout.close()
 
     def predict(self, query_with_answers, type_answers, provenance_test = "test"):
         if self.test_annotations is None:
