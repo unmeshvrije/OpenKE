@@ -20,6 +20,12 @@ ANNDIR="${BASEDIR}/${DATASET}/annotations/"
 QUEDIR="${BASEDIR}/${DATASET}/queries/"
 ANSDIR="${BASEDIR}/${DATASET}/answers/"
 TRADIR="${BASEDIR}/${DATASET}/training_data/"
+LOGDIR="${BASEDIR}/${DATASET}/logs/"
+
+EXP=`date +"%Y-%m-%d-%T"`
+EXPDIR="${LOGDIR}/$MODEL-$EXP"
+SOUTFILE="${EXPDIR}/stdout"
+SERRFILE="${EXPDIR}/stderr"
 
 if [ ! -d "$OUTDIR" ]; then
   mkdir $OUTDIR
@@ -39,6 +45,18 @@ fi
 if [ ! -d "$TRADIR" ]; then
   mkdir $TRADIR
 fi
+if [ ! -d "$LOGDIR" ]; then
+  mkdir $LOGDIR
+fi
+
+# Store experimental results
+if [ ! -d "$EXPDIR" ]; then
+  mkdir $EXPDIR
+fi
+exec > >(tee -a $SOUTFILE)
+exec 2> >(tee -a $ERRFILE)
+
+echo "COMMAND: $0 $@"
 
 EXEC_CREATE_QUERIES="create_queries.py"
 EXEC_CREATE_ANSWERS="create_answers.py"
@@ -48,22 +66,50 @@ EXEC_EVAL_GOLD="evaluate_annotations_gold_standard.py"
 EXEC_CREATE_TRAINING_DATA="create_training_data.py"
 EXEC_CREATE_MODEL="create_model.py"
 
-DO_STEP1="false"
-DO_STEP2="false"
-DO_STEP3="false"
-DO_STEP4="false"
-DO_STEP5="false"
-DO_STEP6="false"
+DO_STEP1="true"
+DO_STEP2="true"
+DO_STEP3="true"
+DO_STEP4="true"
+DO_STEP5="true"
+DO_STEP6="true"
 DO_STEP7="true"
 DO_STEP8="true"
 DO_STEP9="true"
 DO_STEP10="true"
 DO_STEP11="true"
 
-#PARAMS_SNORKEL_HEAD="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
-PARAMS_SNORKEL_HEAD="--name_signals conv,path,sub --snorkel_low_threshold 0.2,0,0 --snorkel_high_threshold 0.6,1,1"
-#PARAMS_SNORKEL_TAIL="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
-PARAMS_SNORKEL_TAIL="--name_signals conv,path,sub --snorkel_low_threshold 0.2,0,0 --snorkel_high_threshold 0.6,1,1"
+# idiomatic parameter and option handling in sh
+while test $# -gt 0
+do
+    case "$1" in
+        -SKIP1) DO_STEP1="false"
+            ;;
+        -SKIP2) DO_STEP2="false"
+            ;;
+        -SKIP3) DO_STEP3="false"
+            ;;
+        -SKIP4) DO_STEP4="false"
+            ;;
+        -SKIP5) DO_STEP5="false"
+            ;;
+        -SKIP6) DO_STEP6="false"
+            ;;
+        -SKIP7) DO_STEP7="false"
+            ;;
+        -SKIP8) DO_STEP8="false"
+            ;;
+        -SKIP9) DO_STEP9="false"
+            ;;
+        -SKIP10) DO_STEP10="false"
+            ;;
+        -SKIP11) DO_STEP11="false"
+            ;;
+    esac
+    shift
+done
+
+PARAMS_SNORKEL_HEAD="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
+PARAMS_SNORKEL_TAIL="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
 PARAMS_MLP_HEAD="--mlp_dropout 0.2 --mlp_n_hidden_units 100"
 PARAMS_MLP_TAIL="--mlp_dropout 0.2 --mlp_n_hidden_units 100"
 PARAMS_LSTM_HEAD="--lstm_dropout 0.2 --lstm_n_hidden_units 100"
@@ -246,6 +292,18 @@ python3 $EXEC_EVAL_GOLD --mode test --type_prediction head --classifier snorkel 
 python3 $EXEC_EVAL_GOLD --mode test --type_prediction tail --classifier snorkel --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 fi
 
+# Store results
+echo "Copying data ..."
+cp scripts/$0 $EXPDIR
+mkdir $EXPDIR/results
+cp -R $OUTDIR $EXPDIR/results
+mkdir $EXPDIR/models
+cp -R $MODELDIR/ $EXPDIR/models
+mkdir $EXPDIR/source
+cp -R *.py $EXPDIR/source/
+mkdir $EXPDIR/source/support
+cp -R support/ $EXPDIR/source/support
+echo "done."
 
 
 
