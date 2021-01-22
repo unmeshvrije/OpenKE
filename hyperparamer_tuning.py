@@ -45,14 +45,14 @@ test_threshold_different_k = args.test_threshold_different_k
 
 # ***** PARAMS TO TUNE *****
 sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
-lstm_nhid = [ 10, 100 ]
-lstm_dropout = [0, 0.1]
+lstm_nhid = [ 10, 100, 1000 ]
+lstm_dropout = [0, 0.1, 0.2 ]
 mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
 mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
 conv_k1 = [ 4, 8, 16, 32 ]
 conv_k2 = [ 2, 4, 8]
-snorkel_tau = [ (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
-snorkel_classifiers = ['mlp_multi','lstm','conv','path','sub']
+snorkel_tau = [ (0.05,0.6), (0.1, 0.6), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
+snorkel_classifiers = [ 'mlp_multi','lstm','conv','path','sub' ]
 ks = [1, 2, 3, 5, 10]
 
 def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub', 'threshold', 'supensemble'])
+    parser.add_argument('--classifier', dest='classifier', type=str, required=True, choices=['mlp', 'random', 'mlp_multi', 'lstm', 'conv', 'min', 'maj', 'snorkel', 'path', 'sub', 'threshold', 'supensemble', 'squid'])
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest ='db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
     parser.add_argument('--topk', dest='topk', type=int, default=10)
@@ -131,6 +131,19 @@ elif args.classifier == 'snorkel':
     model_dir = args.result_dir + '/' + args.db + '/models/'
     model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir,
+                                    signals, embedding_model_typ, model_path=model_dir + '/' + model_filename, abstain_scores=thresholds)
+elif args.classifier == 'squid':
+    from classifier_squid import Classifier_Squid
+    signals = args.name_signals.split(",")
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
+    model_dir = args.result_dir + '/' + args.db + '/models/'
+    model_filename = get_filename_classifier_model(args.db, args.model, args.classifier, args.topk, args.type_prediction)
+    classifier = Classifier_Squid(dataset, args.type_prediction, args.topk, args.result_dir,
                                     signals, embedding_model_typ, model_path=model_dir + '/' + model_filename, abstain_scores=thresholds)
 elif args.classifier == 'supensemble':
     from classifier_supensemble import Classifier_SuperEnsemble

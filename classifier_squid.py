@@ -1,14 +1,14 @@
-import supervised_classifier
-from snorkel.labeling.model.label_model import LabelModel
+import classifier_snorkel
+from flyingsquid.label_model import LabelModel
 import numpy as np
 from support.utils import *
 import json
 
-FALSE=0
+FALSE=-1
 TRUE=1
-ABSTAIN=-1
+ABSTAIN=0
 
-class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
+class Classifier_Squid(classifier_snorkel.Classifier_Snorkel):
     def __init__(self,
                  dataset,
                  type_prediction : {'head', 'tail'},
@@ -28,17 +28,32 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         self.abstain_scores = abstain_scores
         if self.abstain_scores is not None:
             assert(len(self.abstain_scores) == len(classifiers))
+        super(Classifier_Squid, self).__init__(dataset, type_prediction, topk, results_dir, classifiers, embedding_model_name, model_path=None, abstain_scores=abstain_scores)
         if model_path is not None:
             print("Loading existing model {} ...".format(model_path))
-            label_model = LabelModel(verbose=True)
-            label_model.load(model_path)
-            self.set_model(label_model)
             with open(model_path + '.meta', 'rt') as fin:
                 a = json.load(fin)
                 self.classifiers = a['classifiers']
+            with open(model_path, 'rb') as fin:
+                cls, attrs = pickle.load(fin)
+                label_model = LabelModel.load(cls, attrs)
+                self.set_model(label_model)
 
-    def init_model(self, embedding_model, hyper_params):
-        pass
+    def get_name(self):
+        return "SQUID"
+
+    def train(self, training_data, valid_data, model_path):
+        data = training_data['data']
+        self.classifiers = training_data['classifiers']
+        self.model = LabelModel(len(self.classifiers))
+        self.model.fit(data)
+        if model_path is not None:
+            pickledVersion = self.model.save()
+            with open(model_path, 'wb') as fout:
+                pickle.dump(pickledVersion, fout)
+            with open(model_path + '.meta', 'wt') as fout:
+                json.dump({'classifiers' : self.classifiers, 'retained_columns' : training_data['retained_columns'] }, fout)
+                fout.close()
 
     def _annotate_labels(self, labels):
         l = []
@@ -89,11 +104,11 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         selected_classifiers = []
         keep_columns = []
         for i, classifier in enumerate(self.classifiers):
-            #if count_true[i] != 0 or (3 - len(selected_classifiers)) == (len(self.classifiers) - i):
-            selected_classifiers.append(classifier)
-            keep_columns.append(i)
-            #else:
-            #    print("Dropping classifier {}".format(classifier))
+            if count_true[i] != 0 or (3 - len(selected_classifiers)) == (len(self.classifiers) - i):
+                selected_classifiers.append(classifier)
+                keep_columns.append(i)
+            else:
+                print("Dropping classifier {}".format(classifier))
             print("Classifier {} TRUE {} FALSE {} ABSTAIN {}".format(classifier, count_true[i], count_false[i], count_abstain[i]))
         if len(selected_classifiers) < len(self.classifiers):
             new_training_data = np.zeros(shape=(len(training_data), len(selected_classifiers)), dtype=np.int)
@@ -103,19 +118,6 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
             training_data = new_training_data
         return {'classifiers' : selected_classifiers, 'retained_columns' : keep_columns, 'data' : training_data}
 
-    def get_name(self):
-        return "Snorkel"
-
-    def train(self, training_data, valid_data, model_path):
-        self.model = LabelModel(verbose=True)
-        data = training_data['data']
-        self.classifiers = training_data['classifiers']
-        self.model.fit(data, n_epochs=500, optimizer="adam")
-        if model_path is not None:
-            self.model.save(model_path)
-            with open(model_path + '.meta', 'wt') as fout:
-                json.dump({'classifiers' : self.classifiers, 'retained_columns' : training_data['retained_columns'] }, fout)
-                fout.close()
 
     def predict(self, query_with_answers, type_answers, provenance_test = "test"):
         if self.test_annotations is None:
@@ -128,7 +130,6 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
                                                                         self.type_prediction,
                                                                         return_scores=True)
 
-        # for q in query_with_answers:
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
@@ -147,7 +148,7 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
             assert (len(labels) == len(self.classifiers))
             l = np.asarray(self._annotate_labels(labels))
             l = l.reshape(1, -1)
-            out = self.get_model().predict(l)
+            out = self.get_model().predict(l).reshape(1)
             checked = out[0] == TRUE
             annotated_answers.append({'entity_id': entity_id, 'checked': checked, 'score': 1})
         return annotated_answers

@@ -6,7 +6,7 @@ import pickle
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
-    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv', 'snorkel', 'trans', 'supensemble'])
+    parser.add_argument('--classifier', dest='classifier', type=str, choices=['mlp', 'mlp_multi', 'lstm', 'conv', 'snorkel', 'trans', 'supensemble', 'squid'])
     parser.add_argument('--name_signals', dest='name_signals', help='name of the signals (classifiers) to use when multiple signals should be combined', type=str, required=False, default="mlp_multi,lstm,conv,path,sub")
     parser.add_argument('--result_dir', dest ='result_dir', type = str, help = 'Output dir.')
     parser.add_argument('--db', dest = 'db', type = str, default = "fb15k237", choices=['fb15k237', 'dbpedia50'])
@@ -66,6 +66,16 @@ elif args.classifier == 'snorkel':
         h = highs[i]
         thresholds.append((float(l), float(h)))
     classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ, abstain_scores=thresholds)
+elif args.classifier == 'squid':
+    from classifier_squid import Classifier_Squid
+    signals = args.name_signals.split(",")
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
+    classifier = Classifier_Squid(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ, abstain_scores=thresholds)
 elif args.classifier == 'supensemble':
     from classifier_supensemble import Classifier_SuperEnsemble
     signals = args.name_signals.split(",")
