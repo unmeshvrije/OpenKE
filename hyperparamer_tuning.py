@@ -61,7 +61,7 @@ def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_d
         classifier = Classifier_Subgraphs(dataset, type_prediction, embedding_model, args.result_dir, sub_k)
         output = []
         for item in tqdm(valid_data_to_test):
-            predicted_answers = classifier.predict(item)
+            predicted_answers = classifier.predict(item, 'answers_fil')
             out = {}
             out['query'] = item
             out['valid_annotations'] = True
@@ -97,7 +97,7 @@ def tune_conv_classifier(training_data, type_prediction, dataset, embedding_mode
             classifier.start_predict()
             output = []
             for item in tqdm(valid_data_to_test):
-                predicted_answers = classifier.predict(item)
+                predicted_answers = classifier.predict(item, 'answers_fil')
                 out = {}
                 out['query'] = item
                 out['valid_annotations'] = True
@@ -138,7 +138,7 @@ def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_m
                 classifier.start_predict()
                 output = []
                 for item in tqdm(valid_data_to_test):
-                    predicted_answers = classifier.predict(item, provenance_test="train")
+                    predicted_answers = classifier.predict(item, 'answers_fil', provenance_test="train")
                     out = {}
                     out['query'] = item
                     out['valid_annotations'] = True
@@ -177,7 +177,7 @@ def tune_lstm_classifier(training_data, type_prediction, dataset, embedding_mode
             classifier.start_predict()
             output = []
             for item in tqdm(valid_data_to_test):
-                predicted_answers = classifier.predict(item)
+                predicted_answers = classifier.predict(item, 'answers_fil')
                 out = {}
                 out['query'] = item
                 out['valid_annotations'] = True
@@ -212,7 +212,7 @@ def tune_mlp_classifier(training_data, type_prediction, dataset, embedding_model
             classifier.start_predict()
             output = []
             for item in tqdm(valid_data_to_test):
-                predicted_answers = classifier.predict(item)
+                predicted_answers = classifier.predict(item, 'answers_fil')
                 out = {}
                 out['query'] = item
                 out['valid_annotations'] = True
@@ -260,7 +260,7 @@ def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding
         classifier.start_predict()
         output = []
         for item in tqdm(valid_data_to_test):
-            predicted_answers = classifier.predict(item)
+            predicted_answers = classifier.predict(item, 'answers_fil')
             out = {}
             out['query'] = item
             out['valid_annotations'] = True
@@ -289,7 +289,7 @@ def do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding
     classifier.start_predict()
     output = []
     for item in tqdm(valid_data_to_test):
-        predicted_answers = classifier.predict(item)
+        predicted_answers = classifier.predict(item, 'answers_fil')
         out = {}
         out['query'] = item
         out['valid_annotations'] = True
@@ -331,7 +331,7 @@ def test_threshold_with_different_k(type_prediction, args, gold_valid_data, out_
         classifier = Classifier_Threshold(dataset, type_prediction, args.result_dir, k)
         output = []
         for item in tqdm(valid_data_to_test):
-            predicted_answers = classifier.predict(item)
+            predicted_answers = classifier.predict(ite, 'answers_fil')
             out = {}
             out['query'] = item
             out['valid_annotations'] = True

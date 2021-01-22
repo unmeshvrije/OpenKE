@@ -128,7 +128,6 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
                                                                         self.topk,
                                                                         self.type_prediction,
                                                                         return_scores=True)
-
         ent = query_with_answers['ent']
         rel = query_with_answers['rel']
         typ = query_with_answers['type']
