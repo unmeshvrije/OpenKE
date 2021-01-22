@@ -1,4 +1,4 @@
-import classifier_snorkel
+import supervised_classifier
 from flyingsquid.label_model import LabelModel
 import numpy as np
 from support.utils import *
@@ -8,7 +8,7 @@ FALSE=-1
 TRUE=1
 ABSTAIN=0
 
-class Classifier_Squid(classifier_snorkel.Classifier_Snorkel):
+class Classifier_Squid(supervised_classifier.Supervised_Classifier):
     def __init__(self,
                  dataset,
                  type_prediction : {'head', 'tail'},
@@ -28,7 +28,7 @@ class Classifier_Squid(classifier_snorkel.Classifier_Snorkel):
         self.abstain_scores = abstain_scores
         if self.abstain_scores is not None:
             assert(len(self.abstain_scores) == len(classifiers))
-        super(Classifier_Squid, self).__init__(dataset, type_prediction, topk, results_dir, classifiers, embedding_model_name, model_path=None, abstain_scores=abstain_scores)
+            print("Abstain scores: ", str(self.abstain_scores))
         if model_path is not None:
             print("Loading existing model {} ...".format(model_path))
             with open(model_path + '.meta', 'rt') as fin:
@@ -117,7 +117,6 @@ class Classifier_Squid(classifier_snorkel.Classifier_Snorkel):
                     new_training_data[i][j] = training_data[i][idx]
             training_data = new_training_data
         return {'classifiers' : selected_classifiers, 'retained_columns' : keep_columns, 'data' : training_data}
-
 
     def predict(self, query_with_answers, type_answers, provenance_test = "test"):
         if self.test_annotations is None:

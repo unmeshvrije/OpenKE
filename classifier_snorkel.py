@@ -28,6 +28,7 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
         self.abstain_scores = abstain_scores
         if self.abstain_scores is not None:
             assert(len(self.abstain_scores) == len(classifiers))
+            print("Abstain scores: ", str(self.abstain_scores))
         if model_path is not None:
             print("Loading existing model {} ...".format(model_path))
             label_model = LabelModel(verbose=True)
