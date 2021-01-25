@@ -33,7 +33,6 @@ def parse_args():
     return parser.parse_args()
 
 args = parse_args()
-use_valid_data = 0.05
 tune_sub = args.tune_sub
 tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
@@ -44,13 +43,13 @@ test_different_k = args.test_different_k
 test_threshold_different_k = args.test_threshold_different_k
 
 # ***** PARAMS TO TUNE *****
-sub_ks = [ 1, 3, 5, 10, 25, 50, 100 ]
+sub_ks = [ 1, 3, 5, 10, 25, 50, 100, 1000 ]
 lstm_nhid = [ 10, 100, 1000 ]
 lstm_dropout = [0, 0.1, 0.2 ]
 mlp_nhid = [ 10, 20, 50, 100, 500, 1000, 1500, 2000 ]
 mlp_dropout = [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
-conv_k1 = [ 4, 8, 16, 32 ]
-conv_k2 = [ 2, 4, 8]
+conv_k1 = [ 2, 3, 4, 6]
+conv_k2 = [ 1, 2, 3, 4]
 snorkel_tau = [ (0.05,0.6), (0.1, 0.6), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
 snorkel_classifiers = [ 'mlp_multi','lstm','conv','path','sub' ]
 ks = [1, 2, 3, 5, 10]
@@ -331,7 +330,7 @@ def test_threshold_with_different_k(type_prediction, args, gold_valid_data, out_
         classifier = Classifier_Threshold(dataset, type_prediction, args.result_dir, k)
         output = []
         for item in tqdm(valid_data_to_test):
-            predicted_answers = classifier.predict(ite, 'answers_fil')
+            predicted_answers = classifier.predict(item, 'answers_fil')
             out = {}
             out['query'] = item
             out['valid_annotations'] = True
@@ -378,7 +377,7 @@ for type_prediction in ['head', 'tail']:
 
     # Load the gold standard
     gold_dir = args.result_dir + '/' + args.db + '/annotations/'
-    gold_filename = get_filename_gold(args.db, args.topk)
+    gold_filename = get_filename_gold(args.db, args.topk, '-valid')
     with open(gold_dir + gold_filename, 'rt') as fin:
         gold_annotations = json.load(fin)
     filter_queries = {}
@@ -402,17 +401,14 @@ for type_prediction in ['head', 'tail']:
             assert (len(ans) == args.topk)
             filter_queries[(ent, rel)] = ans
 
-    # Split them between train and validation set
-    n_data_points = len(queries_with_answers)
-    training_data, valid_data = train_test_split(queries_with_answers, test_size=use_valid_data)
-    gold_valid_data = {} # This is the format used for computing the metrics
+    training_data = queries_with_answers
+    gold_valid_data = filter_queries # This format is used to compute the metrics
     valid_data_to_test = [] # This stores the content of the valid dataset in a format that is readable as input by the classifiers
-    for v in valid_data:
-        ent = v['query']['ent']
-        rel = v['query']['rel']
-        typ = v['query']['type']
-        gold_valid_data[(ent, rel)] = [a for a in v['annotated_answers']]
-        valid_data_to_test.append({ 'ent' : ent, 'rel' : rel, 'type' : typ, 'answers_fil' : [a for a in v['annotated_answers']]})
+    for k, v in filter_queries.items():
+        ent = k[0]
+        rel = k[1]
+        typ = accepted_query_type
+        valid_data_to_test.append({ 'ent' : ent, 'rel' : rel, 'type' : typ, 'answers_fil' : v })
 
     # 1- Subgraph classifier
     if tune_sub:
@@ -436,7 +432,7 @@ for type_prediction in ['head', 'tail']:
 
     # 6- Snorkel ablation study
     if do_ablation_study:
-        do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, test_queries_with_answers, filter_queries, out_dir)
+        do_ablation_study_snorkel(training_data, type_prediction, dataset, embedding_model, args, test_queries_with_answers, gold_valid_data, out_dir)
 
     #7- Test different snorkel with ks
     if test_different_k:

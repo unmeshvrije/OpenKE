@@ -28,8 +28,8 @@ def get_filename_classifier_labels(db, classifier, topk, type_prediction, extra_
     else:
         return db + '-' + classifier + '-' + str(topk) + '-' + type_prediction + '-' + extra_params + ".json"
 
-def get_filename_gold(db, topk):
-    return "gold-annotations.json"
+def get_filename_gold(db, topk, suf=''):
+    return "gold-annotations{}.json".format(suf)
 
 def get_filename_results(db, model, mode, topk, type_prediction, suf = ''):
     return db + "-gold-results-" + model + "-" + mode + "-" + str(topk) + "-" + type_prediction + suf + ".json"

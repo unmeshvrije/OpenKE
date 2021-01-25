@@ -23,7 +23,7 @@ with open(answers_annotations_filename, 'rb') as fin:
 
 # Load the gold standard
 gold_dir = args.result_dir + '/' + args.db + '/annotations/'
-gold_filename = get_filename_gold(args.db, args.topk)
+gold_filename = get_filename_gold(args.db, args.topk, '-test')
 with open(gold_dir + gold_filename, 'rt') as fin:
     gold_annotations = json.load(fin)
 filter_queries = {}

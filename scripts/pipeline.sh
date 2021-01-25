@@ -108,18 +108,7 @@ do
     shift
 done
 
-PARAMS_SNORKEL_HEAD="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
-PARAMS_SNORKEL_TAIL="--name_signals mlp_multi,lstm,conv,path,sub --snorkel_low_threshold 0.2,0.2,0.2,0,0 --snorkel_high_threshold 0.6,0.6,0.6,1,1"
-PARAMS_MLP_HEAD="--mlp_dropout 0.2 --mlp_n_hidden_units 100"
-PARAMS_MLP_TAIL="--mlp_dropout 0.2 --mlp_n_hidden_units 100"
-PARAMS_LSTM_HEAD="--lstm_dropout 0.2 --lstm_n_hidden_units 100"
-PARAMS_LSTM_TAIL="--lstm_dropout 0.2 --lstm_n_hidden_units 100"
-PARAMS_CONV_HEAD="--conv_kern_size1 6 --conv_kern_size2 2"
-PARAMS_CONV_TAIL="--conv_kern_size1 6 --conv_kern_size2 3"
-PARAMS_SUB_HEAD="--sub_k 3"
-PARAMS_SUB_TAIL="--sub_k 3"
-PARAMS_THRESHOLD_K_HEAD="--threshold_k 1"
-PARAMS_THRESHOLD_K_TAIL="--threshold_k 1"
+source "pipeline-params-${DATASET}-${MODEL}.sh"
 
 if [ $DO_STEP1 = "true" ]; then
 # Step 1: Create a list of queries from the training data (train+valid) and test data
