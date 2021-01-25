@@ -73,7 +73,7 @@ def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_d
         # Store the output
         suf = '-sub-classifier-k-' + str(sub_k)
         answers_annotations_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
-        with open(answers_annotations_filename, 'wb') as fout:
+        with open(answers_annotations_filename, 'wt') as fout:
             json.dump(output, fout)
             fout.close()
 
