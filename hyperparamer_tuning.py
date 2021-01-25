@@ -72,7 +72,7 @@ def tune_sub_classifier(type_prediction, dataset, embedding_model, args, valid_d
         results['sub_k'] = sub_k
         # Store the output
         suf = '-sub-classifier-k-' + str(sub_k)
-        answers_annotations_filename = out_dir + get_filename_answer_annotations(args.db, args.model, 'valid', args.topk, type_prediction, suf)
+        answers_annotations_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
         with open(answers_annotations_filename, 'wb') as fout:
             json.dump(output, fout)
             fout.close()
@@ -404,11 +404,12 @@ for type_prediction in ['head', 'tail']:
     training_data = queries_with_answers
     gold_valid_data = filter_queries # This format is used to compute the metrics
     valid_data_to_test = [] # This stores the content of the valid dataset in a format that is readable as input by the classifiers
-    for k, v in filter_queries.items():
-        ent = k[0]
-        rel = k[1]
-        typ = accepted_query_type
-        valid_data_to_test.append({ 'ent' : ent, 'rel' : rel, 'type' : typ, 'answers_fil' : v })
+    for v in test_queries_with_answers:
+        ent = v['ent']
+        rel = v['rel']
+        typ = v['type']
+        if typ == accepted_query_type and (ent, rel) in filter_queries:
+            valid_data_to_test.append(v)
 
     # 1- Subgraph classifier
     if tune_sub:
