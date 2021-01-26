@@ -53,6 +53,7 @@ print("Dataset\t\t\t: {}". format(args.db))
 print("Classifier\t\t: {}". format(args.classifier))
 print("Type prediction\t: {}". format(args.type_prediction))
 results = compute_metrics(args.classifier, args.type_prediction, args.db, annotated_answers, filter_queries)
+results['test_size'] = len(gold_annotations)
 suf = '-' + args.classifier
 results_filename = args.result_dir + '/' + args.db +\
                    '/results/' +\

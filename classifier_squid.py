@@ -9,6 +9,7 @@ TRUE=1
 ABSTAIN=0
 
 class Classifier_Squid(supervised_classifier.Supervised_Classifier):
+
     def __init__(self,
                  dataset,
                  type_prediction : {'head', 'tail'},
@@ -34,10 +35,18 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
             with open(model_path + '.meta', 'rt') as fin:
                 a = json.load(fin)
                 self.classifiers = a['classifiers']
+                if self.abstain_scores is not None:
+                    new_scores = []
+                    for colId in a['retained_columns']:
+                        new_scores.append(self.abstain_scores[colId])
+                    self.abstain_scores = new_scores
             with open(model_path, 'rb') as fin:
                 cls, attrs = pickle.load(fin)
                 label_model = LabelModel.load(cls, attrs)
                 self.set_model(label_model)
+
+    def init_model(self, embedding_model, hyper_params):
+        pass
 
     def get_name(self):
         return "SQUID"
@@ -74,7 +83,7 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
                     l.append(ABSTAIN)
         return l
 
-    def create_training_data(self, queries_with_answers):
+    def create_training_data(self, queries_with_answers, valid_dataset=None):
         classifiers_annotations = load_classifier_annotations(self.classifiers,
                                                                     self.result_dir,
                                                                     self.dataset_name,
@@ -83,8 +92,46 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
                                                                     self.topk,
                                                                     self.type_prediction,
                                                                     return_scores=True)
-        training_data = []
+
+        # load the test dataset to retrieve the annotation on the valid dataset
+        selected_classifiers = []
+        keep_columns = []
+        if valid_dataset is not None:
+            if self.type_prediction == 'head':
+                accepted_type = 0
+            else:
+                accepted_type = 1
+            valid_queries = [(q['query']['ent'], q['query']['rel']) for k, q in valid_dataset.items() if q['query']['type'] == accepted_type]
+            valid_queries = set(valid_queries)
+            test_classifiers_annotations = load_classifier_annotations(self.classifiers,
+                                                                        self.result_dir,
+                                                                        self.dataset_name,
+                                                                        self.embedding_model_name,
+                                                                        "test",
+                                                                        self.topk,
+                                                                        self.type_prediction,
+                                                                        return_scores=True)
+            count_true = np.zeros(len(self.classifiers), dtype=int)
+            for key, annotations in tqdm(test_classifiers_annotations.items()):
+                if key in valid_queries:
+                    for answer, annotation in annotations.items():
+                        l = self._annotate_labels(annotation)
+                        for j, label in enumerate(l):
+                            if label == True:
+                                count_true[j] += 1
+            for i, classifier in enumerate(self.classifiers):
+                if count_true[i] != 0 or (3 - len(selected_classifiers)) == (len(self.classifiers) - i):
+                    selected_classifiers.append(classifier)
+                    keep_columns.append(i)
+                else:
+                    print("Dropping classifier {}".format(classifier))
+        else:
+            for i, classifier in enumerate(self.classifiers):
+                selected_classifiers.append(classifier)
+                keep_columns.append(i)
+
         print("  Creating training data ...")
+        training_data = []
         for keys, annotations in tqdm(classifiers_annotations.items()):
             for answer, annotation in annotations.items():
                 l = self._annotate_labels(annotation)
@@ -101,15 +148,7 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
                     count_false[i] += 1
                 else:
                     count_abstain[i] += 1
-        selected_classifiers = []
-        keep_columns = []
-        for i, classifier in enumerate(self.classifiers):
-            if count_true[i] != 0 or (3 - len(selected_classifiers)) == (len(self.classifiers) - i):
-                selected_classifiers.append(classifier)
-                keep_columns.append(i)
-            else:
-                print("Dropping classifier {}".format(classifier))
-            print("Classifier {} TRUE {} FALSE {} ABSTAIN {}".format(classifier, count_true[i], count_false[i], count_abstain[i]))
+
         if len(selected_classifiers) < len(self.classifiers):
             new_training_data = np.zeros(shape=(len(training_data), len(selected_classifiers)), dtype=np.int)
             for i, row in enumerate(training_data):
