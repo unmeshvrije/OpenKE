@@ -108,7 +108,7 @@ do
     shift
 done
 
-source "pipeline-params-${DATASET}-${MODEL}.sh"
+source "scripts/pipeline-params-${DATASET}-${MODEL}.sh"
 
 if [ $DO_STEP1 = "true" ]; then
 # Step 1: Create a list of queries from the training data (train+valid) and test data
@@ -284,6 +284,7 @@ fi
 # Store results
 echo "Copying data ..."
 cp scripts/$0 $EXPDIR
+cp scripts/pipeline-params-${DATASET}-${MODEL}.sh $EXPDIR
 mkdir $EXPDIR/results
 cp -R $OUTDIR $EXPDIR/results
 mkdir $EXPDIR/models
