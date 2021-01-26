@@ -14,7 +14,7 @@ from classifier_conv import Classifier_Conv
 from classifier_snorkel import Classifier_Snorkel
 from classifier_supensemble import Classifier_SuperEnsemble
 from classifier_threshold import Classifier_Threshold
-
+from classifier_squid import Classifier_Squid
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--tune_sub', dest='tune_sub', type=bool, default=False)
     parser.add_argument('--tune_conv', dest='tune_conv', type=bool, default=False)
     parser.add_argument('--tune_snorkel', dest='tune_snorkel', type=bool, default=False)
+    parser.add_argument('--tune_squid', dest='tune_squid', type=bool, default=False)
     parser.add_argument('--do_ablation_study', dest='do_ablation_study', type=bool, default=False)
     parser.add_argument('--test_different_k', dest='test_different_k', type=bool, default=False)
     parser.add_argument('--test_threshold_different_k', dest='test_threshold_different_k', type=bool, default=False)
@@ -38,6 +39,7 @@ tune_lstm = args.tune_lstm
 tune_mlp_multi = args.tune_mlp_multi
 tune_conv = args.tune_conv
 tune_snorkel = args.tune_snorkel
+tune_squid = args.tune_squid
 do_ablation_study = args.do_ablation_study
 test_different_k = args.test_different_k
 test_threshold_different_k = args.test_threshold_different_k
@@ -50,7 +52,7 @@ mlp_nhid = [ 10, 100, 200 ]
 mlp_dropout = [ 0, 0.1, 0.2 ]
 conv_k1 = [ 2, 3, 4, 6]
 conv_k2 = [ 1, 2, 3, 4]
-snorkel_tau = [ (0.01, 0.6), (0.05,0.6), (0.1, 0.6), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
+snorkel_tau = [ (0.01, 0.1), (0.05, 0.2), (0.01, 0.6), (0.05,0.6), (0.1, 0.6), (0.2,0.6), (0.2,0.7), (0.2,0.8), (0.3,0.6), (0.3,0.7), (0.3,0.8) ]
 snorkel_classifiers = [ 'mlp_multi','lstm','conv','path','sub' ]
 ks = [1, 2, 3, 5, 10]
 
@@ -114,21 +116,30 @@ def tune_conv_classifier(training_data, type_prediction, dataset, embedding_mode
             json.dump(results, fout)
             fout.close()
 
-def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir):
+def tune_snorkel_squid_classifier(is_snorkel, training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data_with_queries, gold_valid_data, out_dir):
+    if is_snorkel:
+        name = "SNORKEL"
+    else:
+        name = "SQUID"
     for l1, h1 in snorkel_tau:
         for l2, h2 in snorkel_tau:
             for l3, h3 in snorkel_tau:
-                print("Test {} SNORKEL with l={},{},{} h={},{},{}".format(type_prediction, l1, l2, l3, h1, h2, h3))
+                print("Test {} {} with l={},{},{} h={},{},{}".format(type_prediction, name, l1, l2, l3, h1, h2, h3))
                 abstain_scores = []
                 abstain_scores.append((l1, h1))
                 abstain_scores.append((l2, h2))
                 abstain_scores.append((l3, h3))
                 abstain_scores.append((0, 0.5))
                 abstain_scores.append((0, 0.5))
-                classifier = Classifier_Snorkel(dataset, type_prediction,  args.topk, args.result_dir, snorkel_classifiers, args.model, model_path=None, abstain_scores=abstain_scores)
+                if is_snorkel:
+                    classifier = Classifier_Snorkel(dataset, type_prediction,  args.topk, args.result_dir, snorkel_classifiers, args.model, model_path=None, abstain_scores=abstain_scores)
+                else:
+                    classifier = Classifier_Squid(dataset, type_prediction, args.topk, args.result_dir,
+                                                    snorkel_classifiers, args.model, model_path=None,
+                                                    abstain_scores=abstain_scores)
 
                 # Create training data
-                td = classifier.create_training_data(training_data)
+                td = classifier.create_training_data(training_data, valid_dataset=gold_valid_data_with_queries)
 
                 # Train a model
                 classifier.train(td, None, None)
@@ -137,15 +148,15 @@ def tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_m
                 classifier.start_predict()
                 output = []
                 for item in tqdm(valid_data_to_test):
-                    predicted_answers = classifier.predict(item, 'answers_fil', provenance_test="train")
+                    predicted_answers = classifier.predict(item, 'answers_fil', provenance_test="test")
                     out = {}
                     out['query'] = item
                     out['valid_annotations'] = True
-                    out['annotator'] = 'snorkel'
+                    out['annotator'] = classifier.get_name()
                     out['date'] = str(datetime.datetime.now())
                     out['annotated_answers'] = predicted_answers
                     output.append(out)
-                results = compute_metrics('snorkel', type_prediction, args.db, output, gold_valid_data)
+                results = compute_metrics(classifier.get_name(), type_prediction, args.db, output, gold_valid_data)
                 results['snorkel_l1'] = l1
                 results['snorkel_h1'] = h1
                 results['snorkel_l2'] = l2
@@ -378,6 +389,7 @@ for type_prediction in ['head', 'tail']:
     # Load the gold standard
     gold_dir = args.result_dir + '/' + args.db + '/annotations/'
     gold_filename = get_filename_gold(args.db, args.topk, '-valid')
+    gold_valid_data_with_queries = {}
     with open(gold_dir + gold_filename, 'rt') as fin:
         gold_annotations = json.load(fin)
     filter_queries = {}
@@ -400,6 +412,7 @@ for type_prediction in ['head', 'tail']:
                         break
             assert (len(ans) == args.topk)
             filter_queries[(ent, rel)] = ans
+            gold_valid_data_with_queries[(ent, rel)] = item
 
     training_data = queries_with_answers
     gold_valid_data = filter_queries # This format is used to compute the metrics
@@ -429,7 +442,7 @@ for type_prediction in ['head', 'tail']:
 
     # 5- Snorkel-based classifier
     if tune_snorkel:
-        tune_snorkel_classifier(training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data, out_dir)
+        tune_snorkel_squid_classifier(True, training_data, type_prediction, dataset, embedding_model, args, valid_data_to_test, gold_valid_data_with_queries, gold_valid_data, out_dir)
 
     # 6- Snorkel ablation study
     if do_ablation_study:
@@ -442,3 +455,8 @@ for type_prediction in ['head', 'tail']:
     #8- Test threshold classifier with different ks
     if test_threshold_different_k:
         test_threshold_with_different_k(type_prediction, args, gold_valid_data, out_dir)
+
+    #9- SQUID-based classifier
+    if tune_squid:
+        tune_snorkel_squid_classifier(False, training_data, type_prediction, dataset, embedding_model, args,
+                                      valid_data_to_test, gold_valid_data_with_queries, gold_valid_data, out_dir)

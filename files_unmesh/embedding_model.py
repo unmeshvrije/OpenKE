@@ -67,7 +67,7 @@ def choose_model():
             loss = MarginLoss(margin = 5.0),
             batch_size = train_dataloader.get_batch_size()
             )
-        epochs = 1000
+        epochs = 100
         alpha = 1.0
     elif args.model == "rotate":
         model = RotatE(ent_tot  = train_dataloader.get_ent_tot(),

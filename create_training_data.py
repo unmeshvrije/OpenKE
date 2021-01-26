@@ -3,6 +3,8 @@ from support.dataset_fb15k237 import Dataset_FB15k237
 from support.dataset_dbpedia50 import Dataset_dbpedia50
 from support.utils import *
 import pickle
+import os
+import json
 
 def parse_args():
     parser = argparse.ArgumentParser(description = '')
@@ -30,9 +32,19 @@ if args.db == 'fb15k237':
     dataset = Dataset_FB15k237()
 elif args.db == 'dbpedia50':
     dataset = Dataset_dbpedia50()
+
+# Load the training data
 annotations_filename = get_filename_answer_annotations(args.db, args.model, 'train', args.topk, args.type_prediction)
 with open(annotations_dir + '/' + annotations_filename, 'rb') as fin:
     annotations = pickle.load(fin)
+
+gold_valid_standard = None
+gold_dir = args.result_dir + '/' + args.db + '/annotations/'
+path_gold_valid_standard = gold_dir + '/' + get_filename_gold(args.db, args.topk, '-valid')
+if os.path.exists(path_gold_valid_standard):
+    with open(path_gold_valid_standard, 'rt') as fin:
+        gold_valid_standard = json.load(fin)
+
 
 # Load the embedding model
 embedding_model_typ = args.model
@@ -84,7 +96,10 @@ elif args.classifier == 'supensemble':
 else:
     raise Exception('Not supported')
 
-training_data = classifier.create_training_data(annotations)
+if args.classifier == 'snorkel' or args.classifier == 'squid':
+    training_data = classifier.create_training_data(annotations, valid_dataset=gold_valid_standard)
+else:
+    training_data = classifier.create_training_data(annotations)
 
 # Save the training data on a file
 training_data_dir = args.result_dir + '/' + args.db + '/training_data/'
