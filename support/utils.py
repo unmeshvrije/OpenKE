@@ -76,7 +76,8 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
                             true_negatives += 1
                             matched_answers += 1
                         found = True
-                assert(found)
+                if not found:
+                    print("Answer {} for query {} {} not found!".format(entity_id, ent, rel))
 
     acc = matched_answers / n_gold_annotations
     if true_positives + false_negatives == 0:
