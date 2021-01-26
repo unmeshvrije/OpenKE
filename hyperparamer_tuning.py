@@ -164,7 +164,7 @@ def tune_snorkel_squid_classifier(is_snorkel, training_data, type_prediction, da
                 results['snorkel_l3'] = l3
                 results['snorkel_h3 '] = h3
                 # Store the output
-                suf = '-snorkel-k1-{}-{}-{}-{}-{}-{}'.format(l1, h1, l2, h2, l3, h3)
+                suf = '-{}-k1-{}-{}-{}-{}-{}-{}'.format(name, l1, h1, l2, h2, l3, h3)
                 results_filename = out_dir + get_filename_results(args.db, args.model, "valid", args.topk, type_prediction, suf)
                 fout = open(results_filename, 'wt')
                 json.dump(results, fout)
