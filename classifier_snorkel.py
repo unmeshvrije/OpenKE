@@ -146,7 +146,13 @@ class Classifier_Snorkel(supervised_classifier.Supervised_Classifier):
     def train(self, training_data, valid_data, model_path):
         self.model = LabelModel(verbose=True)
         data = training_data['data']
-        self.classifiers = training_data['classifiers']
+        if self.classifiers != training_data['classifiers']:
+            new_scores = []
+            for colId in training_data['retained_columns']:
+                new_scores.append(self.abstain_scores[colId])
+            self.abstain_scores = new_scores
+            self.classifiers = training_data['classifiers']
+
         self.model.fit(data, n_epochs=500, optimizer="adam")
         if model_path is not None:
             self.model.save(model_path)

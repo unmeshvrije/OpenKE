@@ -53,7 +53,12 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
 
     def train(self, training_data, valid_data, model_path):
         data = training_data['data']
-        self.classifiers = training_data['classifiers']
+        if self.classifiers != training_data['classifiers']:
+            new_scores = []
+            for colId in training_data['retained_columns']:
+                new_scores.append(self.abstain_scores[colId])
+            self.abstain_scores = new_scores
+            self.classifiers = training_data['classifiers']
         self.model = LabelModel(len(self.classifiers))
         self.model.fit(data)
         if model_path is not None:
@@ -63,6 +68,9 @@ class Classifier_Squid(supervised_classifier.Supervised_Classifier):
             with open(model_path + '.meta', 'wt') as fout:
                 json.dump({'classifiers' : self.classifiers, 'retained_columns' : training_data['retained_columns'] }, fout)
                 fout.close()
+
+    def start_predict(self):
+        pass
 
     def _annotate_labels(self, labels):
         l = []
