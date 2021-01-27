@@ -217,8 +217,8 @@ echo "Step 8b: Create the training dataset to train the supensemble model"
 python3 $EXEC_CREATE_TRAINING_DATA --type_prediction head --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 python3 $EXEC_CREATE_TRAINING_DATA --type_prediction tail --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 echo "Step 8c: Create the training dataset to train the SQUID model"
-python3 $EXEC_CREATE_TRAINING_DATA $PARAMS_SNORKEL_HEAD --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
-python3 $EXEC_CREATE_TRAINING_DATA $PARAMS_SNORKEL_TAIL --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_TRAINING_DATA $PARAMS_SQUID_HEAD --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_TRAINING_DATA $PARAMS_SQUID_TAIL --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 fi
 
 if [ $DO_STEP9 = "true" ]; then
@@ -230,8 +230,8 @@ echo "Step 9b: Create the supensemble model"
 python3 $EXEC_CREATE_MODEL --type_prediction head --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 python3 $EXEC_CREATE_MODEL --type_prediction tail --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 echo "Step 9c: Create the squid model"
-python3 $EXEC_CREATE_MODEL --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
-python3 $EXEC_CREATE_MODEL --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_MODEL $PARAMS_SQUID_HEAD --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_MODEL $PARAMS_SQUID_TAIL --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 fi
 
 if [ $DO_STEP10 = "true" ]; then
@@ -249,8 +249,8 @@ echo "Step 10d: Annotate the answers in the test set using supensemble"
 python3 $EXEC_CREATE_ANN_CLA --mode test --type_prediction head --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 python3 $EXEC_CREATE_ANN_CLA --mode test --type_prediction tail --classifier supensemble --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 echo "Step 10e: Annotate the answers in the test set using squid"
-python3 $EXEC_CREATE_ANN_CLA --mode test --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
-python3 $EXEC_CREATE_ANN_CLA --mode test --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_ANN_CLA $PARAMS_SQUID_HEAD --mode test --type_prediction head --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
+python3 $EXEC_CREATE_ANN_CLA $PARAMS_SQUID_TAIL --mode test --type_prediction tail --classifier squid --result_dir $BASEDIR --topk $TOPK --db $DATASET --model $MODEL
 fi
 
 if [ $DO_STEP11 = "true" ]; then
