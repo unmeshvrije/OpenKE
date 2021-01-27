@@ -75,13 +75,25 @@ elif args.classifier == 'trans':
 elif args.classifier == 'snorkel':
     from classifier_snorkel import Classifier_Snorkel
     signals = args.name_signals.split(",")
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
     use_valid_data = 0 # With snorkel, I don't need validation data
-    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
+    classifier = Classifier_Snorkel(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ, abstain_scores=thresholds)
 elif args.classifier == 'squid':
     from classifier_squid import Classifier_Squid
     signals = args.name_signals.split(",")
+    lows = args.snorkel_low_threshold.split(",")
+    highs = args.snorkel_high_threshold.split(",")
+    thresholds = []
+    for i, l in enumerate(lows):
+        h = highs[i]
+        thresholds.append((float(l), float(h)))
     use_valid_data = 0 # With snorkel, I don't need validation data
-    classifier = Classifier_Squid(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ)
+    classifier = Classifier_Squid(dataset, args.type_prediction, args.topk, args.result_dir, signals, embedding_model_typ, abstain_scores=thresholds)
 elif args.classifier == 'supensemble':
     from classifier_supensemble import Classifier_SuperEnsemble
     signals = args.name_signals.split(",")
