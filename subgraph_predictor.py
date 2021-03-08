@@ -14,6 +14,8 @@ import scann
 import timeit
 import kge.model
 
+from util import timer
+
 class SubgraphPredictor():
 
     def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
@@ -60,6 +62,7 @@ class SubgraphPredictor():
         with open(rel_dict_file, 'rb') as fin:
             self.relation_dict = pickle.load(fin)
 
+    @timer
     def init_train_dataloader(self, db_path):
         self.train_dataloader = TrainDataLoader(
             in_path = db_path,
@@ -99,6 +102,7 @@ class SubgraphPredictor():
 
         log.close()
 
+    @timer
     def init_training_triples(self):
         triples = read_triples(self.training_file_path)
         # triples are in the form (h,t,r)
@@ -120,6 +124,7 @@ class SubgraphPredictor():
             tails.append(t)
         '''
 
+    @timer
     def init_model_score_function(self, emb_model):
         if emb_model == "transe":
             N_DIM = 200
@@ -151,6 +156,7 @@ class SubgraphPredictor():
         self.relation_total = self.train_dataloader.get_rel_tot()
         self.model.cuda()
 
+    @timer
     def init_embeddings(self, emb_model):
         if emb_model == "complex":
             model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
@@ -166,10 +172,12 @@ class SubgraphPredictor():
             self.E = parameters['ent_embeddings.weight']
             self.R = parameters['rel_embeddings.weight']
 
+    @timer
     def init_subgraphs(self):
         with open(self.sub_file_path, 'rb') as fin:
             self.subgraphs = pickle.load(fin)
 
+    @timer
     def init_sub_embeddings(self):
         with open(self.sub_emb_file_path, 'rb') as fin:
             self.S = pickle.load(fin)
