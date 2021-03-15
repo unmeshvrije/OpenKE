@@ -22,18 +22,6 @@ def parse_args():
 
 args = parse_args()
 
-#if args.model != "rotate":
-#    model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model)
-#    checkpoint = load_checkpoint(model_path)
-#    model = KgeModel.create_from(checkpoint)
-#else:
-#    raise Exception("Creating the answers with RotatE is not possible (bugs/unclaritis in libkge. We use different code and openke")
-    #from kge.model.rotate import RotatEScorer
-    #model_path = args.result_dir + '/' + args.db + "/embeddings/" + get_filename_model(args.db, args.model, suf='.ckpt')
-    #model = torch.load(model_path, map_location=torch.device('cpu'))
-    #E = model['ent_embeddings.weight']
-    #R = model['rel_embeddings.weight']
-
 # Load the dataset
 dataset = None
 annotations_dir = args.result_dir + '/' + args.db + '/annotations/'
@@ -81,7 +69,7 @@ for index in tqdm(range(0, len(ent_queries))):
             exists = dataset.exists_htr(oi.item(), ent, rel)
         else:
             exists = dataset.exists_htr(ent, oi.item(), rel)
-        if not exists: #ent, rel, oi.item()) not in known_answers:
+        if not exists:
             filtered_answers.append({'entity_id' : oi.item(), 'score' : scores[index][oi.item()].item()})
             if len(filtered_answers) == topk:
                 break
@@ -89,6 +77,15 @@ for index in tqdm(range(0, len(ent_queries))):
     q = records[index]
     q['answers_fil'] = filtered_answers
     q['answers_raw'] = raw_answers
+    if args.mode == 'test':
+        # Add also a list of all true answers that we have in our test set (useful to compute MRR)
+        if args.type_prediction == 'head':
+            answers = dataset.get_test_answers_for_tr(ent, rel)
+        elif args.type_prediction == 'tail':
+            answers = dataset.get_test_answers_for_hr(ent, rel)
+        else:
+            raise Exception("Not supported")
+        q['answers_test_file'] = answers
     out.append(q)
 
 answers_dir =  args.result_dir + '/' + args.db + "/answers/"
