@@ -182,39 +182,6 @@ class SubgraphPredictor():
         with open(self.sub_emb_file_path, 'rb') as fin:
             self.S = pickle.load(fin)
 
-    def complex_score(self, sub_emb, ent_emb, rel_emb, pred_type):
-        # separate real and imag embeddings
-        mid = len(sub_emb)/2
-        sub_re = sub_emb[:mid]
-        sub_im = sub_emb[mid:]
-        ent_re = ent_emb[:mid]
-        ent_im = ent_emb[mid:]
-        rel_re = rel_emb[:mid]
-        rel_im = rel_emb[mid:]
-
-        if pred_type == "tail":
-            score = (ent_emb + rel_emb) - sub_emb
-        else:
-            score = sub_emb + (rel_emb - ent_emb)
-
-        return LA.norm(score, 2)
-
-    def rotate_score(self, sub_emb, ent_emb, rel_emb, pred_type):
-        if pred_type == "tail":
-            score = (ent_emb + rel_emb) - sub_emb
-        else:
-            score = sub_emb + (rel_emb - ent_emb)
-
-        return LA.norm(score, 2)
-
-    def transe_score(self, sub_emb, ent_emb, rel_emb, pred_type):
-        if pred_type == "tail":
-            score = (ent_emb + rel_emb) - sub_emb
-        else:
-            score = sub_emb + (rel_emb - ent_emb)
-
-        return LA.norm(score, 2)
-
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
     #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
