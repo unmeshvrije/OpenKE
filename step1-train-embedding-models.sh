@@ -27,11 +27,11 @@ fi
 echo "Model $EMB_MODEL_PATH is found. Generating test answers..."
 for K in 10 #1 3 5
 do
-    training_file=$RDD"$DB-$E-training-topk-$K.json"
-    if [ ! -f $training_file ];
-    then
-        python embedding_model.py --gpu --db $DB --mode "trainAsTest" --model $E --topk $K
-    fi
+    #training_file=$RDD"$DB-$E-training-topk-$K.json"
+    #if [ ! -f $training_file ];
+    #then
+    #    python embedding_model.py --gpu --db $DB --mode "trainAsTest" --model $E --topk $K
+    #fi
 
     test_file=$RDD"$DB-$E-test-topk-$K.json"
     if [ ! -f $test_file ];

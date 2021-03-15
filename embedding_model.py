@@ -1,6 +1,6 @@
 import openke
 from openke.config import Trainer, Tester
-from openke.module.model import TransE, ComplEx, HolE, RotatE, Distmult
+from openke.module.model import TransE, ComplEx, HolE, RotatE, DistMult
 from openke.module.loss import MarginLoss, SigmoidLoss, SoftplusLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
