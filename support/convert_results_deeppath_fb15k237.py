@@ -80,8 +80,6 @@ with open(gold_annotation_file, 'rt') as fin:
             continue
         ent = query['query']['ent']
         rel = query['query']['rel']
-        if rel == 12:
-            print("Stop")
         typ = query['query']['type']
         t = (ent, rel)
         if typ == 0:
