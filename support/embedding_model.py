@@ -4,8 +4,6 @@ from kge.util.io import load_checkpoint
 import numpy as np
 from support.dataset import Dataset
 from .utils import *
-from openke.module.model import RotatE, ComplEx, TransE
-from openke.data import TrainDataLoader, TestDataLoader
 import os
 from contextlib import redirect_stderr
 
@@ -51,9 +49,6 @@ class Embedding_Model:
                     assert (txt in kge_map)
                     kge_id = kge_map[txt]
                     self.rel_map[i] = kge_id
-                #new_R = self.R[rel_map]
-                #self.E = new_E
-                #self.R = new_R
         else:
             self.E = self.torch_model['ent_embeddings.weight']
             self.R = self.torch_model['rel_embeddings.weight']
@@ -83,52 +78,7 @@ class Embedding_Model:
             self.dim_r = self.model.get_p_embedder().dim
             self.use_libkge = True
         else:
-            suf = '.ckpt'
-            path = results_dir + '/' + db + "/embeddings/" + get_filename_model(db, typ, suf)
-            if os.path.exists(path):
-                self.torch_model = torch.load(path, map_location=torch.device('cpu'))
-                #self.E = self.model['ent_embeddings.weight']
-                #self.R = self.model['rel_embeddings.weight']
-                db_path = dataset.get_path()
-                self.train_dataloader = TrainDataLoader(
-                    in_path=db_path,
-                    nbatches=100,
-                    threads=8,
-                    sampling_mode="normal",
-                    bern_flag=1,
-                    filter_flag=1,
-                    neg_ent=25,
-                    neg_rel=0
-                )
-                self.test_dataloader = TestDataLoader(in_path=db_path)
-                assert(self.n == self.train_dataloader.get_ent_tot())
-                assert(self.r == self.train_dataloader.get_rel_tot())
-
-                if typ == 'rotate':
-                    self.model = RotatE(
-                        ent_tot=self.train_dataloader.get_ent_tot(),
-                        rel_tot=self.train_dataloader.get_rel_tot(),
-                        dim=200,
-                        margin=6.0,
-                        epsilon=2.0)
-                elif typ == 'complex':
-                    self.model = ComplEx(
-                        ent_tot=self.train_dataloader.get_ent_tot(),
-                        rel_tot=self.train_dataloader.get_rel_tot(),
-                        dim=256
-                    )
-                else: #transe
-                    self.model = TransE(
-                        ent_tot=self.train_dataloader.get_ent_tot(),
-                        rel_tot=self.train_dataloader.get_rel_tot(),
-                        dim=200,
-                        p_norm=1,
-                        norm_flag=True
-                    )
-                self.dim_e = len(self.torch_model['ent_embeddings.weight'][0])
-                self.dim_r = len(self.torch_model['rel_embeddings.weight'][0])
-            else:
-                self.model = None
+            raise Exception("Model not found")
         assert(self.model is not None)
         self._fix_dictionary() # This method will create the E and R data structures
 
