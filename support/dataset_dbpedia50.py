@@ -20,6 +20,8 @@ class Dataset_dbpedia50(Dataset):
         training_data = self._load_dataset(training_data_path)
         valid_data_path = path + '/valid2id.txt'
         valid_data = self._load_dataset(valid_data_path)
+        test_data_path = path + '/test2id.txt'
+        test_data = self._load_dataset(test_data_path)
         # add valid data to the set of training data
         for v in valid_data:
             training_data.append(v)
@@ -44,6 +46,20 @@ class Dataset_dbpedia50(Dataset):
             if t[1] not in self.neighbours:
                 self.neighbours[t[1]] = set()
             self.neighbours[t[1]].add(t[0])
+
+        self.test_answers_hr = {}
+        self.test_answers_tr = {}
+        for t in test_data:
+            q_hr = (t[0], t[2])
+            if q_hr in self.test_answers_hr:
+                self.test_answers_hr[q_hr].append(t[1])
+            else:
+                self.test_answers_hr[q_hr] = [t[1]]
+            q_tr = (t[1], t[2])
+            if q_tr in self.test_answers_tr:
+                self.test_answers_tr[q_tr].append(t[0])
+            else:
+                self.test_answers_tr[q_tr] = [t[0]]
 
         # test_data_path = path + '/test2id.txt'
         # self.test_data = self._load_dataset(test_data_path)
@@ -84,6 +100,20 @@ class Dataset_dbpedia50(Dataset):
         q = (t, r)
         if q in self.known_answers_tr:
             return self.known_answers_tr[q]
+        else:
+            return []
+
+    def get_test_answers_for_hr(self, h, r):
+        q = (h, r)
+        if q in self.test_answers_hr:
+            return self.test_answers_hr[q]
+        else:
+            return []
+
+    def get_test_answers_for_tr(self, t, r):
+        q = (t, r)
+        if q in self.test_answers_tr:
+            return self.test_answers_tr[q]
         else:
             return []
 
