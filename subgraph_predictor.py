@@ -186,6 +186,7 @@ class SubgraphPredictor():
     #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
 
+    @timer
     def get_dynamic_threshold(self, ent, rel, ent_emb, rel_emb, type_pred, model_name):
         '''
             1. Search ent, rel in training triples

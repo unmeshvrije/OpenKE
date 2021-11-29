@@ -34,17 +34,21 @@ db = args.db
 result_dir = args.result_dir + db + "/subgraphs/"
 os.makedirs(result_dir, exist_ok = True)
 
+def read_json_file(filename):
+    with open(filename, "r") as fin:
+        params = json.loads(fin.read())
+    return params
+
 # read complex embeddings from the LibKGE
 #'./local/fb15k-237-complex.pt'
 def read_complex_embeddings(filename):
-    model = kge.model.KgeModel.load_from_checkpoint(filename)
-    E = model._entity_embedder._embeddings_all()
-    R = model._relation_embedder._embeddings_all()
-    return E.tolist(), R.tolist()
+    params = read_json_file(filename)
+    E = params['ent_re_embeddings.weight'] + params['ent_im_embeddings.weight']
+    R = params['rel_re_embeddings.weight'] + params['rel_im_embeddings.weight']
+    return E, R
 
 def read_embeddings(filename):
-    with open(filename, "r") as fin:
-        params = json.loads(fin.read())
+    params = read_json_file(filename)
     E = params['ent_embeddings.weight']
     R = params['rel_embeddings.weight']
     return E, R
