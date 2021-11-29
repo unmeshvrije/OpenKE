@@ -158,17 +158,14 @@ class SubgraphPredictor():
 
     @timer
     def init_embeddings(self, emb_model):
+        with open (self.emb_file_path, 'r') as fin:
+            parameters = json.loads(fin.read())
+        for i in parameters:
+            parameters[i] = torch.Tensor(parameters[i]).to('cuda')
         if emb_model == "complex":
-            model = kge.model.KgeModel.load_from_checkpoint(self.emb_file_path)
-            E_temp = model._entity_embedder._embeddings_all()
-            R_temp = model._relation_embedder._embeddings_all()
-            self.E = torch.Tensor(E_temp.tolist()).to('cuda')
-            self.R = torch.Tensor(R_temp.tolist()).to('cuda')
+            self.E = parameters['ent_re_embeddings.weight'] + parameters['ent_im_embeddings.weight']
+            self.R = parameters['rel_re_embeddings.weight'] + parameters['rel_im_embeddings.weight']
         else:
-            with open (self.emb_file_path, 'r') as fin:
-                parameters = json.loads(fin.read())
-            for i in parameters:
-                parameters[i] = torch.Tensor(parameters[i]).to('cuda')
             self.E = parameters['ent_embeddings.weight']
             self.R = parameters['rel_embeddings.weight']
 
