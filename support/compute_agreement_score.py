@@ -13,24 +13,71 @@ def parse_args():
 args = parse_args()
 topk = 10
 file_path = args.result_dir + '/' + args.db + '/annotations/gold-annotations.json'
-annotators_ids = {}
+facts_annotator = {}
 
 n_annotations = 0
 with open(file_path, encoding='utf-8') as fin:
     objects = json.load(fin)
     for key in objects.keys():
-        annotator = objects[key]['annotator']
-        if annotator not in annotators_ids:
-            annotators_ids[annotator] = set()
-        annotators_ids[annotator].add((objects[key]['query']['ent'], objects[key]['query']['rel']))
-        n_annotations += 1
+        ent = objects[key]['query']['ent']
+        rel = objects[key]['query']['rel']
+        typ = objects[key]['query']['type']
+        if objects[key]['valid_annotations'] == False:
+            continue
+        annotations = objects[key]['annotated_answers']
+        for annotation in annotations:
+            a = annotation['entity_id']
+            fact = (ent, rel, a, typ)
+            for c in annotation['checked']:
+                annotator = c['annotator']
+                checked = c['checked']
+                if fact not in facts_annotator:
+                    facts_annotator[fact] = []
+                facts_annotator[fact].append((annotator, checked))
+            n_annotations += 1
 
-print("N. annotators", len(annotators_ids))
+n_annotations = 0
+n_agreed = 0
+n_yes1 = 0
+n_yes2 = 0
+for fact, an in facts_annotator.items():
+    # Check that every fact was annotated by one annotator exactly once
+    annotator_fact = set()
+    is_testset = False
+    for a,_ in an:
+        annotator_fact.add(a)
+        if a == 'Testset':
+            is_testset = True
+            break
+    if is_testset:
+        continue
+    assert(len(annotator_fact) == len(an))
+    if len(an) == 1:
+        continue
+    assert(len(an) == 2)
+    if an[0][1] == an[1][1]:
+        n_agreed += 1
+    if an[0][1] == True:
+        n_yes1 += 1
+    if an[1][1] == True:
+        n_yes2 += 1
+    n_annotations += 1
+
+p0 = n_agreed / n_annotations
+pe = (n_yes1 / (n_annotations * 2)) * ((n_yes2 / (n_annotations * 2))) +\
+     ((n_annotations - n_yes1) / (n_annotations * 2)) * (((n_annotations - n_yes2) / (n_annotations * 2)))
+cohen_confidence = (p0 - pe) / (1 - pe)
+
+print("N. agreed", n_agreed)
 print("N. annotations", n_annotations)
-intersection = None
-for annotator, annotations in annotators_ids.items():
-    if intersection is None:
-        intersection = annotations
-    else:
-        intersection = intersection.intersection(annotations)
-print("Size intersection", len(intersection))
+print("p0", p0)
+print("pe", pe)
+print("Cohen_confidence", cohen_confidence)
+
+#Coefficient between 0.81-0.99 => near perfect agreement
+
+# With dbpedia50
+#p0 0.8973214285714286
+#pe 0.2114780970982143
+#Cohen_confidence 0.8697834885109583
+

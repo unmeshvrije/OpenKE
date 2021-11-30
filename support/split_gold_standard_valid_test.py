@@ -38,7 +38,7 @@ if os.path.exists(gold_dir + '/' + gold_valid_filename):
         json.dump(new_test_annotations, fout)
 else:
     # split
-    array_gold_annotations = [ a for key, a in gold_annotations.items() ]
+    array_gold_annotations = [ a for key, a in gold_annotations.items() if a['valid_annotations'] == True ]
     array_gold_test_annotations, array_gold_valid_annotations = train_test_split(array_gold_annotations, test_size=50)
     gold_test_annotations = {}
     for a in array_gold_test_annotations:
