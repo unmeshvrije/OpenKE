@@ -52,7 +52,8 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
                 if subset_k is not None and idx_ans >= subset_k:
                     break
                 entity_id = ans['entity_id']
-                checked = ans['checked']
+                checked_by_annotators = ans['checked']
+                checked = checked_by_annotators[0]['checked'] # Pick the first one
                 found = False
                 for true_answer in true_annotated_answers:
                     if true_answer['entity_id'] == entity_id:
