@@ -7,7 +7,7 @@ if [ $# -eq 0 ]
 fi
 
 cd ..
-source venv/bin/activate
+#source venv/bin/activate
 
 BASEDIR=$1
 DATASET=$2
