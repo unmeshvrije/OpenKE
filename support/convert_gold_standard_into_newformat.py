@@ -55,17 +55,21 @@ for key, query in gold_annotations.items():
     for annotated_answer in new_query['annotated_answers']:
         a = annotated_answer['entity_id']
         checked = annotated_answer['checked']
-        enabled = annotated_answer['enabled']
         found = False
         if typ == 0 and (a, ent, rel) in raw_test_triples:
             found = True
         if typ == 1 and (ent, a, rel) in raw_test_triples:
             found = True
+        if 'enabled' in annotated_answer:
+            enabled = annotated_answer['enabled']
+        else:
+            enabled = not found
         if found:
-            assert(not enabled)
+            enabled = False
         if not enabled:
             if found:
-                assert(checked)
+                if not checked:
+                    print("true triple not checked")
                 annotated_answer['checked'] = [{'checked' : True, 'annotator' : 'Testset'}]
             else:
                 # This comes from a previous set of annotations
