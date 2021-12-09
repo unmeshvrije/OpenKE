@@ -81,3 +81,8 @@ print("Cohen_confidence", cohen_confidence)
 #pe 0.2114780970982143
 #Cohen_confidence 0.8697834885109583
 
+# With fb15k237
+#p0 0.8513513513513513
+#pe 0.20169831994156318
+#Cohen_confidence 0.8137938922566624
+
