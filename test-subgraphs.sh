@@ -62,12 +62,7 @@ RD="/var/scratch2/uji300/OpenKE-results/"
 
 #for K in -2 #10 -1 # is for dynamic K, -2 is for dynamic threshold
 #do
-    if [ $E == "complex" ];
-    then
-    emb_file=$RDE"$DB-$E.pt"
-    else
     emb_file=$RDE"$DB-$E.json"
-    fi
     sub_file=$RDS"$DB-$E-subgraphs-tau-10.pkl"
     sub_emb_file=$RDS"$DB-$E-avgemb-tau-10.pkl"
     test_file="./benchmarks/$DB/test2id.txt"
