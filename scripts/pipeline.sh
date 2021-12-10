@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -eq 0 ]
   then
@@ -28,30 +28,30 @@ SOUTFILE="${EXPDIR}/stdout"
 SERRFILE="${EXPDIR}/stderr"
 
 if [ ! -d "$OUTDIR" ]; then
-  mkdir $OUTDIR
+  mkdir -p $OUTDIR
 fi
 if [ ! -d "$MODELDIR" ]; then
-  mkdir $MODELDIR
+  mkdir -p $MODELDIR
 fi
 if [ ! -d "$ANNDIR" ]; then
-  mkdir $ANNDIR
+  mkdir -p $ANNDIR
 fi
 if [ ! -d "$QUEDIR" ]; then
-  mkdir $QUEDIR
+  mkdir -p $QUEDIR
 fi
 if [ ! -d "$ANSDIR" ]; then
-  mkdir $ANSDIR
+  mkdir -p $ANSDIR
 fi
 if [ ! -d "$TRADIR" ]; then
-  mkdir $TRADIR
+  mkdir -p $TRADIR
 fi
 if [ ! -d "$LOGDIR" ]; then
-  mkdir $LOGDIR
+  mkdir -p $LOGDIR
 fi
 
 # Store experimental results
 if [ ! -d "$EXPDIR" ]; then
-  mkdir $EXPDIR
+  mkdir -p $EXPDIR
 fi
 exec > >(tee -a $SOUTFILE)
 exec 2> >(tee -a $ERRFILE)
@@ -297,12 +297,12 @@ fi
 echo "Copying data ..."
 cp scripts/$0 $EXPDIR
 cp scripts/pipeline-params-${DATASET}-${MODEL}.sh $EXPDIR
-mkdir $EXPDIR/results
+mkdir -p $EXPDIR/results
 cp -R $OUTDIR $EXPDIR/results
-mkdir $EXPDIR/models
+mkdir -p $EXPDIR/models
 cp -R $MODELDIR/ $EXPDIR/models
-mkdir $EXPDIR/source
+mkdir -p $EXPDIR/source
 cp -R *.py $EXPDIR/source/
-mkdir $EXPDIR/source/support
+mkdir -p $EXPDIR/source/support
 cp -R support/ $EXPDIR/source/support
 echo "done."
