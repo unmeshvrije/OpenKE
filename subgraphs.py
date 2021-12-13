@@ -70,6 +70,8 @@ class SubgraphFactory():
         return subgraphs
 
     # sub_type can be SPO or POS
+    # TODO: Use this method to find first the SPO or POS subgraphs
+    # then use entities in SPO subgraphs to further make SPOSPO, OPSPO etc.
     def make_subgraphs_per_type(self,sub_type):
 
         E = self.E

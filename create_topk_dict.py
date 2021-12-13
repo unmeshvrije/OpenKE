@@ -14,7 +14,7 @@ def parse_args():
 
 args = parse_args()
 db = args.db
-result_dir = args.result_dir + db + "/"
+result_dir = args.result_dir + db + "/misc/"
 os.makedirs(result_dir, exist_ok = True)
 
 dyntop = DynamicTopk()
