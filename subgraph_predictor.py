@@ -2,7 +2,7 @@ import numpy as np
 import json
 import pickle5 as pickle
 from tqdm import tqdm
-from openke.module.model import TransE, RotatE, ComplEx
+from openke.module.model import TransE, RotatE, ComplEx, DistMult, HolE
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from numpy import linalg as LA
@@ -150,7 +150,28 @@ class SubgraphPredictor():
                     ent_tot = self.train_dataloader.get_ent_tot(),
                     rel_tot = self.train_dataloader.get_rel_tot(),
                     dim = N_DIM
-                    );
+                    )
+        elif emb_model == "distmult":
+            N_DIM = 200
+            self.model = DistMult(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    #margin = 6.0,
+                    #epsilon = 2.0
+                    )
+        elif emb_model == "hole":
+            N_DIM = 200
+            self.model = HolE(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    #margin = 6.0,
+                    #epsilon = 2.0
+                    )
+        else:
+            print(f"Unsupported model: {emb_model}")
+            sys.exit()
         # This is crucial
         self.entity_total = self.train_dataloader.get_ent_tot()
         self.relation_total = self.train_dataloader.get_rel_tot()
@@ -333,6 +354,8 @@ class SubgraphPredictor():
                 subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
                 subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
 
+
+                '''
                 answer_embedding_head = self.model._calc_embedding(new_H, new_T, new_R, 'head_batch')
                 answer_embedding_tail = self.model._calc_embedding(new_H, new_T, new_R, 'tail_batch')
 
@@ -345,6 +368,7 @@ class SubgraphPredictor():
 
                 answer_embedding_head = answer_embedding_head.squeeze(0)
                 answer_embedding_tail = answer_embedding_tail.squeeze(0)
+                '''
 
             for index, se in enumerate(self.S):
                 if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
@@ -419,6 +443,7 @@ class SubgraphPredictor():
             time_end = timeit.default_timer()
 
         # calculate recall
+        print()
         print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
         print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
         head_normal_comparisons = self.entity_total * hitsHead
