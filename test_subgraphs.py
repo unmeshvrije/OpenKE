@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('--modelfile', dest ='model_file',type = str, help = 'File containing test data.')
     parser.add_argument('--weightsfile', dest ='weights_file', type = str, help = 'File containing test data.')
     parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
-    parser.add_argument('--subembfile', dest ='subemb_file', type = str, help = 'File containing subgraphs embeddings.')
+    parser.add_argument('--subembdir', dest ='subemb_dir', type = str, help = 'Dir containing subgraphs embeddings.')
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
+    parser.add_argument('--score', dest='score_func', type=str, help='Score function to evaluate subgraphs on', default="avg")
     return parser.parse_args()
 
 args = parse_args()
@@ -35,10 +36,10 @@ queries_file_path = args.test_file
 
 emb_file = args.emb_file
 sub_file = args.sub_file
-subemb_file = args.subemb_file
+subemb_dir = args.subemb_dir
 db_path = "./benchmarks/" + args.db + "/"
 print("Initializing Subgraph predictor", flush=True)
-mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
+mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_dir, args.model, args.train_file, db_path, args.sub_threshold, args.score_func)
 
 mys.set_test_triples(queries_file_path, args.num_test_queries)
 # entity dict is the id to string dictionary for entities

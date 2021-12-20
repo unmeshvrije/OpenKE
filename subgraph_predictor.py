@@ -18,8 +18,9 @@ from util import timer
 
 class SubgraphPredictor():
 
-    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_file_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1):
+    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func="avg"):
 
+        self.db = db
         self.topk_subgraphs = topk_subgraphs
         self.dynamic_topk = False
         self.dynamic_threshold = False
@@ -30,9 +31,17 @@ class SubgraphPredictor():
 
         self.emb_file_path = embeddings_file_path
         self.sub_file_path = subgraphs_file_path
-        self.sub_emb_file_path = sub_emb_file_path
+
+        # fb15k237-rotate-avgemb-tau-10.pkl
+        if not sub_emb_dir_path.endswith("/"):
+            sub_emb_dir_path += "/"
+        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-avgemb-tau-10.pkl"
+        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-varemb-tau-10.pkl"
+
         self.training_file_path = training_file_path
         self.subgraph_threshold_percentage = subgraph_threshold_percentage
+        self.score_func = score_func
+
         self.init_embeddings(emb_model)
         self.init_subgraphs()
         self.init_sub_embeddings()
@@ -104,11 +113,11 @@ class SubgraphPredictor():
 
     @timer
     def init_training_triples(self):
-        triples = read_triples(self.training_file_path)
+        self.triples = read_triples(self.training_file_path)
         # triples are in the form (h,t,r)
         # For type_prediction : head, we sort by tail
-        self.training_triples_head_predictions = sorted(triples, key = lambda l : (l[2], l[1]))
-        self.training_triples_tail_predictions = sorted(triples, key = lambda l : (l[2], l[0])) #TODO: is this correct ?
+        self.training_triples_head_predictions = sorted(self.triples, key = lambda l : (l[2], l[1]))
+        self.training_triples_tail_predictions = sorted(self.triples, key = lambda l : (l[2], l[0]))
         '''
         self.training_triples_head_predictions = {}
         self.training_triples_tail_predictions = {}
@@ -197,14 +206,16 @@ class SubgraphPredictor():
 
     @timer
     def init_sub_embeddings(self):
-        with open(self.sub_emb_file_path, 'rb') as fin:
-            self.S = pickle.load(fin)
+        with open(self.sub_avgemb_file_path, 'rb') as fin:
+            self.SA = torch.Tensor(pickle.load(fin)).to('cuda')
+        with open(self.sub_varemb_file_path, 'rb') as fin:
+            self.SV = torch.Tensor(pickle.load(fin)).to('cuda')
+        # TODO: Load var embeddings here for KL divergence
 
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
     #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
 
-    @timer
     def get_dynamic_threshold(self, ent, rel, ent_emb, rel_emb, type_pred, model_name):
         '''
             1. Search ent, rel in training triples
@@ -307,7 +318,61 @@ class SubgraphPredictor():
 
         return found_index if found_index > 0 else int(0.1 * len(sub_indexes))
 
+    def get_matching_entities(self, sub_type, e, r):
+        entities = []
+        for triple in self.triples:
+            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[1] == r:
+                entities.append(triple[2])
+                if len(entities) == 10:
+                    return entities
+            elif triple[2] == e and triple[1] == r:
+                entities.append(triple[0])
+                if len(entities) == 10:
+                    return entities
+        return entities
 
+    def get_kl_divergence_scores(self, ent, rel, sub_type):
+        '''
+        Get the entities with this ent and rel from db.
+        sample some entites for trueAvg and trueVar embeddings
+        now find KL divergence with these trueAvg and trueVar embeddings
+        with all other subgraphs
+        '''
+        dim = self.E.size()[1]
+        summation = torch.zeros(dim).to('cuda')
+        count = 0
+        scores = []
+        me = self.get_matching_entities(sub_type, ent, rel)
+        for e in me:
+            summation += self.E[e]
+            count += 1
+        mean = summation / count if count > 0 else summation
+
+        columnsSquareDiff = torch.zeros(dim).to('cuda')
+        for e in me:
+            columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
+        if count > 2:
+                columnsSquareDiff /= (count - 1)
+        else:
+            columnsSquareDiff = mean
+        true_avg_emb = mean
+        true_var_emb = columnsSquareDiff
+
+        # Calculate kl scores with all subgraphs
+
+        def calc_kl(sa, sv, qa, qv):
+            temp = ((qa - sa)**2 + qv**2 / (2*sv*sv))
+            #print("UNM : temp\n ", temp)
+            sv[sv<0] = sv[sv<0]*-1
+            qv[qv<0] = qv[qv<0]*-1
+            temp2 = torch.log(torch.sqrt(sv)/qv)
+            #print("UNM : temp2\n ", temp2)
+            temp3 = 0.5
+            ans = torch.sum(temp + temp2 - temp3)
+            return ans
+        for i in range(len(self.subgraphs)):
+            scores.append(calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb))
+        return scores
 
     def predict(self):
         hitsHead = 0
@@ -319,6 +384,7 @@ class SubgraphPredictor():
         max_subset_size_head = 0
         max_subset_size_tail = 0
         dim = self.E.size()[1]
+        print(f"UNM: E dim = {dim}")
         all_tail_answer_embeddings = torch.empty(0, dim).to('cuda')
         all_head_answer_embeddings = torch.empty(0, dim).to('cuda')
 
@@ -339,38 +405,29 @@ class SubgraphPredictor():
             new_H = self.E[head]
             new_R = self.R[rel]
             new_T = self.E[tail]
-            new_S = torch.Tensor(self.S).to('cuda')
-            if self.model_name == "complex":
-                s_re, s_im = torch.chunk(new_S, 2, dim = -1)
-                h_re, h_im = torch.chunk(new_H, 2, dim = -1)
-                t_re, t_im = torch.chunk(new_T, 2, dim = -1)
-                r_re, r_im = torch.chunk(new_R, 2, dim = -1)
-                subgraph_scores_head_prediction = self.model._calc(s_re, s_im, t_re, t_im, r_re, r_im)
-                subgraph_scores_tail_prediction = self.model._calc(s_re, s_im, h_re, h_im, r_re, r_im)
-            else:# self.model_name == "rotate":
-                new_H.unsqueeze_(0)
-                new_T.unsqueeze_(0)
+            new_S = self.SA
+            if self.score_func == "kl":
+                # Compute KL divergence scores
+                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
+                subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
                 new_R.unsqueeze_(0)
-                subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
-                subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
+            else:
+                if self.model_name == "complex":
+                    s_re, s_im = torch.chunk(new_S, 2, dim = -1)
+                    h_re, h_im = torch.chunk(new_H, 2, dim = -1)
+                    t_re, t_im = torch.chunk(new_T, 2, dim = -1)
+                    r_re, r_im = torch.chunk(new_R, 2, dim = -1)
+                    subgraph_scores_head_prediction = self.model._calc(s_re, s_im, t_re, t_im, r_re, r_im)
+                    subgraph_scores_tail_prediction = self.model._calc(s_re, s_im, h_re, h_im, r_re, r_im)
+                else:# self.model_name == "rotate":
+                    new_H.unsqueeze_(0)
+                    new_T.unsqueeze_(0)
+                    new_R.unsqueeze_(0)
+                    subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
+                    subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
 
 
-                '''
-                answer_embedding_head = self.model._calc_embedding(new_H, new_T, new_R, 'head_batch')
-                answer_embedding_tail = self.model._calc_embedding(new_H, new_T, new_R, 'tail_batch')
-
-                if self.model_name == "rotate":
-                    temp = answer_embedding_tail.unbind()
-                    answer_embedding_tail = torch.cat(temp, dim = -1)
-
-                    temp = answer_embedding_head.unbind()
-                    answer_embedding_head = torch.cat(temp, dim = -1)
-
-                answer_embedding_head = answer_embedding_head.squeeze(0)
-                answer_embedding_tail = answer_embedding_tail.squeeze(0)
-                '''
-
-            for index, se in enumerate(self.S):
+            for index, se in enumerate(self.SA):
                 if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
                     subgraph_scores_tail_prediction[index] = np.inf
                 if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:

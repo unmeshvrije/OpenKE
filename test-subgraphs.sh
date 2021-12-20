@@ -38,7 +38,14 @@ do
         K=$val
         ((i++))
         ;;
-        *)
+    -s)
+        S=$val
+        ((i++))
+        ;;
+    --score-func=*)
+        S=${arg#*=}
+        ;;
+     *)
         echo "Unknown argument number $i: '$arg'"
         ;;
     esac
@@ -64,10 +71,10 @@ RD="/var/scratch2/uji300/OpenKE-results/"
 #do
     emb_file=$RDE"$DB-$E.json"
     sub_file=$RDS"$DB-$E-subgraphs-tau-10.pkl"
-    sub_emb_file=$RDS"$DB-$E-avgemb-tau-10.pkl"
+    sub_emb_dir=$RDS
     test_file="./benchmarks/$DB/test2id.txt"
     train_file="./benchmarks/$DB/train2id.txt"
     edict_file="/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
     rdict_file="/var/scratch2/uji300/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"
     echo "Calling Python script"
-    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembfile $sub_emb_file --topk $K --db $DB --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R
+    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S
