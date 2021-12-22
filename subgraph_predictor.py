@@ -331,6 +331,7 @@ class SubgraphPredictor():
                     return entities
         return entities
 
+    @timer
     def get_kl_divergence_scores(self, ent, rel, sub_type):
         '''
         Get the entities with this ent and rel from db.
@@ -339,22 +340,27 @@ class SubgraphPredictor():
         with all other subgraphs
         '''
         dim = self.E.size()[1]
-        summation = torch.zeros(dim).to('cuda')
-        count = 0
-        scores = []
         me = self.get_matching_entities(sub_type, ent, rel)
-        for e in me:
-            summation += self.E[e]
-            count += 1
+        #summation = torch.zeros(dim).to('cuda')
+        summation = torch.sum(self.E[me])
+        count = len(me)
+        #count = 0
+        #for e in me:
+        #    summation += self.E[e]
+        #    count += 1
         mean = summation / count if count > 0 else summation
 
-        columnsSquareDiff = torch.zeros(dim).to('cuda')
-        for e in me:
-            columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
-        if count > 2:
-                columnsSquareDiff /= (count - 1)
-        else:
-            columnsSquareDiff = mean
+        def internal_var():
+            columnsSquareDiff = torch.zeros(dim).to('cuda')
+            for e in me:
+                columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
+            if count > 2:
+                    columnsSquareDiff /= (count - 1)
+            else:
+                columnsSquareDiff = mean
+            return columnsSquareDiff
+
+        columnsSquareDiff = internal_var()
         true_avg_emb = mean
         true_var_emb = columnsSquareDiff
 
@@ -362,17 +368,19 @@ class SubgraphPredictor():
 
         def calc_kl(sa, sv, qa, qv):
             temp = ((qa - sa)**2 + qv**2 / (2*sv*sv))
-            #print("UNM : temp\n ", temp)
             sv[sv<0] = sv[sv<0]*-1
             qv[qv<0] = qv[qv<0]*-1
             temp2 = torch.log(torch.sqrt(sv)/qv)
-            #print("UNM : temp2\n ", temp2)
             temp3 = 0.5
             ans = torch.sum(temp + temp2 - temp3)
             return ans
-        for i in range(len(self.subgraphs)):
-            scores.append(calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb))
-        return scores
+
+        @timer
+        def prep_ans():
+            #TODO: Make this faster
+            return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
+
+        return prep_ans()
 
     def predict(self):
         hitsHead = 0
