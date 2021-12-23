@@ -13,6 +13,7 @@ import time
 import scann
 import timeit
 import kge.model
+import torch.nn.functional as F
 
 from util import timer
 
@@ -341,31 +342,27 @@ class SubgraphPredictor():
         '''
         dim = self.E.size()[1]
         me = self.get_matching_entities(sub_type, ent, rel)
-        #summation = torch.zeros(dim).to('cuda')
-        summation = torch.sum(self.E[me])
         count = len(me)
-        #count = 0
-        #for e in me:
-        #    summation += self.E[e]
-        #    count += 1
+        n_subgraphs = len(self.subgraphs)
+        if count == 0:
+            return [0.0] * n_subgraphs
+        summation = torch.sum(self.E[me])
         mean = summation / count if count > 0 else summation
 
-        def internal_var():
-            columnsSquareDiff = torch.zeros(dim).to('cuda')
-            for e in me:
-                columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
-            if count > 2:
-                    columnsSquareDiff /= (count - 1)
-            else:
-                columnsSquareDiff = mean
-            return columnsSquareDiff
+        columnsSquareDiff = torch.zeros(dim).to('cuda')
+        for e in me:
+            columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
+        if count > 2:
+                columnsSquareDiff /= (count - 1)
+        else:
+            columnsSquareDiff = mean
 
-        columnsSquareDiff = internal_var()
         true_avg_emb = mean
         true_var_emb = columnsSquareDiff
 
         # Calculate kl scores with all subgraphs
 
+        print(f"{self.SA.shape}, {self.SA[0].shape} , {true_avg_emb.shape}")
         def calc_kl(sa, sv, qa, qv):
             temp = ((qa - sa)**2 + qv**2 / (2*sv*sv))
             sv[sv<0] = sv[sv<0]*-1
@@ -375,12 +372,11 @@ class SubgraphPredictor():
             ans = torch.sum(temp + temp2 - temp3)
             return ans
 
-        @timer
-        def prep_ans():
-            #TODO: Make this faster
-            return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
+        #TODO: Ensure this evaluation is correct
+        # return calc_kl(self.SA, self.SV, true_avg_emb, true_var_emb)
+        return [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+        # return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
 
-        return prep_ans()
 
     def predict(self):
         hitsHead = 0
@@ -392,7 +388,6 @@ class SubgraphPredictor():
         max_subset_size_head = 0
         max_subset_size_tail = 0
         dim = self.E.size()[1]
-        print(f"UNM: E dim = {dim}")
         all_tail_answer_embeddings = torch.empty(0, dim).to('cuda')
         all_head_answer_embeddings = torch.empty(0, dim).to('cuda')
 
