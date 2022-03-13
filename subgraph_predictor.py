@@ -211,7 +211,6 @@ class SubgraphPredictor():
             self.SA = torch.Tensor(pickle.load(fin)).to('cuda')
         with open(self.sub_varemb_file_path, 'rb') as fin:
             self.SV = torch.Tensor(pickle.load(fin)).to('cuda')
-        # TODO: Load var embeddings here for KL divergence
 
     #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
     #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
@@ -332,7 +331,6 @@ class SubgraphPredictor():
                     return entities
         return entities
 
-    @timer
     def get_kl_divergence_scores(self, ent, rel, sub_type):
         '''
         Get the entities with this ent and rel from db.
