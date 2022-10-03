@@ -1,15 +1,16 @@
 #!/bin/sh
 source ~/.bashrc
 
-if [ "$#" -ne 3 ];
+if [ "$#" -ne 4 ];
 then
-    echo "usage: $0 [result_dir] [model] [db]. Found $#"
+    echo "usage: $0 [result_dir] [model] [db] [type](star, diamond). Found $#"
     exit
 fi
 
-RD=$1 #"/var/scratch2/uji300/OpenKE-results/"
+RD=$1 #"/var/scratch/dvs254/OpenKE-results/"
 E=$2  # "transe", "hole", "rotate"
 DB=$3 #"fb15k237"
+TYPE=$4 #"star", "diamond"
 RDB=$RD"$DB/"
 RDE=$RDB"embeddings/" # contains file in the name format : db-model.json
 RDM=$RDB"models/"
@@ -22,7 +23,7 @@ SUB_FILE_PATH="$RDS""$DB-$E-subgraphs-tau-10.pkl"
 if [ ! -f $SUB_FILE_PATH ];
 then
     echo "$SUB_FILE_PATH : NOT FOUND. Generating..."
-    python create_subgraphs.py --db $DB --model $E --embfile $emb_file --ms 10 --infile $in_file
+    python create_subgraphs.py --db $DB --model $E --embfile $emb_file --type $TYPE --ms 10 --infile $in_file
 else
     echo "$SUB_FILE_PATH : FOUND!"
 fi
