@@ -44,8 +44,8 @@ def load_pickle(filename):
     return data
 
 def sample_star_subgraph_entities(subgraphs):
-    id_to_entity_data = load_pickle('../../../../var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('../../../../var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
+    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
+    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
     subgraph_index = random.randint(0, len(subgraphs) - 1)
     subgraph = subgraphs[subgraph_index]
     size = subgraph.data['size']
@@ -68,8 +68,8 @@ def sample_star_subgraph_entities(subgraphs):
 
 
 def sample_diamond_subgraph_entities(subgraphs):
-    id_to_entity_data = load_pickle('../../../../var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('../../../../var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
+    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
+    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
     subgraph_index = random.randint(0, len(subgraphs) - 1)
     subgraph = subgraphs[subgraph_index]
     while subgraph.data['subType'] == SUBTYPE.SPO or subgraph.data['subType'] == SUBTYPE.POS:
@@ -113,7 +113,7 @@ class Subgraph():
     def __str__():
         return str(self.data)
 
-class Subgraph_diamond():
+class SubgraphDiamond():
     def __init__(self, sid, st, sent1, sent2, srel1, srel2, ssize, entities):
         self.data = {}
         self.data['subType']  = st
@@ -146,7 +146,7 @@ class SubgraphFactory():
 
     def add_diamond_subgraphs(self, st, sent1, sent2, srel1, srel2, ssize, entities):
         subentities = copy.deepcopy(entities)
-        sub = Subgraph_diamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, entities)
+        sub = SubgraphDiamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, entities)
         self.subgraphs.append(sub)
 
     def get_Nsubgraphs(self):
