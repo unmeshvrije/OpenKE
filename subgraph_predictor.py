@@ -19,7 +19,7 @@ from util import timer
 
 class SubgraphPredictor():
 
-    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func="avg"):
+    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
 
         self.db = db
         self.topk_subgraphs = topk_subgraphs
@@ -204,6 +204,10 @@ class SubgraphPredictor():
     def init_subgraphs(self):
         with open(self.sub_file_path, 'rb') as fin:
             self.subgraphs = pickle.load(fin)
+        if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
+            self.subgraph_type = "star"
+        else:
+            self.subgraph_type = "diamond"
 
     @timer
     def init_sub_embeddings(self):
@@ -260,7 +264,7 @@ class SubgraphPredictor():
             if model_name == "complex":
                 all_answer_scores = self.model._calc(e_re, e_im, a_re, a_im, r_re, r_im)
             else:
-                all_answer_scores = self.model._calc(ent_emb, all_answer_emb,rel_emb, 'tail_batch')
+                all_answer_scores = self.model._calc(ent_emb, all_answer_emb, rel_emb, 'tail_batch')
 
         #return torch.mean(all_answer_scores).cpu().numpy()
         return torch.min(all_answer_scores).cpu().numpy()
@@ -334,7 +338,7 @@ class SubgraphPredictor():
     def get_kl_divergence_scores(self, ent, rel, sub_type):
         '''
         Get the entities with this ent and rel from db.
-        sample some entites for trueAvg and trueVar embeddings
+        sample some entities for trueAvg and trueVar embeddings
         now find KL divergence with these trueAvg and trueVar embeddings
         with all other subgraphs
         '''
@@ -409,8 +413,8 @@ class SubgraphPredictor():
             new_S = self.SA
             if self.score_func == "kl":
                 # Compute KL divergence scores
-                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
                 subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
+                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
                 new_R.unsqueeze_(0)
             else:
                 if self.model_name == "complex":
@@ -429,10 +433,17 @@ class SubgraphPredictor():
 
 
             for index, se in enumerate(self.SA):
-                if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
-                    subgraph_scores_tail_prediction[index] = np.inf
-                if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
-                    subgraph_scores_head_prediction[index] = np.inf
+                if self.subgraph_type == "star":
+                    if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
+                        subgraph_scores_tail_prediction[index] = np.inf
+                    if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
+                        subgraph_scores_head_prediction[index] = np.inf
+                else: # self.subgraph_type = "diamond"
+                    if (self.subgraphs[index].data['ent1'] == head and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == head and self.subgraphs[index].data['rel2'] == rel):
+                        subgraph_scores_tail_prediction[index] = np.inf
+                    if (self.subgraphs[index].data['ent1'] == tail and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == tail and self.subgraphs[index].data['rel2'] == rel):
+                        subgraph_scores_head_prediction[index] = np.inf
+
 
             sub_indexes_head_prediction = torch.argsort(subgraph_scores_head_prediction)
             sub_indexes_tail_prediction = torch.argsort(subgraph_scores_tail_prediction)
@@ -516,6 +527,8 @@ class SubgraphPredictor():
         #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
         #print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
         #print("Time: ", end - start)
+
+
 
     #def predict_internal(self, ent, rel, ans, tester):
     #    # call get_subgraph_scores only once and get all scores
