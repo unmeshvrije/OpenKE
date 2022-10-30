@@ -28,9 +28,9 @@ def make_adjacency_lists(triples):
         h = triple[0]
         t = triple[1]
         r = triple[2]
-        while len(adj_list_out) < h + 1:
+        while len(adj_list_out) < max(h, t) + 1:
             adj_list_out.append([])
-        while len(adj_list_in) < t + 1:
+        while len(adj_list_in) < max(h, t) + 1:
             adj_list_in.append([])
         adj_list_out[h].append((t, r))
         adj_list_in[t].append((h, r))
@@ -186,7 +186,7 @@ class SubgraphFactory():
     # sub_type can be SPO or POS
     # TODO: Use this method to find first the SPO or POS subgraphs
     # then use entities in SPO subgraphs to further make SPOSPO, OPSPO etc.
-    def make_subgraphs_per_type(self,sub_type):
+    def make_subgraphs_per_type(self, sub_type):
 
         E = self.E
         min_subgraph_size = self.min_subgraph_size
