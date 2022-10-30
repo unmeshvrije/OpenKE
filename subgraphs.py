@@ -43,9 +43,9 @@ def load_pickle(filename):
         data = pickle.load(fin)
     return data
 
-def sample_star_subgraph_entities(subgraphs):
-    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
+def sample_star_subgraph_entities(subgraphs, db):
+    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-entity.pkl')
+    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-relation.pkl')
     subgraph_index = random.randint(0, len(subgraphs) - 1)
     subgraph = subgraphs[subgraph_index]
     size = subgraph.data['size']
@@ -67,9 +67,9 @@ def sample_star_subgraph_entities(subgraphs):
     return
 
 
-def sample_diamond_subgraph_entities(subgraphs):
-    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/fb15k237-id-to-relation.pkl')
+def sample_diamond_subgraph_entities(subgraphs, db):
+    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-entity.pkl')
+    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-relation.pkl')
     subgraph_index = random.randint(0, len(subgraphs) - 1)
     subgraph = subgraphs[subgraph_index]
     while subgraph.data['subType'] == SUBTYPE.SPO or subgraph.data['subType'] == SUBTYPE.POS:
@@ -297,7 +297,7 @@ class SubgraphFactory():
 
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)
-        sample_star_subgraph_entities(self.subgraphs)
+        sample_star_subgraph_entities(self.subgraphs, self.db)
 
         if subtype == "diamond":
             adj_list_out, adj_list_in = make_adjacency_lists(self.triples)
@@ -313,4 +313,4 @@ class SubgraphFactory():
             self.avg_embeddings = self.avg_embeddings[first_dia_graph_index:]
             self.var_embeddings = self.var_embeddings[first_dia_graph_index:]
             for i in range(8):
-                sample_diamond_subgraph_entities(self.subgraphs)
+                sample_diamond_subgraph_entities(self.subgraphs, self.db)
