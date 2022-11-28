@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument('--dropout', dest = 'dropout', type = float, default = 0.5)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', required = True, dest = 'model_str', type = str, default = "lstm")
-    parser.add_argument('--pred', dest ='pred', required = True, type = str, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
+    parser.add_argument('--pred', dest ='pred', type = str, choices = ['head', 'tail'], help = 'Prediction type (head/tail)')
     return parser.parse_args()
 
 args = parse_args()
@@ -47,7 +47,10 @@ if args.batch_size == None:
 else:
     batch_size = int(args.batch_size)
 
-print("Loading training data...", input_file, end = " ")
+def percentify(num):
+    return str(round(float(num)*100, 2)) + "%"
+
+print("Loading training data...", end = " ")
 with open(input_file, "rb") as fin:
     training_data = pickle.load(fin)
 print("DONE")
@@ -102,14 +105,12 @@ print("Validation set : %s: %.2f%%" % (model.metrics_names[1], score[1]*100))
 
 #Saving of model and weights
 json_model = model.to_json()
-
-base_name = os.path.basename(input_file).split('.')[0]
-model_file_name = result_dir + "models/" + base_name + "-" + type_prediction + "-model-"+ model_str + "-units-"+str(n_units) + \
+model_file_name = result_dir + args.db + "-" + model_str + "-model-topk-"+str(topk)+"-"+type_prediction+"-units-"+str(n_units) + \
 "-dropout-" + str(dropout) +".json"
 with open(model_file_name, 'w') as fout:
     fout.write(json_model)
 
-model_weights_file_name = result_dir + "models/" + base_name + "-" + type_prediction + "-weights-"+ model_str + "-units-"+str(n_units) + \
+model_weights_file_name = result_dir + args.db + "-" + model_str + "-weights-topk-"+str(topk)+"-"+type_prediction+ "-units-"+str(n_units) + \
 "-dropout-" + str(dropout) +".h5"
 
 model.save_weights(model_weights_file_name)
