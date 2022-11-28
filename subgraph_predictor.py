@@ -1,0 +1,591 @@
+import numpy as np
+import json
+import pickle5 as pickle
+from tqdm import tqdm
+from openke.module.model import TransE, RotatE, ComplEx, DistMult, HolE
+from subgraphs import Subgraph
+from subgraphs import SUBTYPE
+from numpy import linalg as LA
+from subgraphs import read_triples
+from openke.data import TrainDataLoader
+import torch
+import time
+import scann
+import timeit
+import kge.model
+import torch.nn.functional as F
+
+from util import timer
+
+class SubgraphPredictor():
+
+    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
+
+        self.db = db
+        self.topk_subgraphs = topk_subgraphs
+        self.dynamic_topk = False
+        self.dynamic_threshold = False
+        if topk_subgraphs == -1:
+            self.dynamic_topk = True
+        elif topk_subgraphs == -2:
+            self.dynamic_threshold = True
+
+        self.emb_file_path = embeddings_file_path
+        self.sub_file_path = subgraphs_file_path
+
+        # fb15k237-rotate-avgemb-tau-10.pkl
+        if not sub_emb_dir_path.endswith("/"):
+            sub_emb_dir_path += "/"
+        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-avgemb-tau-10.pkl"
+        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-varemb-tau-10.pkl"
+
+        self.training_file_path = training_file_path
+        self.subgraph_threshold_percentage = subgraph_threshold_percentage
+        self.score_func = score_func
+
+        self.init_embeddings(emb_model)
+        self.init_subgraphs()
+        self.init_sub_embeddings()
+        self.init_training_triples()
+
+        self.init_train_dataloader(db_path)
+        self.model_name = emb_model
+        self.init_model_score_function(emb_model)
+        self.cnt_subgraphs_dict = {}
+        # This is the list of Counts of subgraphs / % Threshold
+        # Count of subgraphs in which the answer was found.
+        # % Threshold for this query (dynamically computed, hence different for every query)
+        self.cnt_subgraphs_dict["raw"] = []
+        self.cnt_subgraphs_dict["fil"] = []
+        self.cnt_subgraphs_dict["abs"] = []
+
+    def set_test_triples(self, queries_file_path, num_test_queries):
+        self.test_triples = read_triples(queries_file_path)[:num_test_queries]
+
+    def set_logfile(self, logfile):
+        self.logfile = logfile
+
+    def init_entity_dict(self, entity_dict_file, rel_dict_file):
+        with open(entity_dict_file, 'rb') as fin:
+            self.entity_dict = pickle.load(fin)
+
+        with open(rel_dict_file, 'rb') as fin:
+            self.relation_dict = pickle.load(fin)
+
+    @timer
+    def init_train_dataloader(self, db_path):
+        self.train_dataloader = TrainDataLoader(
+            in_path = db_path,
+            nbatches = 100,
+            threads = 8,
+            sampling_mode = "normal",
+            bern_flag = 1,
+            filter_flag = 1,
+            neg_ent = 25,
+            neg_rel = 0
+            )
+
+    def print_answer_entities(self):
+        if self.logfile == None:
+            return
+        log = open(self.logfile, "w")
+        for index, x in enumerate(self.x_test_fil):
+            e = int(x[0])
+            r = int(x[1])
+            a = int(x[2])
+            head = e
+            tail = a
+            if self.type_prediction == "head":
+                head = a
+                tail = e
+            sub = "{" + self.cnt_subgraphs_dict["fil"][index] + "}"
+            if self.y_test_fil[index] == 1 and self.y_predicted_fil[index] == 0:
+                print("$$Expected (1) Predicted (0): $", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail], sub," $$$", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 0:
+                print("**Expected (0) Predicted (1): * ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub," ***", file=log)
+            if self.y_predicted_fil[index] == 1 and self.y_test_fil[index] == 1:
+                print("##Expected (1) Predicted (1): # ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub," ###", file=log)
+            if self.y_predicted_fil[index] == 0 and self.y_test_fil[index] == 0:
+                print("##Expected (0) Predicted (0): # ", self.entity_dict[head] , " , ", self.relation_dict[r] , " => ", self.entity_dict[tail] , sub, " ###", file=log)
+            if (index+1) % self.topk_subgraphs == 0:
+                print("*" * 80, file = log)
+
+        log.close()
+
+    @timer
+    def init_training_triples(self):
+        self.triples = read_triples(self.training_file_path)
+        # triples are in the form (h,t,r)
+        # For type_prediction : head, we sort by tail
+        self.training_triples_head_predictions = sorted(self.triples, key = lambda l : (l[2], l[1]))
+        self.training_triples_tail_predictions = sorted(self.triples, key = lambda l : (l[2], l[0]))
+        '''
+        self.training_triples_head_predictions = {}
+        self.training_triples_tail_predictions = {}
+        print("HERE " *50, flush=True)
+        for i in tqdm(range(0, len(triples))):
+            print("{}, {}, {}".format(triples[i][0], triples[i][1], triples[i][2]), flush=True)
+            h = triples[i][0]
+            r = triples[i][1]
+            t = triples[i][2]
+            heads = self.training_triples_head_predictions.get((r,t), [])
+            heads.append(h)
+            tails = self.training_triples_tail_predictions.get((r,h), [])
+            tails.append(t)
+        '''
+
+    @timer
+    def init_model_score_function(self, emb_model):
+        if emb_model == "transe":
+            N_DIM = 200
+            #self.model_score = self.transe_score
+            self.model = TransE(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM,
+                    p_norm = 1,
+                    norm_flag = True
+                    )
+        elif emb_model == "rotate":
+            N_DIM = 200
+            self.model = RotatE(
+                            ent_tot  = self.train_dataloader.get_ent_tot(),
+                            rel_tot = self.train_dataloader.get_rel_tot(),
+                            dim = N_DIM,
+                            margin = 6.0,
+                            epsilon = 2.0)
+        elif emb_model == "complex":
+            N_DIM = 256
+            self.model = ComplEx(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    )
+        elif emb_model == "distmult":
+            N_DIM = 200
+            self.model = DistMult(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    #margin = 6.0,
+                    #epsilon = 2.0
+                    )
+        elif emb_model == "hole":
+            N_DIM = 200
+            self.model = HolE(
+                    ent_tot = self.train_dataloader.get_ent_tot(),
+                    rel_tot = self.train_dataloader.get_rel_tot(),
+                    dim = N_DIM
+                    #margin = 6.0,
+                    #epsilon = 2.0
+                    )
+        else:
+            print(f"Unsupported model: {emb_model}")
+            sys.exit()
+        # This is crucial
+        self.entity_total = self.train_dataloader.get_ent_tot()
+        self.relation_total = self.train_dataloader.get_rel_tot()
+        self.model.cuda()
+
+    @timer
+    def init_embeddings(self, emb_model):
+        with open (self.emb_file_path, 'r') as fin:
+            parameters = json.loads(fin.read())
+        for i in parameters:
+            parameters[i] = torch.Tensor(parameters[i]).to('cuda')
+        if emb_model == "complex":
+            self.E = parameters['ent_re_embeddings.weight'] + parameters['ent_im_embeddings.weight']
+            self.R = parameters['rel_re_embeddings.weight'] + parameters['rel_im_embeddings.weight']
+        else:
+            self.E = parameters['ent_embeddings.weight']
+            self.R = parameters['rel_embeddings.weight']
+
+    @timer
+    def init_subgraphs(self):
+        with open(self.sub_file_path, 'rb') as fin:
+            self.subgraphs = pickle.load(fin)
+        if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
+            self.subgraph_type = "star"
+        else:
+            self.subgraph_type = "diamond"
+
+    @timer
+    def init_sub_embeddings(self):
+        with open(self.sub_avgemb_file_path, 'rb') as fin:
+            self.SA = torch.Tensor(pickle.load(fin)).to('cuda')
+        with open(self.sub_varemb_file_path, 'rb') as fin:
+            self.SV = torch.Tensor(pickle.load(fin)).to('cuda')
+
+    #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type, score_callback):
+    #    return score_callback(np.array(sub_emb), np.array(ent_emb), np.array(rel_emb), pred_type)
+    #def get_subgraph_scores(self, sub_emb, ent_emb, rel_emb, pred_type):
+
+    def get_dynamic_threshold(self, ent, rel, ent_emb, rel_emb, type_pred, model_name):
+        '''
+            1. Search ent, rel in training triples
+            2. If answer is found, look for the scores of these answers
+            3. Get the minimum of these scores
+        '''
+        #print("ent {}, rel {} ". format(ent, rel))
+        if type_pred == "head":
+            training_triples = self.training_triples_head_predictions
+        else:
+            training_triples = self.training_triples_tail_predictions
+
+        answers = []
+        for index, triple in enumerate(training_triples):
+            if triple[2] != rel:
+                continue
+
+            if triple[2] > rel:
+                break
+
+            if type_pred == "head":
+                if triple[1] == ent:
+                    answers.append(triple[0])
+            elif type_pred == "tail":
+                if triple[0] == ent:
+                    answers.append(triple[1])
+
+        if len(answers) == 0:
+            return 0.0
+
+        all_answer_emb = self.E[np.array(answers)]
+        if model_name == "complex":
+            a_re, a_im = torch.chunk(all_answer_emb, 2, dim = -1)
+            e_re, e_im = torch.chunk(ent_emb, 2, dim = -1)
+            r_re, r_im = torch.chunk(rel_emb, 2, dim = -1)
+        if type_pred == "head":
+            if model_name == "complex":
+                all_answer_scores = self.model._calc(a_re, a_im, e_re, e_im, r_re, r_im)
+            else:
+                all_answer_scores = self.model._calc(all_answer_emb, ent_emb, rel_emb, 'head_batch')
+        else:
+            if model_name == "complex":
+                all_answer_scores = self.model._calc(e_re, e_im, a_re, a_im, r_re, r_im)
+            else:
+                all_answer_scores = self.model._calc(ent_emb, all_answer_emb, rel_emb, 'tail_batch')
+
+        #return torch.mean(all_answer_scores).cpu().numpy()
+        return torch.min(all_answer_scores).cpu().numpy()
+
+    def get_dynamic_topk(self, ent, rel, sub_indexes, type_pred):
+        '''
+            1. Search ent, rel in training triples
+            2. If answer is found, look for the answer in sorted subgraphs
+        '''
+        if type_pred == "head":
+            training_triples = self.training_triples_head_predictions
+        else:
+            training_triples = self.training_triples_tail_predictions
+
+        answers = []
+        for index, triple in enumerate(training_triples):
+            if triple[2] != rel:
+                continue
+
+            if triple[2] > rel:
+                break
+
+            if type_pred == "head":
+                if triple[1] == ent:
+                    answers.append(triple[0])
+            elif type_pred == "tail":
+                if triple[0] == ent:
+                    answers.append(triple[1])
+
+        if len(answers) == 0:
+            return int(0.1 * len(sub_indexes))
+
+        '''
+        found_index = []
+        for j, sub_index in enumerate(sub_indexes):
+            if j > len(sub_indexes)/2:
+                break
+            for answer in answers:
+                if answer in self.subgraphs[sub_index].data['entities']:
+                    found_index.append(j)
+                    break
+        if len(found_index) == 0:
+            return int(0.1 * len(sub_indexes))
+
+        return max(found_index)
+        '''
+        found_index = 0
+        j = len(sub_indexes)-1
+        while j > 0:
+            for answer in answers:
+                if answer in self.subgraphs[sub_indexes[j]].data['entities']:
+                    found_index = j
+                    break
+            j //= 2
+
+        return found_index if found_index > 0 else int(0.1 * len(sub_indexes))
+
+    def get_matching_entities(self, sub_type, e, r):
+        entities = []
+        for triple in self.triples:
+            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[1] == r:
+                entities.append(triple[2])
+                if len(entities) == 10:
+                    return entities
+            elif triple[2] == e and triple[1] == r:
+                entities.append(triple[0])
+                if len(entities) == 10:
+                    return entities
+        return entities
+
+    def get_kl_divergence_scores(self, ent, rel, sub_type):
+        '''
+        Get the entities with this ent and rel from db.
+        sample some entities for trueAvg and trueVar embeddings
+        now find KL divergence with these trueAvg and trueVar embeddings
+        with all other subgraphs
+        '''
+        dim = self.E.size()[1]
+        me = self.get_matching_entities(sub_type, ent, rel)
+        count = len(me)
+        n_subgraphs = len(self.subgraphs)
+        if count == 0:
+            return [0.0] * n_subgraphs
+        summation = torch.sum(self.E[me])
+        mean = summation / count if count > 0 else summation
+
+        columnsSquareDiff = torch.zeros(dim).to('cuda')
+        for e in me:
+            columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
+        if count > 2:
+                columnsSquareDiff /= (count - 1)
+        else:
+            columnsSquareDiff = mean
+
+        true_avg_emb = mean
+        true_var_emb = columnsSquareDiff
+
+        # Calculate kl scores with all subgraphs
+
+        print(f"{self.SA.shape}, {self.SA[0].shape} , {true_avg_emb.shape}")
+        def calc_kl(sa, sv, qa, qv):
+            temp = ((qa - sa)**2 + qv**2 / (2*sv*sv))
+            sv[sv<0] = sv[sv<0]*-1
+            qv[qv<0] = qv[qv<0]*-1
+            temp2 = torch.log(torch.sqrt(sv)/qv)
+            temp3 = 0.5
+            ans = torch.sum(temp + temp2 - temp3)
+            return ans
+
+        #TODO: Ensure this evaluation is correct
+        # return calc_kl(self.SA, self.SV, true_avg_emb, true_var_emb)
+        return [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+        # return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
+
+
+    def predict(self):
+        hitsHead = 0
+        hitsTail = 0
+        hits_head_scann = 0
+        hits_tail_scann = 0
+        head_subgraph_comparisons = 0
+        tail_subgraph_comparisons = 0
+        max_subset_size_head = 0
+        max_subset_size_tail = 0
+        dim = self.E.size()[1]
+        all_tail_answer_embeddings = torch.empty(0, dim).to('cuda')
+        all_head_answer_embeddings = torch.empty(0, dim).to('cuda')
+
+        dataset = self.E.cpu().numpy()
+        normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
+        #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
+
+        if self.test_triples is None:
+            print("ERROR: set_test_triples() is not called.")
+            return
+
+        for index in tqdm(range(0, len(self.test_triples))):
+            head = int(self.test_triples[index][0])
+            tail = int(self.test_triples[index][1])
+            rel  = int(self.test_triples[index][2])
+
+            #time_start = timeit.default_timer()
+            new_H = self.E[head]
+            new_R = self.R[rel]
+            new_T = self.E[tail]
+            new_S = self.SA
+            if self.score_func == "kl":
+                # Compute KL divergence scores
+                subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
+                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
+                new_R.unsqueeze_(0)
+            else:
+                if self.model_name == "complex":
+                    s_re, s_im = torch.chunk(new_S, 2, dim = -1)
+                    h_re, h_im = torch.chunk(new_H, 2, dim = -1)
+                    t_re, t_im = torch.chunk(new_T, 2, dim = -1)
+                    r_re, r_im = torch.chunk(new_R, 2, dim = -1)
+                    subgraph_scores_head_prediction = self.model._calc(s_re, s_im, t_re, t_im, r_re, r_im)
+                    subgraph_scores_tail_prediction = self.model._calc(s_re, s_im, h_re, h_im, r_re, r_im)
+                else:# self.model_name == "rotate":
+                    new_H.unsqueeze_(0)
+                    new_T.unsqueeze_(0)
+                    new_R.unsqueeze_(0)
+                    subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
+                    subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
+
+
+            for index, se in enumerate(self.SA):
+                if self.subgraph_type == "star":
+                    if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
+                        subgraph_scores_tail_prediction[index] = np.inf
+                    if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
+                        subgraph_scores_head_prediction[index] = np.inf
+                else: # self.subgraph_type = "diamond"
+                    if (self.subgraphs[index].data['ent1'] == head and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == head and self.subgraphs[index].data['rel2'] == rel):
+                        subgraph_scores_tail_prediction[index] = np.inf
+                    if (self.subgraphs[index].data['ent1'] == tail and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == tail and self.subgraphs[index].data['rel2'] == rel):
+                        subgraph_scores_head_prediction[index] = np.inf
+
+
+            sub_indexes_head_prediction = torch.argsort(subgraph_scores_head_prediction)
+            sub_indexes_tail_prediction = torch.argsort(subgraph_scores_tail_prediction)
+            #time_end = timeit.default_timer()
+            #print("time taken to sort scores = {}s".format((time_end - time_start)*1000))
+
+            if self.dynamic_topk:
+                topk_subgraphs_head = self.get_dynamic_topk(tail, rel, sub_indexes_head_prediction, "head")
+                topk_subgraphs_tail = self.get_dynamic_topk(head, rel, sub_indexes_tail_prediction, "tail")
+                # Check topk_subgraphs and if it is >= 10
+                topk_subgraphs_head = max(10, topk_subgraphs_head)
+                topk_subgraphs_tail = max(10, topk_subgraphs_tail)
+                #print("Looking for answers in {}/{} subgraphs".format(topk_subgraphs_head, len(self.subgraphs)))
+            elif self.dynamic_threshold:
+                thresh_subgraphs_head = self.get_dynamic_threshold(tail, rel, new_T, new_R, "head", self.model_name)
+                thresh_subgraphs_tail = self.get_dynamic_threshold(head, rel, new_H, new_R, "tail", self.model_name)
+
+                sub_indexes_head_prediction = np.where(subgraph_scores_head_prediction.cpu().numpy() > thresh_subgraphs_head)[0]
+                sub_indexes_tail_prediction = np.where(subgraph_scores_tail_prediction.cpu().numpy() > thresh_subgraphs_tail)[0]
+                topk_subgraphs_head = -1
+                topk_subgraphs_tail = -1 # consider all of these indexes
+                #print("Looking for answers in {}/{} subgraphs".format(len(sub_indexes_head_prediction), len(self.subgraphs)))
+            else:
+                #print("topk subgraphs : ", self.topk_subgraphs)
+                topk_subgraphs_head = self.topk_subgraphs
+                topk_subgraphs_tail = self.topk_subgraphs
+
+            time_start = timeit.default_timer()
+            subset_head_predictions = set()
+            for sub_index in sub_indexes_head_prediction[:topk_subgraphs_head]:
+                subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
+            if head in subset_head_predictions:
+                hitsHead += 1
+                head_subgraph_comparisons += len(subset_head_predictions)
+            #print("head total sub comparisons {} ({})".format(len(subset_head_predictions), head_subgraph_comparisons))
+            #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
+
+            #print("Length of subset = ", len(subset_head_predictions))
+            #topk_subgraphs_scann = min(100000, len(subset_head_predictions))
+            #if topk_subgraphs_scann == 1000:
+            #    hitsHead -= 1
+
+            #print("Searching in {}".format(topk_subgraphs_scann))
+            #head_neighbours, head_distances = searcher.search_batched(answer_embedding_head.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            #print("Actual neighbours returned :  ",len(np.squeeze(head_neighbours)))
+            #print("Actual neighbours returned :  ",(np.squeeze(head_neighbours)))
+            #if head in np.squeeze(head_neighbours):
+            #    print("ScaNN HEAD FOUND")
+            #    hits_head_scann += 1
+
+            subset_tail_predictions = set()
+            for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
+                subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
+            if tail in subset_tail_predictions:
+                hitsTail += 1
+                tail_subgraph_comparisons += len(subset_tail_predictions)
+            #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
+            #topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
+            #if topk_subgraphs_scann == 1000:
+            #    hitsTail -= 1
+
+            #tail_neighbours, tail_distances = searcher.search_batched(answer_embedding_tail.cpu().numpy(), final_num_neighbors = topk_subgraphs_scann)
+            #if tail in np.squeeze(tail_neighbours):
+            #    print("ScaNN TAIL FOUND")
+            #    hits_tail_scann += 1
+            time_end = timeit.default_timer()
+
+        # calculate recall
+        print()
+        print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
+        print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
+        head_normal_comparisons = self.entity_total * hitsHead
+        if head_normal_comparisons != 0:
+            print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
+            float(head_normal_comparisons)*100)
+        tail_normal_comparisons = self.entity_total * hitsTail
+        if tail_normal_comparisons != 0:
+            print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
+            float(tail_normal_comparisons)*100)
+
+        #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
+        #print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
+        #print("Time: ", end - start)
+
+
+
+    #def predict_internal(self, ent, rel, ans, tester):
+    #    # call get_subgraph_scores only once and get all scores
+    #    new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
+    #    new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
+    #    new_S = torch.Tensor(self.S)
+    #    if self.model_name == "complex":
+    #        s_re, s_im = torch.chunk(new_S, 2, dim = -1)
+    #        e_re, e_im = torch.chunk(new_E, 2, dim = -1)
+    #        r_re, r_im = torch.chunk(new_R, 2, dim = -1)
+    #        subgraph_scores = self.model._calc(s_re, s_im, e_re, e_im, r_re, r_im)
+    #    else:
+    #        #subgraph_scores = self.model._calc(torch.Tensor(self.S), new_E, new_R, self.type_prediction+'_batch')
+    #        # this won't work:
+    #        #TODO: here we need to pass only indices of Entities and relations
+    #        # def forward() from the models will then find embeddings based on them
+    #        subgraph_scores = self.model.predict({
+    #        'batch_h': tester.to_var(np.array(self.E[ent]), tester.use_gpu),
+    #        'batch_t': tester.to_var(np.array(self.S), tester.use_gpu),
+    #        'batch_r': tester.to_var(np.array(self.R[rel]), tester.use_gpu),
+    #        'mode': "tail_batch" # or head_batch
+    #        })
+
+    #    print("sub scores     = ", len(subgraph_scores))
+    #    print("sub embeddings = ", len(self.S))
+
+    #    # Set scores of known subgraph(s) to infinity.
+    #    for index, se in enumerate(self.S):
+    #        if self.subgraphs[index].data['ent'] == ent and self.subgraphs[index].data['rel'] == rel:
+    #            subgraph_scores[index] = np.inf
+
+    #    sub_indexes = np.argsort(subgraph_scores)
+    #    topk_subgraphs = 5#self.get_dynamic_topk(ent, rel, sub_indexes)
+
+    #    # Check topk_subgraphs and if it is > 10
+    #    #threshold_subgraphs = int(self.subgraph_threshold_percentage * topk_subgraphs)
+
+    #    #threshold_subgraphs = min(len(sub_indexes)*0.1, threshold_subgraphs)
+    #    # working
+    #    '''
+    #    for i, answer in enumerate(topk_ans_entities):
+    #        cnt_presence_in_sub = 0;
+    #        # Check in only topK subgraphs
+    #        for j, sub_index in enumerate(sub_indexes[:topk_subgraphs]):
+    #            if answer in self.subgraphs[sub_index].data['entities']:
+    #                cnt_presence_in_sub += 1
+    #                #print("{} FOUND in subgraph # {}". format(answer, j))
+    #        #if cnt_presence_in_sub != 0:
+    #        self.cnt_subgraphs_dict[setting].append(str(cnt_presence_in_sub) + " / " + str(threshold_subgraphs))
+    #        if cnt_presence_in_sub > threshold_subgraphs: #topk_subgraphs/2:
+    #            y_predicted.append(1)
+    #        else:
+    #            y_predicted.append(0)
+    #    '''
+    #    found_answer = False
+    #    for sub_index in sub_indexes[:topk_subgraphs]:
+    #        if ans in self.subgraphs[sub_index].data['entities']:
+    #            print("Found in sub: ")#, self.subgraphs[sub_index].data)
+    #            return True
+

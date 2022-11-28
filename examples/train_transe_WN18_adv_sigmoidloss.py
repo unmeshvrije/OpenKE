@@ -5,6 +5,7 @@ from openke.module.loss import SigmoidLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader
 
+import sys
 # dataloader for training
 train_dataloader = TrainDataLoader(
 	in_path = "./benchmarks/WN18RR/", 
@@ -38,12 +39,14 @@ model = NegativeSampling(
 	regul_rate = 0.0
 )
 
+is_gpu = sys.argv[1] == 'gpu'
+
 # train the model
-trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 3000, alpha = 2e-5, use_gpu = True, opt_method = "adam")
+trainer = Trainer(model = model, data_loader = train_dataloader, train_times = 3000, alpha = 2e-5, use_gpu = is_gpu, opt_method = "adam")
 trainer.run()
 transe.save_checkpoint('./checkpoint/transe_2.ckpt')
 
 # test the model
 transe.load_checkpoint('./checkpoint/transe_2.ckpt')
-tester = Tester(model = transe, data_loader = test_dataloader, use_gpu = True)
+tester = Tester(model = transe, "WN18", data_loader = test_dataloader, use_gpu = is_gpu)
 tester.run_link_prediction(type_constrain = False)

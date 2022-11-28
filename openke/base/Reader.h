@@ -234,10 +234,10 @@ void importTestFiles() {
     memset(testLef, -1, sizeof(INT) * relationTotal);
     memset(testRig, -1, sizeof(INT) * relationTotal);
     for (INT i = 1; i < testTotal; i++) {
-	if (testList[i].r != testList[i-1].r) {
-	    testRig[testList[i-1].r] = i - 1;
-	    testLef[testList[i].r] = i;
-	}
+        if (testList[i].r != testList[i-1].r) {
+            testRig[testList[i-1].r] = i - 1;
+            testLef[testList[i].r] = i;
+        }
     }
     testLef[testList[0].r] = 0;
     testRig[testList[testTotal - 1].r] = testTotal - 1;
@@ -247,10 +247,10 @@ void importTestFiles() {
     memset(validLef, -1, sizeof(INT)*relationTotal);
     memset(validRig, -1, sizeof(INT)*relationTotal);
     for (INT i = 1; i < validTotal; i++) {
-	if (validList[i].r != validList[i-1].r) {
-	    validRig[validList[i-1].r] = i - 1;
-	    validLef[validList[i].r] = i;
-	}
+        if (validList[i].r != validList[i-1].r) {
+            validRig[validList[i-1].r] = i - 1;
+            validLef[validList[i].r] = i;
+        }
     }
     validLef[validList[0].r] = 0;
     validRig[validList[validTotal - 1].r] = validTotal - 1;
@@ -312,10 +312,10 @@ void importTrainAsTestFiles() {
     memset(testLef, -1, sizeof(INT) * relationTotal);
     memset(testRig, -1, sizeof(INT) * relationTotal);
     for (INT i = 1; i < testTotal; i++) {
-	if (testList[i].r != testList[i-1].r) {
-	    testRig[testList[i-1].r] = i - 1;
-	    testLef[testList[i].r] = i;
-	}
+        if (testList[i].r != testList[i-1].r) {
+            testRig[testList[i-1].r] = i - 1;
+            testLef[testList[i].r] = i;
+        }
     }
     testLef[testList[0].r] = 0;
     testRig[testList[testTotal - 1].r] = testTotal - 1;
