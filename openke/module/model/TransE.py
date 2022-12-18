@@ -58,6 +58,9 @@ class TransE(Model):
 
         return score
 
+    def _vector_op(h, r):
+        return h + r
+
     def _calc(self, h, t, r, mode):
         score = self._calc_embedding(h, t, r, mode)
         score = torch.norm(score, self.p_norm, -1).flatten()
@@ -71,7 +74,7 @@ class TransE(Model):
         h = self.ent_embeddings(batch_h)
         t = self.ent_embeddings(batch_t)
         r = self.rel_embeddings(batch_r)
-        score = self._calc(h ,t, r, mode)
+        score = self._calc(h, t, r, mode)
         if self.margin_flag:
             return self.margin - score
         else:
