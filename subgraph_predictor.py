@@ -14,6 +14,7 @@ import scann
 import timeit
 import kge.model
 import torch.nn.functional as F
+import nanopq
 
 from util import timer
 
@@ -395,6 +396,13 @@ class SubgraphPredictor():
 
         dataset = self.E.cpu().numpy()
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
+
+        product_quantizator = nanopq.PQ(M = 8) #Instantiate quantizator with 8 subspaces
+        if self.score_func == "nn":
+            training_vector_count = 2000
+            dim = 200
+            training_vectors = np.random.random((training_vector_count, dim)).astype(np.float32)
+            product_quantizator.fit(training_vectors)
         #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
         if self.test_triples is None:
