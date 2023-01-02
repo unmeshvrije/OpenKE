@@ -32,6 +32,22 @@ class ComplEx(Model):
             -1
         )
 
+
+    def _vector_op(self, vector, r, mode):
+        vector_re, vector_im = torch.chunk(vector, 2, dim = -1)
+        r_re, r_im = torch.chunk(r, 2, dim = -1)
+
+        if mode == 'tail_pred':
+            h_re, h_im = vector_re, vector_im
+            t_re = r_re * h_im + r_im * h_re
+            t_im = r_re * h_re - r_im * h_im
+            return torch.cat((t_re, t_im))
+        else:
+            t_re, t_im = vector_re, vector_im
+            h_re = r_re * t_re - r_im * t_im
+            h_im = r_re * t_im + r_im * t_re
+            return torch.cat((h_re, h_im))
+
     def forward(self, data):
         batch_h = data['batch_h']
         batch_t = data['batch_t']

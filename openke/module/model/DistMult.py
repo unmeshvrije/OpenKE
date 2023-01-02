@@ -43,6 +43,14 @@ class DistMult(Model):
         score = torch.sum(score, -1).flatten()
         return score
 
+    def _vector_op(self, vector, r, mode):
+        if mode == 'tail_pred':
+            h = vector
+            return h * r
+        else:
+            t = vector
+            return t * r
+
     def forward(self, data):
         batch_h = data['batch_h']
         batch_t = data['batch_t']

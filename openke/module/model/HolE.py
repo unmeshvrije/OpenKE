@@ -74,6 +74,19 @@ class HolE(Model):
         score = torch.sum(score, -1).flatten()
         return score
 
+    def _circular_convolution(self, a, b):
+        A = numpy.fft.fft(a.cpu().numpy())
+        B = numpy.fft.fft(b.cpu().numpy())
+        return torch.Tensor(numpy.real(numpy.fft.ifft(A * B)))
+
+    def _vector_op(self, vector, r, mode):
+        if mode == 'tail_pred':
+            h = vector
+            return self._circular_convolution(r, h)
+        else:
+            t = vector
+            return self._circular_convolution(r, t)
+
     def forward(self, data):
         batch_h = data['batch_h']
         batch_t = data['batch_t']
@@ -82,7 +95,7 @@ class HolE(Model):
         h = self.ent_embeddings(batch_h)
         t = self.ent_embeddings(batch_t)
         r = self.rel_embeddings(batch_r)
-        score = self._calc(h ,t, r, mode)
+        score = self._calc(h, t, r, mode)
         return score
 
     def regularization(self, data):

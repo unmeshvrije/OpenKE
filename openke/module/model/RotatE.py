@@ -79,6 +79,29 @@ class RotatE(Model):
         score = score.norm(dim = 0).sum(dim = -1)
         return score.permute(1, 0).flatten()
 
+    def _vector_op(self, vector, r, mode):
+        pi = self.pi_const
+
+        vector_re, vector_im = torch.chunk(vector, 2, dim = -1)
+
+        phase_relation = r / (self.rel_embedding_range.item() / pi)
+
+        re_relation = torch.cos(phase_relation)
+        im_relation = torch.sin(phase_relation)
+
+        if mode == 'tail_pred':
+            h_re = vector_re
+            h_im = vector_im
+            t_re = h_re * re_relation - h_im * im_relation
+            t_im = h_re * im_relation + h_im * re_relation
+            return torch.cat((t_re, t_im))
+        else:
+            t_re = vector_re
+            t_im = vector_im
+            h_re = re_relation * t_re + im_relation * t_im
+            h_im = re_relation * t_im - im_relation * t_re
+            return torch.cat((h_re, h_im))
+
     def forward(self, data):
         batch_h = data['batch_h']
         batch_t = data['batch_t']
