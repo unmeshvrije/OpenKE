@@ -397,12 +397,25 @@ class SubgraphPredictor():
         dataset = self.E.cpu().numpy()
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
 
-        product_quantizator = nanopq.PQ(M = 8) #Instantiate quantizator with 8 subspaces
+        product_quantizator = nanopq.PQ(M = 10) #Instantiate quantizator with 10 subspaces
+        X_code = []
         if self.score_func == "nn":
-            training_vector_count = 2000
+            max_training_vector_count = 5000
             dim = 200
-            training_vectors = np.random.random((training_vector_count, dim)).astype(np.float32)
-            product_quantizator.fit(training_vectors)
+            if self.model_name == "rotate":
+                dim = 400
+            training_vectors_new = []
+            training_vector_size = min(len(self.triples), max_training_vector_count)
+            for index in range(0, training_vector_size):
+                head_id = self.triples[index][0]
+                tail_id = self.triples[index][1]
+                training_vectors_new.append(self.E[head_id])
+                training_vectors_new.append(self.E[tail_id])
+            training_vectors_new = torch.cat(training_vectors_new)
+            training_vectors_new = torch.reshape(training_vectors_new, [2 * training_vector_size, dim])
+            product_quantizator.fit(training_vectors_new.cpu().numpy())
+            X_code = product_quantizator.encode(self.SA.detach().cpu().numpy())
+
         #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
         if self.test_triples is None:
@@ -424,6 +437,12 @@ class SubgraphPredictor():
                 subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
                 subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
                 new_R.unsqueeze_(0)
+            elif self.score_func == "nn":
+                query_head_prediction = self.model._vector_op(new_T, new_R, 'head_pred')
+                query_tail_prediction = self.model._vector_op(new_H, new_R, 'tail_pred')
+                subgraph_scores_head_prediction = torch.Tensor(product_quantizator.dtable(query_head_prediction.detach().cpu().numpy()).adist(X_code))
+                subgraph_scores_tail_prediction = torch.Tensor(product_quantizator.dtable(query_tail_prediction.detach().cpu().numpy()).adist(X_code))
+                new_R.unsqueeze_(0)
             else:
                 if self.model_name == "complex":
                     s_re, s_im = torch.chunk(new_S, 2, dim = -1)
@@ -438,7 +457,6 @@ class SubgraphPredictor():
                     new_R.unsqueeze_(0)
                     subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
                     subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
-
 
             for index, se in enumerate(self.SA):
                 if self.subgraph_type == "star":
