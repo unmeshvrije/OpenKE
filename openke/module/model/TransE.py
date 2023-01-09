@@ -63,6 +63,17 @@ class TransE(Model):
         score = torch.norm(score, self.p_norm, -1).flatten()
         return score
 
+    def _vector_op(self, vector, r, mode):
+        if self.norm_flag:
+            vector = F.normalize(vector, 2, -1)
+            r = F.normalize(r, 2, -1)
+        if mode == 'tail_pred':
+            h = vector
+            return h + r
+        else:
+            t = vector
+            return t - r
+
     def forward(self, data):
         batch_h = data['batch_h']
         batch_t = data['batch_t']
@@ -71,7 +82,7 @@ class TransE(Model):
         h = self.ent_embeddings(batch_h)
         t = self.ent_embeddings(batch_t)
         r = self.rel_embeddings(batch_r)
-        score = self._calc(h ,t, r, mode)
+        score = self._calc(h, t, r, mode)
         if self.margin_flag:
             return self.margin - score
         else:
