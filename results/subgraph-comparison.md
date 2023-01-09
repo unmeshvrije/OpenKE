@@ -297,7 +297,6 @@ Database contains 7024 records for testing
 |                 | 0.527 - 0.057 | 0.879 - 0.884 |
 |                 | 46.750 - 46.750 | 6.026 - 6.026 |
 
-
 ### hole
 |Arguments|Diamond|Star|
 |--|--|--|
@@ -653,4 +652,3 @@ Database contains 2097 records for testing
 | r -1 k -2 s nn  | 00:15 | 00:18 |
 |                 | 0.044 - 0.013 | 0.489 - 0.221 |
 |                 | 96.045 - 96.045 | 54.183 - 54.183 |
-
