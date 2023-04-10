@@ -1,6 +1,17 @@
+import math
 import subprocess
 
 TEST_FILE_PATH = "test-subgraphs.sh"
+SUBGRAPH_COUNT = {          # used for k = 10% option
+    "fb15k237-star": 7694,
+    "fb15k237-diamond": 232216,
+    "lubm-star": 1106,
+    "lubm-diamond": 3270,
+    "yago2-star": 8789,
+    "yago2-diamond": 568,
+    "dbpedia50-star": 326,
+    "dbpedia50-diamond": 62
+}
 
 # Runs an experiment with particular metrics
 #
@@ -12,6 +23,7 @@ TEST_FILE_PATH = "test-subgraphs.sh"
 #    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
 #    s - score function. one of "avg", "kl", "nn"
 #    metric - the metric of interest, either "Recall" or "Reduction"/"Red"
+#    subgraph_type - "star" or "diamond"
 #    max_time - maximum permitted time per task in format "hh:mm:ss"
 # Note: all arguments must be given as strings
 #
@@ -19,7 +31,13 @@ TEST_FILE_PATH = "test-subgraphs.sh"
 #    1st - reduction/recall (based on the 'metric' argument) value for Head (H)
 #    2nd - reduction/recall value for Tail (T)
 # In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
-def run_test(test_file_path, model, database, r, k, s, metric = "Recall", max_time = "00:30:00"):
+def run_test(test_file_path, model, database, r, k, s, metric = "Recall", subgraph_type = "star", max_time = "00:30:00"):
+    # process k = 10% case
+    if k.endswith('%'):
+        k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
+        k = str(math.floor(k))  # format k value
+        print(k)
+
     proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + test_file_path + " -m " + model + " -d " + database + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
     output = proc.stdout.readlines()
 
@@ -45,5 +63,6 @@ def run_test(test_file_path, model, database, r, k, s, metric = "Recall", max_ti
     else:
         return red_H, red_T
 
-result_tuple = run_test(TEST_FILE_PATH, "transe", "dbpedia50", "1000", "10", "avg", "Recall")
+
+result_tuple = run_test(TEST_FILE_PATH, "transe", "dbpedia50", "1000", "10%", "avg", "Recall")
 print(result_tuple[0], result_tuple[1])
