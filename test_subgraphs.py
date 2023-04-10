@@ -38,7 +38,7 @@ emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_dir = args.subemb_dir
 db_path = "./benchmarks/" + args.db + "/"
-print("Initializing Subgraph predictor", flush=True)
+print("Initializing Subgraph predictor")
 mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_dir, args.model, args.train_file, db_path, args.sub_threshold, args.score_func)
 
 mys.set_test_triples(queries_file_path, args.num_test_queries)
