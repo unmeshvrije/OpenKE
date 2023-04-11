@@ -63,6 +63,7 @@ def run_test(test_file_path, database, model, r, k, s, metric = "Recall", subgra
     else:
         return str(round(float(red_H), 2)), str(round(float(red_T), 2))
 
+# Constructs a cell with particular subgraph type for the latex table
 def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
     result_avg = run_test(TEST_FILE_PATH, database, model, r, k, "avg", metric, subgraph_type)
     result_kl = run_test(TEST_FILE_PATH, database, model, r, k, "kl", metric, subgraph_type)
@@ -80,14 +81,15 @@ def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
         "H": result_nn[0],
         "T": result_nn[1]
     }
-    print(experiment_results)
     return experiment_results
 
+# Constructs a portion of a line with particular subgraph type for the latex table
 def construct_model_subgraph_type_results(database, model, r, metric, subgraph_type):
     proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", stdout = subprocess.PIPE, shell = True)
     proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " " + subgraph_type, stdout = subprocess.PIPE, shell = True)
-    creation_results = proc.stdout.read()
-    experiment_results["star"] = {
+    creation_results = proc.stdout.read() # needed in order not to run two processes at the same time
+    experiment_results = {
+
         "10": construct_model_cell_results(database, model, r, "10", metric, "star"),
         "10%": construct_model_cell_results(database, model, r, "10%", metric, "star"),
         "-1": construct_model_cell_results(database, model, r, "-1", metric, "star"),
@@ -95,6 +97,7 @@ def construct_model_subgraph_type_results(database, model, r, metric, subgraph_t
     }
     return experiment_results
 
+# Constructs a line of data for the latex table
 def construct_model_results(database, model, r, metric):
     r = str(r)
     experiment_results = dict()
@@ -102,4 +105,48 @@ def construct_model_results(database, model, r, metric):
     experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, metric, "diamond")
     return experiment_results
 
-print(construct_model_results("dbpedia50", "transe", "-1", "Recall"))
+def generate_latex_line(database, model, r, metric):
+    table_line_dict = dict()
+    table_line_dict["star"] = dict()
+    table_line_dict["diamond"] = dict()
+    experiment_results = construct_model_results(database, model, r, metric)
+    for subgraph_type in ["star", "diamond"]:
+        for end_type in ["H", "T"]:
+            type_str = metric + "(H)" if end_type == "H" else metric + "(T)"
+            table_line_dict[subgraph_type][end_type] = "& " + type_str + f"$\\{subgraph_type}$ & "
+            data_string = ""
+            for k in ["10", "10%", "-1", "-2"]:
+                for s in ["avg", "kl", "nn"]:
+                    data_string += str(experiment_results[subgraph_type][k][s][end_type]) + " &"
+            table_line_dict[subgraph_type][end_type] += data_string[:-1] + "\\\\"
+
+    return f"""\\multirow{{4}}{{*}}{{\\rotatebox{{90}}{{\\{model}}}}}
+          {table_line_dict['star']['H']}
+          {table_line_dict['star']['T']}
+          {table_line_dict['diamond']['H']}
+          {table_line_dict['diamond']['T']}
+          """
+
+def generate_latex_table(database, r, metric):
+    print("\\begingroup")
+    print("\\setlength{\\tabcolsep}{6pt} % Default value: 6pt")
+
+    print("\\begin{tabular}{p{0.3em} p{4.5em} || ccc | ccc | ccc | ccc}")
+    print("& \\multirow{2}{*}{\\em K} & \\multicolumn{3}{c}{10} & \\multicolumn{3}{c}{10\\%} & \\multicolumn{3}{c}{$Dyn$} & \\multicolumn{3}{c} {$Dyn^T$}\\\\")
+    print("& & a & d & n & a & d & n & a & d & n & a & d & n \\\\")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line(database, 'transe', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line(database, 'hole', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line(database, 'rotate', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line(database, 'distmult', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line(database, 'complex', r, metric)}")
+    print("\\end{tabular}")
+    print("\\endgroup")
+
+
+#print(construct_model_results("dbpedia50", "transe", "-1", "Recall"))
+generate_latex_table("dbpedia50", "1000", "Recall")
