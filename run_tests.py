@@ -13,12 +13,13 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
     "dbpedia50-diamond": 62
 }
 
+
 # Runs an experiment with particular metrics
 #
 # Arguments:
 #    test_file_path - location of python script running a single experiment, usually test_subgraphs.py
-#    model - one of models "transe", "rotate", "complex", "distmult", "hole"
 #    database - one of databases "fb15k237", "lubm", "yago2", "dbpedia50"
+#    model - one of models "transe", "rotate", "complex", "distmult", "hole"
 #    r - number of records to test, usually 1000 or -1 (all the records)
 #    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
 #    s - score function. one of "avg", "kl", "nn"
@@ -31,12 +32,11 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 #    1st - reduction/recall (based on the 'metric' argument) value for Head (H)
 #    2nd - reduction/recall value for Tail (T)
 # In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
-def run_test(test_file_path, model, database, r, k, s, metric = "Recall", subgraph_type = "star", max_time = "00:30:00"):
+def run_test(test_file_path, database, model, r, k, s, metric = "Recall", subgraph_type = "star", max_time = "00:30:00"):
     # process k = 10% case
     if k.endswith('%'):
         k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
         k = str(math.floor(k))  # format k value
-        print(k)
 
     proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + test_file_path + " -m " + model + " -d " + database + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
     output = proc.stdout.readlines()
@@ -46,7 +46,7 @@ def run_test(test_file_path, model, database, r, k, s, metric = "Recall", subgra
     for line in output:
         line = line.decode('ascii')
         if line.startswith('Recall (H)'):
-            recall_H = line[13:-1]    # ignore starting text (Recall (H) :) and the ending \n character
+            recall_H = line[13:-1]    # ignore starting text "Recall (H) :" and the ending "\n" character
         elif line.startswith('Recall (T)'):
             recall_T = line[13:-1]
         elif line.startswith('%Red (H)'):
@@ -59,10 +59,53 @@ def run_test(test_file_path, model, database, r, k, s, metric = "Recall", subgra
         recall_H = recall_T = red_H = red_T = -1
 
     if metric.lower() == "recall":
-        return recall_H, recall_T
+        return str(round(float(recall_H), 2)), str(round(float(recall_T), 2))
     else:
-        return red_H, red_T
+        return str(round(float(red_H), 2)), str(round(float(red_T), 2))
 
+def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
+    result_avg = run_test(TEST_FILE_PATH, database, model, r, k, "avg", metric, subgraph_type)
+    result_kl = run_test(TEST_FILE_PATH, database, model, r, k, "kl", metric, subgraph_type)
+    result_nn = run_test(TEST_FILE_PATH, database, model, r, k, "nn", metric, subgraph_type)
+    experiment_results = dict()
+    experiment_results["avg"] = {
+        "H": result_avg[0],
+        "T": result_avg[1]
+    }
+    experiment_results["kl"] = {
+        "H": result_kl[0],
+        "T": result_kl[1]
+    }
+    experiment_results["nn"] = {
+        "H": result_nn[0],
+        "T": result_nn[1]
+    }
+    print(experiment_results)
+    return experiment_results
 
-result_tuple = run_test(TEST_FILE_PATH, "transe", "dbpedia50", "1000", "10%", "avg", "Recall")
-print(result_tuple[0], result_tuple[1])
+def construct_model_results(database, model, r, metric):
+    r = str(r)
+    experiment_results = dict()
+    # TO DO: remove repeated code
+    # generate star subgraphs
+    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", shell = True)
+    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " star", shell = True)
+    experiment_results["star"] = {
+        "10": construct_model_cell_results(database, model, r, "10", metric, "star"),
+        "10%": construct_model_cell_results(database, model, r, "10%", metric, "star"),
+        "-1": construct_model_cell_results(database, model, r, "-1", metric, "star"),
+        "-2": construct_model_cell_results(database, model, r, "-2", metric, "star")
+    }
+    # generate diamond subgraphs
+    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", shell = True)
+    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " diamond", shell = True)
+    experiment_results["diamond"] = dict()
+    experiment_results["diamond"] = {
+        "10": construct_model_cell_results(database, model, r, "10", metric, "diamond"),
+        "10%": construct_model_cell_results(database, model, r, "10%", metric, "diamond"),
+        "-1": construct_model_cell_results(database, model, r, "-1", metric, "diamond"),
+        "-2": construct_model_cell_results(database, model, r, "-2", metric, "diamond")
+    }
+    return experiment_results
+
+print(construct_model_results("dbpedia50", "transe", "-1", "Recall"))
