@@ -83,29 +83,23 @@ def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
     print(experiment_results)
     return experiment_results
 
-def construct_model_results(database, model, r, metric):
-    r = str(r)
-    experiment_results = dict()
-    # TO DO: remove repeated code
-    # generate star subgraphs
-    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", shell = True)
-    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " star", shell = True)
+def construct_model_subgraph_type_results(database, model, r, metric, subgraph_type):
+    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", stdout = subprocess.PIPE, shell = True)
+    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " " + subgraph_type, stdout = subprocess.PIPE, shell = True)
+    creation_results = proc.stdout.read()
     experiment_results["star"] = {
         "10": construct_model_cell_results(database, model, r, "10", metric, "star"),
         "10%": construct_model_cell_results(database, model, r, "10%", metric, "star"),
         "-1": construct_model_cell_results(database, model, r, "-1", metric, "star"),
         "-2": construct_model_cell_results(database, model, r, "-2", metric, "star")
     }
-    # generate diamond subgraphs
-    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", shell = True)
-    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " diamond", shell = True)
-    experiment_results["diamond"] = dict()
-    experiment_results["diamond"] = {
-        "10": construct_model_cell_results(database, model, r, "10", metric, "diamond"),
-        "10%": construct_model_cell_results(database, model, r, "10%", metric, "diamond"),
-        "-1": construct_model_cell_results(database, model, r, "-1", metric, "diamond"),
-        "-2": construct_model_cell_results(database, model, r, "-2", metric, "diamond")
-    }
+    return experiment_results
+
+def construct_model_results(database, model, r, metric):
+    r = str(r)
+    experiment_results = dict()
+    experiment_results["star"] = construct_model_subgraph_type_results(database, model, r, metric, "star")
+    experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, metric, "diamond")
     return experiment_results
 
 print(construct_model_results("dbpedia50", "transe", "-1", "Recall"))
