@@ -13,7 +13,6 @@ import pickle
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from dynamic_topk import DynamicTopk
-from subgraph_predictor import SubgraphPredictor
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
