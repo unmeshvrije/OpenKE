@@ -1,5 +1,14 @@
+import argparse
 import math
 import subprocess
+
+def parse_args():
+    parser = argparse.ArgumentParser(description = 'Run the experiments and extract the results in a format suitable for constructing tables.')
+    parser.add_argument('-db', dest = 'db', type = str, default = 'fb15k237')
+    parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
+    parser.add_argument('-r', dest = 'r', type = int, default = '-1', help = 'Number of records to test')
+    parser.add_argument('--metric', dest = 'metric', type = str, default = 'Recall', help = 'The metric of interest, either "Recall" or "Reduction"')
+    return parser.parse_args()
 
 TEST_FILE_PATH = "test-subgraphs.sh"
 SUBGRAPH_COUNT = {          # used for k = 10% option
@@ -148,5 +157,7 @@ def generate_latex_table(database, r, metric):
     print("\\endgroup")
 
 
-#print(construct_model_results("dbpedia50", "transe", "-1", "Recall"))
-generate_latex_table("dbpedia50", "1000", "Recall")
+args = parse_args()
+
+#print(construct_model_results(args.db, args.model, args.r, args.metric))
+generate_latex_table(args.db, args.r, args.metric)
