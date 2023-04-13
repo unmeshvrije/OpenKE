@@ -86,7 +86,6 @@ void ansHeadInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT *filte
             filtered_indexes[j] = indexes[i];
             if (_find_in_test(indexes[i], t, r)) {
                 truths[j] = 1;
-                printf("*********** FOUND ****************");
             } else {
                 truths[j] = 0;
             }
@@ -120,7 +119,6 @@ void ansTailInTest(INT *indexes, INT lastHead, INT topK, INT *truths, INT* filte
             filtered_indexes[j] = indexes[i];
             if (_find_in_test(h, indexes[i], r)) {
                 truths[j] = 1;
-                printf("*********** FOUND ****************");
             } else {
                 truths[j] = 0;
             }
