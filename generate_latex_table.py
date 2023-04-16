@@ -1,0 +1,64 @@
+import argparse
+import sys
+import pickle
+
+def parse_args():
+    parser = argparse.ArgumentParser(description = 'Construct latex tables from the experiment results')
+    parser.add_argument('-db', dest = 'db', type = str, default = 'fb15k237')
+    parser.add_argument('-r', dest = 'r', type = int, default = '-1', help = 'Number of records that were tested')
+    parser.add_argument('--metric', dest = 'metric', type = str, default = 'recall', help = 'The metric of interest, either "Recall" or "Reduction"')
+    return parser.parse_args()
+
+DATA_DIR_PATH = "results/data/"
+TABLE_DIR_PATH = "results/tables/"
+
+def generate_latex_line(model, r, metric):
+    table_line_dict = dict()
+    table_line_dict["star"] = dict()
+    table_line_dict["diamond"] = dict()
+    experiment_results = data[model]
+    for subgraph_type in ["star", "diamond"]:
+        for end_type in ["H", "T"]:
+            type_str = metric.capitalize() + "(H)" if end_type == "H" else metric.capitalize() + "(T)"
+            table_line_dict[subgraph_type][end_type] = "& " + type_str + f"$\\{subgraph_type}$ & "
+            data_string = ""
+            for k in ["10", "10%", "-1", "-2"]:
+                for s in ["avg", "kl", "nn"]:
+                    data_string += str(experiment_results[subgraph_type][k][s][end_type]) + " &"
+            table_line_dict[subgraph_type][end_type] += data_string[:-1] + "\\\\"
+
+    return f"""\\multirow{{4}}{{*}}{{\\rotatebox{{90}}{{\\{model}}}}}
+          {table_line_dict['star']['H']}
+          {table_line_dict['star']['T']}
+          {table_line_dict['diamond']['H']}
+          {table_line_dict['diamond']['T']}
+          """
+
+def generate_latex_table(r, metric, fout):
+    sys.stdout = fout
+    print("\\begingroup")
+    print("\\setlength{\\tabcolsep}{6pt} % Default value: 6pt")
+
+    print("\\begin{tabular}{p{0.3em} p{4.5em} || ccc | ccc | ccc | ccc}")
+    print("& \\multirow{2}{*}{\\em K} & \\multicolumn{3}{c}{10} & \\multicolumn{3}{c}{10\\%} & \\multicolumn{3}{c}{$Dyn$} & \\multicolumn{3}{c} {$Dyn^T$}\\\\")
+    print("& & a & d & n & a & d & n & a & d & n & a & d & n \\\\")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line('transe', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line('hole', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line('rotate', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line('distmult', r, metric)}")
+    print("\\cline{2-14}")
+    print(f"{generate_latex_line('complex', r, metric)}")
+    print("\\end{tabular}")
+    print("\\endgroup")
+
+args = parse_args()
+
+with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.metric + '-results.pkl', 'rb') as fin:
+    data = pickle.load(fin)
+
+with open(TABLE_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.metric + '-results.tex', 'w') as fout:
+    generate_latex_table(args.r, args.metric, fout)
