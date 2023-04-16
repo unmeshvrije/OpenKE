@@ -326,11 +326,11 @@ class SubgraphPredictor():
     def get_matching_entities(self, sub_type, e, r):
         entities = []
         for triple in self.triples:
-            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[1] == r:
-                entities.append(triple[2])
+            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[2] == r:
+                entities.append(triple[1])
                 if len(entities) == 10:
                     return entities
-            elif triple[2] == e and triple[1] == r:
+            elif triple[1] == e and triple[2] == r:
                 entities.append(triple[0])
                 if len(entities) == 10:
                     return entities
