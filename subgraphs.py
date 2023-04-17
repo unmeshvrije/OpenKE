@@ -152,17 +152,17 @@ class SubgraphFactory():
     def get_Nsubgraphs(self):
         return len(self.subgraphs)
 
-    def save(self, outdir, emb_model_str, protocol=pickle.HIGHEST_PROTOCOL):
-        filename = outdir + self.db + "-" + emb_model_str + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
+    def save(self, outdir, emb_model_str, subgraph_type_str, protocol=pickle.HIGHEST_PROTOCOL):
+        filename = outdir + self.db + "-" + emb_model_str + "-" + subgraph_type_str + "-subgraphs-tau-" + str(self.min_subgraph_size) + ".pkl"
         print("writing to...", filename)
         with open(filename, 'wb') as fout:
             pickle.dump(self.subgraphs, fout, protocol=protocol)
 
-        filename = outdir + self.db + "-" + emb_model_str + "-avgemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        filename = outdir + self.db + "-" + emb_model_str + "-" + subgraph_type_str + "-avgemb-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
             pickle.dump(self.avg_embeddings, fout, protocol=protocol)
 
-        filename = outdir + self.db + "-" + emb_model_str + "-varemb-tau-" + str(self.min_subgraph_size) + ".pkl"
+        filename = outdir + self.db + "-" + emb_model_str + "-" + subgraph_type_str + "-varemb-tau-" + str(self.min_subgraph_size) + ".pkl"
         with open(filename, 'wb') as fout:
             pickle.dump(self.var_embeddings, fout, protocol=protocol)
 
@@ -297,7 +297,7 @@ class SubgraphFactory():
 
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)
-        sample_star_subgraph_entities(self.subgraphs, self.db)
+        #sample_star_subgraph_entities(self.subgraphs, self.db)
 
         if subtype == "diamond":
             adj_list_out, adj_list_in = make_adjacency_lists(self.triples)
@@ -312,5 +312,5 @@ class SubgraphFactory():
             self.subgraphs = self.subgraphs[first_dia_graph_index:]
             self.avg_embeddings = self.avg_embeddings[first_dia_graph_index:]
             self.var_embeddings = self.var_embeddings[first_dia_graph_index:]
-            for i in range(8):
-                sample_diamond_subgraph_entities(self.subgraphs, self.db)
+            #for i in range(8):
+                #sample_diamond_subgraph_entities(self.subgraphs, self.db)

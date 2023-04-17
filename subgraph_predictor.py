@@ -20,9 +20,10 @@ from util import timer
 
 class SubgraphPredictor():
 
-    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
+    def __init__(self, db, subgraph_type, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
 
         self.db = db
+        self.subgraph_type = subgraph_type
         self.topk_subgraphs = topk_subgraphs
         self.dynamic_topk = False
         self.dynamic_threshold = False
@@ -37,8 +38,8 @@ class SubgraphPredictor():
         # fb15k237-rotate-avgemb-tau-10.pkl
         if not sub_emb_dir_path.endswith("/"):
             sub_emb_dir_path += "/"
-        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-avgemb-tau-10.pkl"
-        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-varemb-tau-10.pkl"
+        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-" + self.subgraph_type + "-avgemb-tau-10.pkl"
+        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-" + self.subgraph_type + "-varemb-tau-10.pkl"
 
         self.training_file_path = training_file_path
         self.subgraph_threshold_percentage = subgraph_threshold_percentage

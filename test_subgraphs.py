@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--testonly', dest = 'num_test_queries', required = False, type = int, default = -1) # -1 means all
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
+    parser.add_argument('--type', required = True, dest = 'type', type = str, default = None)
     parser.add_argument('--model', dest ='model',type = str, default = "transe", help = 'Embedding model name.')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     parser.add_argument('-th', '--threshold',dest ='threshold', type = float, default = 0.5, help = 'Probability value that decides the boundary between class 0 and 1.')
@@ -39,7 +40,7 @@ sub_file = args.sub_file
 subemb_dir = args.subemb_dir
 db_path = "./benchmarks/" + args.db + "/"
 print("Initializing Subgraph predictor")
-mys = SubgraphPredictor(args.db, args.topk, emb_file, sub_file, subemb_dir, args.model, args.train_file, db_path, args.sub_threshold, args.score_func)
+mys = SubgraphPredictor(args.db, args.type, args.topk, emb_file, sub_file, subemb_dir, args.model, args.train_file, db_path, args.sub_threshold, args.score_func)
 
 mys.set_test_triples(queries_file_path, args.num_test_queries)
 # entity dict is the id to string dictionary for entities
