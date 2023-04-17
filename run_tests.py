@@ -24,7 +24,7 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 }
 
 
-# Runs an experiment with particular metrics
+# Runs an experiment with particular parameters
 #
 # Arguments:
 #    test_file_path - location of python script running a single experiment, usually test_subgraphs.py
@@ -33,26 +33,38 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 #    r - number of records to test, usually 1000 or -1 (all the records)
 #    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
 #    s - score function. one of "avg", "kl", "nn"
-#    metric - the metric of interest, either "recall" or "reduction"
 #    subgraph_type - "star" or "diamond"
 #    max_time - maximum permitted time per task in format "hh:mm:ss"
 # Note: all arguments must be given as strings
 #
 # Results:
-#    1st - reduction/recall (based on the 'metric' argument) value for Head (H)
-#    2nd - reduction/recall value for Tail (T)
+#    proc - the process that has finished running an experiment. It should be later handled with process_results() function
 # In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
-def run_test(test_file_path, database, model, r, k, s, metric = "Recall", subgraph_type = "star", max_time = "00:30:00"):
+def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "02:30:00"):
     # process k = 10% case
     if k.endswith('%'):
         k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
         k = str(math.floor(k))  # format k value
 
-    proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + test_file_path + " -m " + model + " -d " + database + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
-    output = proc.stdout.readlines()
+    proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + test_file_path + " -m " + model + " -d " + database + " -type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
+    return proc
 
-    recall_H = recall_T = red_H = red_T = 0
+# Processes the result output and extracts the requested metrics
+#
+# Arguments:
+#    proc - process that run the test in run_test() function
+#    metric - the metric of interest, either "recall" or "reduction"
+#
+# Results:
+#    1st - reduction/recall (based on the 'metric' argument) value for Head (H)
+#    2nd - reduction/recall value for Tail (T)
+# In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
+def process_results(result_proc, metric = "recall"):
+    output = result_proc.stdout.readlines()
+
+    recall_H = recall_T = red_H = red_T = runtime = 0
     # extract recall and reduction values from the output
+
     for line in output:
         line = line.decode('ascii')
         if line.startswith('Recall (H)'):
@@ -75,9 +87,12 @@ def run_test(test_file_path, database, model, r, k, s, metric = "Recall", subgra
 
 # Generates a small portions of results with particular subgraph type and k value
 def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
-    result_avg = run_test(TEST_FILE_PATH, database, model, r, k, "avg", metric, subgraph_type)
-    result_kl = run_test(TEST_FILE_PATH, database, model, r, k, "kl", metric, subgraph_type)
-    result_nn = run_test(TEST_FILE_PATH, database, model, r, k, "nn", metric, subgraph_type)
+    result_avg_proc = run_test(TEST_FILE_PATH, database, model, r, k, "avg", subgraph_type)
+    result_kl_proc = run_test(TEST_FILE_PATH, database, model, r, k, "kl", subgraph_type)
+    result_nn_proc = run_test(TEST_FILE_PATH, database, model, r, k, "nn", subgraph_type)
+    result_avg = process_results(result_avg_proc, metric)
+    result_kl = process_results(result_kl_proc, metric)
+    result_nn = process_results(result_nn_proc, metric)
     experiment_results = dict()
     experiment_results["avg"] = {
         "H": result_avg[0],
@@ -95,15 +110,11 @@ def construct_model_cell_results(database, model, r, k, metric, subgraph_type):
 
 # Generates a portion of results with a particular subgraph type
 def construct_model_subgraph_type_results(database, model, r, metric, subgraph_type):
-    proc = subprocess.Popen("rm ../../../../var/scratch/dvs254/OpenKE-results/" + database + "/subgraphs/" + database + "-" + model + "-subgraphs-tau-10.pkl", stdout = subprocess.PIPE, shell = True)
-    proc = subprocess.Popen("prun -v -np 1 -t 00:15:00 -native '-C gpunode --gres=gpu:1' ./step2-create-subgraphs.sh /var/scratch/dvs254/OpenKE-results/ " + model + " " + database + " " + subgraph_type, stdout = subprocess.PIPE, shell = True)
-    creation_results = proc.stdout.read() # needed in order not to run two processes at the same time
     experiment_results = {
-
-        "10": construct_model_cell_results(database, model, r, "10", metric, "star"),
-        "10%": construct_model_cell_results(database, model, r, "10%", metric, "star"),
-        "-1": construct_model_cell_results(database, model, r, "-1", metric, "star"),
-        "-2": construct_model_cell_results(database, model, r, "-2", metric, "star")
+        "10": construct_model_cell_results(database, model, r, "10", metric, subgraph_type),
+        "10%": construct_model_cell_results(database, model, r, "10%", metric, subgraph_type),
+        "-1": construct_model_cell_results(database, model, r, "-1", metric, subgraph_type),
+        "-2": construct_model_cell_results(database, model, r, "-2", metric, subgraph_type)
     }
     return experiment_results
 
