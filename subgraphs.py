@@ -260,7 +260,7 @@ class SubgraphFactory():
                 for adj_entity in adj_list[entity]: # change depending on type
                     ent2 = adj_entity[0]
                     rel2 = adj_entity[1]
-                    if ent1 == ent2 or rel1 == rel2:
+                    if ent1 == ent2 or rel1 >= rel2:
                         continue
                     while len(diamond_tuple_dicts) < ent2 + 1:
                         diamond_tuple_dicts.append({})
