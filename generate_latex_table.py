@@ -19,12 +19,12 @@ def generate_latex_line(model, r, metric):
     experiment_results = data[model]
     for subgraph_type in ["star", "diamond"]:
         for end_type in ["H", "T"]:
-            type_str = metric.capitalize() + "(H)" if end_type == "H" else metric.capitalize() + "(T)"
-            table_line_dict[subgraph_type][end_type] = "& " + type_str + f"$\\{subgraph_type}$ & "
+            type_str = metric.lower() + "_" + end_type
+            table_line_dict[subgraph_type][end_type] = "& " + metric.capitalize() + "(" + end_type + ")" + f"$\\{subgraph_type}$ & "
             data_string = ""
             for k in ["10", "10%", "-1", "-2"]:
                 for s in ["avg", "kl", "nn"]:
-                    data_string += str(experiment_results[subgraph_type][k][s][end_type]) + " &"
+                    data_string += str(experiment_results[subgraph_type][k][s][type_str]) + " &"
             table_line_dict[subgraph_type][end_type] += data_string[:-1] + "\\\\"
 
     return f"""\\multirow{{4}}{{*}}{{\\rotatebox{{90}}{{\\{model}}}}}
@@ -56,8 +56,10 @@ def generate_latex_table(r, metric, fout):
     print("\\endgroup")
 
 args = parse_args()
+if args.metric == "reduction":
+    args.metric = "red"
 
-with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.metric + '-results.pkl', 'rb') as fin:
+with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'rb') as fin:
     data = pickle.load(fin)
 
 with open(TABLE_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.metric + '-results.tex', 'w') as fout:
