@@ -1,6 +1,7 @@
 import os
 import pickle
 import argparse
+import time
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from subgraph_predictor import SubgraphPredictor
@@ -51,7 +52,11 @@ base_name = os.path.basename(sub_file).rsplit('.', maxsplit=1)[0]
 logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 
+start_time = time.time()
 mys.predict()
+
+runtime = time.time() - start_time
+print("Runtime :", runtime, "s")
 '''
 raw_result, fil_result = mys.results()
 
