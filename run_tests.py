@@ -13,13 +13,13 @@ TEST_FILE_PATH = "test-subgraphs.sh"
 DATA_DIR_PATH = "results/data/"
 SUBGRAPH_COUNT = {          # used for k = 10% option
     "fb15k237-star": 7694,
-    "fb15k237-diamond": 232216,
+    "fb15k237-diamond": 116108,
     "lubm-star": 1106,
-    "lubm-diamond": 3270,
+    "lubm-diamond": 1635,
     "yago2-star": 8789,
-    "yago2-diamond": 568,
+    "yago2-diamond": 284,
     "dbpedia50-star": 326,
-    "dbpedia50-diamond": 62
+    "dbpedia50-diamond": 31
 }
 
 
