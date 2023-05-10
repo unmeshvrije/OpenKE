@@ -1,13 +1,12 @@
 #!/bin/sh
 
 cd ..
-source venv/bin/activate
 
 BASEDIR=$1
-DATASET="fb15k237"
+DATASET=$2
+MODEL=$3
 OUTDIR="${BASEDIR}/${DATASET}/results/"
 TOPK=10
-MODEL="transe"
 EXEC_CREATE_ANS="create_answer_annotations_classifier.py"
 EXEC_EVAL_GOLD="evaluate_annotations_gold_standard.py"
 EXEC_CREATE_MODEL="create_model.py"

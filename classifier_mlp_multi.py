@@ -39,8 +39,10 @@ class MLP_multi_model(nn.Module):
             nn.Linear(n_hidden_units, 1),
             nn.Sigmoid()
         )
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def forward(self, x):
+        x = x.to(self.device)
         out = self.mlp(x)
         return out
 
@@ -115,8 +117,8 @@ class Classifier_MLP_Multi(supervised_classifier.Supervised_Classifier):
             running_loss = 0.0
             for i, data in enumerate(train_data_loader, 0):
                 inputs, labels = data
-                inputs.to(self.device)
-                labels.to(self.device)
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.get_model()(inputs)
                 outputs_reshaped = outputs.reshape(outputs.shape[0], outputs.shape[1])

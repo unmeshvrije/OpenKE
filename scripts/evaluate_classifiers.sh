@@ -1,7 +1,6 @@
 #!/bin/sh
 
 cd ..
-source venv/bin/activate
 
 CLASSIFIERS="threshold"
 BASEDIR=$1

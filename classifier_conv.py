@@ -34,16 +34,19 @@ class Conv_Model(nn.Module):
         self.topk = topk
         self.conv1 = torch.nn.Conv2d(1, topk, kernel_size=kernel_size1)
         self.pool = torch.nn.MaxPool2d(kernel_size=kernel_size2, stride=2, padding=0)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.fc1 = None
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
+        x = x.to(self.device)
         x = x.view(x.shape[0], 1, x.shape[1], x.shape[2])
         out = self.conv1(x)
         out = self.pool(out)
         out = out.view(out.shape[0], -1)
         if self.fc1 is None:
             self.fc1 = torch.nn.Linear(out.shape[1], self.topk)
+            self.fc1 = self.fc1.to(self.device)
         out = self.fc1(out)
         out = self.sig(out)
         return out
@@ -120,8 +123,8 @@ class Classifier_Conv(supervised_classifier.Supervised_Classifier):
             running_loss = 0.0
             for i, data in enumerate(train_data_loader, 0):
                 inputs, labels = data
-                inputs.to(self.device)
-                labels.to(self.device)
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.get_model()(inputs)
                 outputs_reshaped = outputs.reshape(outputs.shape[0], outputs.shape[1])

@@ -1,3 +1,4 @@
+import os
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
 from support.dataset_dbpedia50 import Dataset_dbpedia50
@@ -44,7 +45,7 @@ elif args.db == 'dbpedia50':
 else:
     pass
 annotations_filename = get_filename_training_data(args.db, args.model, args.classifier, args.topk, args.type_prediction)
-with open(training_data_dir + '/' + annotations_filename, 'rb') as fin:
+with open(os.path.join(training_data_dir, annotations_filename), 'rb') as fin:
     training_data = pickle.load(fin)
 
 # Load the embedding model

@@ -47,6 +47,8 @@ class Supervised_Classifier(Classifier):
                 XS = torch.Tensor(data_point['X'])
                 XS = XS.view(1, XS.shape[0], XS.shape[1])
                 annotated_answers = self.get_model()(XS)
+                if annotated_answers.is_cuda:
+                    annotated_answers = annotated_answers.to(torch.device('cpu'))
                 annotated_answers = (annotated_answers.numpy() > 0.5).astype(int)
                 true_answers = data_point['Y']
                 true_positives += np.sum(np.logical_and(annotated_answers,true_answers))
@@ -55,10 +57,22 @@ class Supervised_Classifier(Classifier):
                 false_negatives += np.sum(np.logical_and(np.logical_not(annotated_answers), true_answers))
 
             # Measure the F1
-        rec = true_positives / (true_positives + false_negatives)
-        prec = true_positives / (true_positives + false_positives)
-        f1 = 2 * (prec * rec) / (prec + rec)
-        print("F1 on the validation dataset was {}".format(f1))
+        if true_positives + false_negatives == 0:
+            rec = 0
+        else:
+            rec = true_positives / (true_positives + false_negatives)
+
+        if true_positives + false_positives == 0:
+            prec = 0
+        else:
+            prec = true_positives / (true_positives + false_positives)
+
+        if prec + rec == 0:
+            print("WARNING ! Both precision and recall are 0")
+            f1 = 0.0
+        else:
+            f1 = 2 * (prec * rec) / (prec + rec)
+            print("F1 on the validation dataset was {}".format(f1))
         self.get_model().train()
         return f1
 

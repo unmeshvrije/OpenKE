@@ -1,3 +1,4 @@
+import os
 import argparse
 import json
 from support.utils import *
@@ -24,7 +25,8 @@ with open(answers_annotations_filename, 'rb') as fin:
 # Load the gold standard
 gold_dir = args.result_dir + '/' + args.db + '/annotations/'
 gold_filename = get_filename_gold(args.db, args.topk, '-test')
-with open(gold_dir + gold_filename, 'rt') as fin:
+print(os.path.join(gold_dir, gold_filename))
+with open(os.path.join(gold_dir + gold_filename), 'rt') as fin:
     gold_annotations = json.load(fin)
 filter_queries = {}
 if args.type_prediction == 'head':

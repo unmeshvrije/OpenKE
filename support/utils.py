@@ -57,7 +57,7 @@ def compute_metrics(classifier, type_prediction, db, annotated_answers, true_ans
                 for true_answer in true_annotated_answers:
                     if true_answer['entity_id'] == entity_id:
                         checked_by_annotators = true_answer['checked']
-                        true_answer_checked = checked_by_annotators[0]['checked']  # Pick the first one
+                        true_answer_checked = checked_by_annotators  # Pick the first one
                         found = True
                         n_gold_annotations += 1
                         matched_answers += checked == true_answer_checked

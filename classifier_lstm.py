@@ -33,11 +33,13 @@ class LSTM_model(nn.Module):
         super(LSTM_model, self).__init__()
 
         self.lstm = nn.LSTM(input_size= n_features, hidden_size = n_hidden_units, num_layers = 1)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(n_hidden_units, 1)
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
+        x = x.to(self.device)
         out, hidden = self.lstm(x)
         out = self.dropout(out)
         out = self.linear(out)
@@ -115,8 +117,8 @@ class Classifier_LSTM(supervised_classifier.Supervised_Classifier):
             running_loss = 0.0
             for i, data in enumerate(train_data_loader, 0):
                 inputs, labels = data
-                inputs.to(self.device)
-                labels.to(self.device)
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 optimizer.zero_grad()
                 outputs = self.get_model()(inputs)
                 outputs_reshaped = outputs.reshape(outputs.shape[0], outputs.shape[1])

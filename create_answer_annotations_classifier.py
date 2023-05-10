@@ -1,3 +1,4 @@
+import os
 import argparse
 from support.dataset_fb15k237 import Dataset_FB15k237
 from support.dataset_dbpedia50 import Dataset_dbpedia50
@@ -62,7 +63,7 @@ if args.classifier == 'mlp':
                                 args.result_dir,
                                 embedding_model,
                                 hyper_params=hyper_params,
-                                model_path=model_dir + '/' + model_filename)
+                                model_path=os.path.join(model_dir, model_filename))
 elif args.classifier == 'mlp_multi':
     from classifier_mlp_multi import Classifier_MLP_Multi
     model_dir = args.result_dir + '/' + args.db + '/models/'
@@ -73,7 +74,7 @@ elif args.classifier == 'mlp_multi':
                                 args.result_dir,
                                 embedding_model,
                                 hyper_params=hyper_params,
-                                model_path=model_dir + '/' + model_filename)
+                                model_path=os.path.join(model_dir, model_filename))
 elif args.classifier == 'lstm':
     from classifier_lstm import Classifier_LSTM
     model_dir = args.result_dir + '/' + args.db + '/models/'
@@ -84,7 +85,7 @@ elif args.classifier == 'lstm':
                                 args.result_dir,
                                 embedding_model,
                                 hyper_params=hyper_params,
-                                model_path=model_dir + '/' + model_filename)
+                                model_path=os.path.join(model_dir, model_filename))
 elif args.classifier == 'conv':
     from classifier_conv import Classifier_Conv
     model_dir = args.result_dir + '/' + args.db + '/models/'
@@ -96,7 +97,7 @@ elif args.classifier == 'conv':
                                 embedding_model,
                                 args.topk,
                                 hyper_params=hyper_params,
-                                model_path=model_dir + '/' + model_filename)
+                                model_path=os.path.join(model_dir, model_filename))
 elif args.classifier == 'random':
     from classifier_random import Classifier_Random
     classifier = Classifier_Random(dataset, args.type_prediction, args.result_dir)
@@ -164,23 +165,25 @@ else:
     type_answers = None
     raise Exception("Case not implemented")
 
-# Launch the predictions
-output = []
-for item in tqdm(queries_with_answers):
-    ent = item['ent']
-    rel = item['rel']
-    predicted_answers = classifier.predict(item, type_answers)
-    out = {}
-    out['query'] = item
-    out['valid_annotations'] = True
-    out['annotator'] = args.classifier
-    out['date'] = str(datetime.datetime.now())
-    out['annotated_answers'] = predicted_answers
-    output.append(out)
-
-# Store the output
 suf = '-' + args.classifier
 answers_annotations_filename = args.result_dir + '/' + args.db + '/annotations/' + get_filename_answer_annotations(args.db, args.model, args.mode, args.topk, args.type_prediction, suf)
-with open(answers_annotations_filename, 'wb') as fout:
-    pickle.dump(output, fout)
-    fout.close()
+
+if not os.path.exists(answers_annotations_filename):
+    # Launch the predictions
+    output = []
+    for item in tqdm(queries_with_answers):
+        ent = item['ent']
+        rel = item['rel']
+        predicted_answers = classifier.predict(item, type_answers)
+        out = {}
+        out['query'] = item
+        out['valid_annotations'] = True
+        out['annotator'] = args.classifier
+        out['date'] = str(datetime.datetime.now())
+        out['annotated_answers'] = predicted_answers
+        output.append(out)
+
+    # Store the output
+    with open(answers_annotations_filename, 'wb') as fout:
+        pickle.dump(output, fout)
+        fout.close()
