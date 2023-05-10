@@ -3,7 +3,7 @@ source ~/.bashrc
 
 if [ "$#" -ne 4 ];
 then
-    echo "usage: $0 [result_dir] [model] [db] [type](star, diamond). Found $#"
+    echo "usage: $0 [result_dir] [model] [db] [type](normal, star, diamond). Found $#"
     exit
 fi
 
