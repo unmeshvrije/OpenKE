@@ -14,12 +14,16 @@ DATA_DIR_PATH = "results/data/"
 SUBGRAPH_COUNT = {          # used for k = 10% option
     "fb15k237-star": 7694,
     "fb15k237-diamond": 116108,
+    "fb15k237-normal": 14541,
     "lubm-star": 1106,
     "lubm-diamond": 1635,
+    "lubm-normal": 17292,
     "yago2-star": 8789,
     "yago2-diamond": 284,
+    "yago2-normal": 397253,
     "dbpedia50-star": 326,
-    "dbpedia50-diamond": 31
+    "dbpedia50-diamond": 31,
+    "dbpedia50-normal": 24624
 }
 
 
@@ -32,14 +36,17 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 #    r - number of records to test, usually 1000 or -1 (all the records)
 #    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
 #    s - score function. one of "avg", "kl", "nn"
-#    subgraph_type - "star" or "diamond"
+#    subgraph_type - "star", "diamond" or "normal" (normal subgraphs do not run kl and nn tests)
 #    max_time - maximum permitted time per task in format "hh:mm:ss"
 # Note: all arguments must be given as strings
 #
 # Results:
 #    proc - the process that has finished running an experiment. It should be later handled with process_results() function
 # In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
-def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "02:30:00"):
+def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00"):
+    if subgraph_type == "normal" and (s == "kl" or s == "nn"):
+        proc = subprocess.Popen(["sleep 0"], stdout = subprocess.PIPE, shell = True)
+        return proc
     # process k = 10% case
     if k.endswith('%'):
         k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
@@ -114,6 +121,7 @@ def construct_model_results(database, model, r):
     experiment_results = dict()
     experiment_results["star"] = construct_model_subgraph_type_results(database, model, r, "star")
     experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, "diamond")
+    experiment_results["normal"] = construct_model_subgraph_type_results(database, model, r, "normal")
     return experiment_results
 
 # Generates experiment results for a particular database
