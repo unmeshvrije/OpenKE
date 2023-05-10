@@ -15,8 +15,11 @@ import timeit
 import kge.model
 import torch.nn.functional as F
 import nanopq
+import os
 
 from util import timer
+
+save_dir = '/var/scratch/dvs254/OpenKE-results/'
 
 class SubgraphPredictor():
 
@@ -208,6 +211,8 @@ class SubgraphPredictor():
             self.subgraphs = pickle.load(fin)
         if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
             self.subgraph_type = "star"
+        elif self.subgraphs[0].data['subType'] == SUBTYPE.NO:
+            self.subgraph_type = "normal"
         else:
             self.subgraph_type = "diamond"
 
@@ -337,13 +342,13 @@ class SubgraphPredictor():
                     return entities
         return entities
 
-    def get_kl_divergence_scores(self, ent, rel, sub_type):
+    def get_kl_divergence_scores(self, ent, rel, sub_type, db, model, sub_type_str):
         '''
         Get the entities with this ent and rel from db.
         sample some entities for trueAvg and trueVar embeddings
         now find KL divergence with these trueAvg and trueVar embeddings
         with all other subgraphs
-        '''
+        '''           
         dim = self.E.size()[1]
         me = self.get_matching_entities(sub_type, ent, rel)
         count = len(me)
@@ -357,7 +362,7 @@ class SubgraphPredictor():
         for e in me:
             columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
         if count > 2:
-                columnsSquareDiff /= (count - 1)
+            columnsSquareDiff /= (count - 1)
         else:
             columnsSquareDiff = mean
 
@@ -378,8 +383,47 @@ class SubgraphPredictor():
 
         #TODO: Ensure this evaluation is correct
         # return calc_kl(self.SA, self.SV, true_avg_emb, true_var_emb)
-        return [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+        #print("Get_kl_divergence_scores - END", flush = True)
+        #print(n_subgraphs, flush = True)
+        #print(self.SA[0], flush = True)
+        #print(summation, flush = True)
+        #for i in range(n_subgraphs):
+            #F.kl_div(self.SA[i], summation, reduction='batchmean')
+            #print(i, flush = True)
+        kl_scores = [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+
+        #with open(scores_file, 'wb') as fout:
+        #    all_kl_scores[ent][rel] = kl_scores
+        #    pickle.dump(all_kl_scores, fout, protocol = pickle.HIGHEST_PROTOCOL)
+
+        return kl_scores
         # return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
+
+    def precalculate_kl_divergence_scores(self):
+        print("Precomputing kl divergence scores...")
+        kl_scores = dict()
+        kl_scores['head'] = dict()
+        kl_scores['tail'] = dict()
+        for index in tqdm(range(0, len(self.test_triples))):
+            head = int(self.test_triples[index][0])
+            tail = int(self.test_triples[index][1])
+            rel  = int(self.test_triples[index][2])
+
+            if tail not in kl_scores['head']:
+                kl_scores['head'][tail] = dict()
+            if head not in kl_scores['tail']:
+                kl_scores['tail'][head] = dict()
+
+            #time_start = timeit.default_timer()
+            new_H = self.E[head]
+            new_R = self.R[rel]
+            new_T = self.E[tail]
+            new_S = self.SA
+            subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS, self.db, self.model_name, self.subgraph_type))
+            subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO, self.db, self.model_name, self.subgraph_type))
+            kl_scores['head'][tail][rel] = subgraph_scores_head_prediction
+            kl_scores['tail'][head][rel] = subgraph_scores_tail_prediction
+        return kl_scores
 
 
     def predict(self):
@@ -400,6 +444,22 @@ class SubgraphPredictor():
 
         product_quantizator = nanopq.PQ(M = 10) #Instantiate quantizator with 10 subspaces
         X_code = []
+        
+        if self.test_triples is None:
+            print("ERROR: set_test_triples() is not called.")
+            return
+        
+        if self.score_func == "kl":
+            scores_file = save_dir + self.db + '/scores/' + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
+            if os.path.isfile(scores_file):
+                with open(scores_file, 'rb') as fin:
+                    kl_scores = pickle.load(fin)
+            else:
+                with open(scores_file, 'wb') as fout:
+                    kl_scores = self.precalculate_kl_divergence_scores()
+                    pickle.dump(kl_scores, fout, protocol = pickle.HIGHEST_PROTOCOL)
+
+
         if self.score_func == "nn":
             max_training_vector_count = 5000
             dim = 200
@@ -419,9 +479,6 @@ class SubgraphPredictor():
 
         #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
-        if self.test_triples is None:
-            print("ERROR: set_test_triples() is not called.")
-            return
 
         for index in tqdm(range(0, len(self.test_triples))):
             head = int(self.test_triples[index][0])
@@ -435,8 +492,10 @@ class SubgraphPredictor():
             new_S = self.SA
             if self.score_func == "kl":
                 # Compute KL divergence scores
-                subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
-                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
+                subgraph_scores_head_prediction = kl_scores['head'][tail][rel]
+                subgraph_scores_tail_prediction = kl_scores['tail'][head][rel]
+                #subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS, self.db, self.model_name, self.subgraph_type))
+                #subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO, self.db, self.model_name, self.subgraph_type))
                 new_R.unsqueeze_(0)
             elif self.score_func == "nn":
                 query_head_prediction = self.model._vector_op(new_T, new_R, 'head_pred')
@@ -459,8 +518,9 @@ class SubgraphPredictor():
                     subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
                     subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
 
-            for index, se in enumerate(self.SA):
-                if self.subgraph_type == "star":
+            for index, se in enumerate(self.SA):    
+                #print(self.subgraph_type, flush = True)
+                if self.subgraph_type == "star" or self.subgraph_type == "normal":
                     if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
                         subgraph_scores_tail_prediction[index] = np.inf
                     if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
