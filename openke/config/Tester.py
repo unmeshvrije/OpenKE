@@ -91,13 +91,15 @@ class Tester(object):
         })
 
 
-    def run_ans_prediction(self, topk, outfile_name, dyntop, mode):
+    def run_ans_prediction(self, topk, outfile_name, dyntop, mode, r):
         self.lib.initTest()
         self.data_loader.set_sampling_mode('link')
         training_range = tqdm(self.data_loader)
         test_data = []
         len_training = len(training_range)
         for index, [data_head, data_tail] in enumerate(training_range):
+            if r != -1 and index >= r:
+                break
             #print(index, " / ", len_training)
             record = DeepDict()
             record['head'] = int(data_tail['batch_h'][0])
