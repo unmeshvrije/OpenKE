@@ -7,6 +7,7 @@ import os
 import time
 import sys
 import datetime
+import time
 import ctypes
 import json
 import numpy as np
@@ -97,8 +98,11 @@ class Tester(object):
         training_range = tqdm(self.data_loader)
         test_data = []
         len_training = len(training_range)
+        if r == -1:
+            r = len_training
+        start_time = time.time()
         for index, [data_head, data_tail] in enumerate(training_range):
-            if r != -1 and index >= r:
+            if index >= r:
                 break
             #print(index, " / ", len_training)
             record = DeepDict()
@@ -201,6 +205,24 @@ class Tester(object):
                 record['tail_predictions_fil']['correctness'] = truths_tail_fil.astype(int).tolist()
 
             test_data.append(record)
+        runtime = time.time() - start_time
+
+        hitsHead = 0
+        hitsTail = 0
+        for data in test_data:
+            print(data['head_predictions_raw']['correctness'])
+            print(data['tail_predictions_raw']['correctness'])
+            if 1 in data['head_predictions_raw']['correctness']:
+                hitsHead += 1
+            if 1 in data['tail_predictions_raw']['correctness']:
+                hitsTail += 1
+
+        print()
+        print("Recall (H) :", float(hitsHead) / float(r))
+        print("Recall (T) :", float(hitsTail) / float(r))
+        print("%Red (H)    : 0") # No reduction when there are no subgraphs
+        print("%Red (T)    : 0")
+        print("Runtime :", runtime, "s")
 
         # Write all the records to the scores file
         with open(outfile_name, "w") as fout:
