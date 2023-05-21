@@ -19,7 +19,7 @@ def generate_latex_line(model, r, metric):
     experiment_results = data[model]
     for subgraph_type in ["star", "diamond"]:
         for end_type in ["H", "T"]:
-            type_str = metric.lower() + "_" + end_type
+            type_str = metric + "_" + end_type
             table_line_dict[subgraph_type][end_type] = "& " + metric.capitalize() + "(" + end_type + ")" + f"$\\{subgraph_type}$ & "
             data_string = ""
             for k in ["10", "10%", "-1", "-2"]:
@@ -56,7 +56,8 @@ def generate_latex_table(r, metric, fout):
     print("\\endgroup")
 
 args = parse_args()
-if args.metric.lower() == "reduction":
+args.metric = args.metric.lower()
+if args.metric == "reduction":
     args.metric = "red"
 
 with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'rb') as fin:
