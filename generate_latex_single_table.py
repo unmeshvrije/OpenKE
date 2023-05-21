@@ -56,7 +56,7 @@ def generate_latex_table(r, metric, fout):
     print("\\endgroup")
 
 args = parse_args()
-if args.metric == "reduction":
+if args.metric.lower() == "reduction":
     args.metric = "red"
 
 with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'rb') as fin:
