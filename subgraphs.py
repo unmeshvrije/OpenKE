@@ -4,8 +4,8 @@ import copy
 import numpy as np
 import random
 from enum import Enum
-SUBTYPE = Enum('SUBTYPE', 'SPO POS OO OI IO II NO')
-sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos", SUBTYPE.OO: "oo", SUBTYPE.OI: "oi", SUBTYPE.IO: "io", SUBTYPE.II: "ii", SUBTYPE.NO: "no"}
+SUBTYPE = Enum('SUBTYPE', 'SPO POS OO OI IO II')
+sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos", SUBTYPE.OO: "oo", SUBTYPE.OI: "oi", SUBTYPE.IO: "io", SUBTYPE.II: "ii"}
 
 def read_triples(filename):
     triples = []
@@ -126,19 +126,6 @@ class SubgraphDiamond():
     def __str__():
         return str(self.data)
 
-class SubgraphSingleEntity():
-    def __init__(self, sid, st, sent, entities):
-        self.data = {}
-        self.data['subType']  = st
-        self.data['subId']    = sid
-        self.data['ent']      = sent
-        self.data['rel']      = -1
-        self.data['size']     = 1
-        self.data['entities'] = copy.deepcopy(entities)
-
-    def __str__():
-        return str(self.data)
-
 class SubgraphFactory():
     def __init__(self, db, min_subgraph_size, triples, ent_embeddings):
         self.db = db
@@ -158,11 +145,6 @@ class SubgraphFactory():
     def add_diamond_subgraphs(self, st, sent1, sent2, srel1, srel2, ssize, entities):
         subentities = copy.deepcopy(entities)
         sub = SubgraphDiamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, entities)
-        self.subgraphs.append(sub)
-
-    def add_normal_subgraphs(self, st, sent, entities):
-        subentities = copy.deepcopy(entities)
-        sub = SubgraphSingleEntity(len(self.subgraphs), st, sent, entities)
         self.subgraphs.append(sub)
 
     def get_Nsubgraphs(self):
@@ -307,22 +289,6 @@ class SubgraphFactory():
             ent2 += 1
 
         print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], self.get_Nsubgraphs()))
-
-    def make_normal_subgraphs(self, sub_type):
-        E = self.E
-        for i in range(len(E)):
-            self.avg_embeddings.append(E[i])
-            entities = []
-            entities.append(E[i])
-            self.var_embeddings.append(self.calculate_var_embeddings(0, E[i], []))
-            self.add_normal_subgraphs(sub_type, i, [i])
-
-        print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], len(E)))
-
-    def make_subgraphs(self, sub_type):
-        if sub_type == "normal":
-            self.make_normal_subgraphs(SUBTYPE.NO)
-            return
 
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)

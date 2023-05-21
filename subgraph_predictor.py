@@ -211,8 +211,6 @@ class SubgraphPredictor():
             self.subgraphs = pickle.load(fin)
         if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
             self.subgraph_type = "star"
-        elif self.subgraphs[0].data['subType'] == SUBTYPE.NO:
-            self.subgraph_type = "normal"
         else:
             self.subgraph_type = "diamond"
 
@@ -494,8 +492,6 @@ class SubgraphPredictor():
                 # Compute KL divergence scores
                 subgraph_scores_head_prediction = kl_scores['head'][tail][rel]
                 subgraph_scores_tail_prediction = kl_scores['tail'][head][rel]
-                #subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS, self.db, self.model_name, self.subgraph_type))
-                #subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO, self.db, self.model_name, self.subgraph_type))
                 new_R.unsqueeze_(0)
             elif self.score_func == "nn":
                 query_head_prediction = self.model._vector_op(new_T, new_R, 'head_pred')
@@ -520,7 +516,7 @@ class SubgraphPredictor():
 
             for index, se in enumerate(self.SA):    
                 #print(self.subgraph_type, flush = True)
-                if self.subgraph_type == "star" or self.subgraph_type == "normal":
+                if self.subgraph_type == "star":
                     if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
                         subgraph_scores_tail_prediction[index] = np.inf
                     if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
