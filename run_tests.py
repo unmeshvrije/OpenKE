@@ -10,20 +10,21 @@ def parse_args():
     return parser.parse_args()
 
 TEST_FILE_PATH = "test-subgraphs.sh"
+TEST_FILE_PATH_SINGLE = "test-model.sh"
 DATA_DIR_PATH = "results/data/"
 SUBGRAPH_COUNT = {          # used for k = 10% option
     "fb15k237-star": 7694,
     "fb15k237-diamond": 116108,
-    "fb15k237-normal": 14541,
+    "fb15k237-single": 14541,
     "lubm-star": 1106,
     "lubm-diamond": 1635,
-    "lubm-normal": 17292,
+    "lubm-single": 17292,
     "yago2-star": 8789,
     "yago2-diamond": 284,
-    "yago2-normal": 397253,
+    "yago2-single": 397253,
     "dbpedia50-star": 326,
     "dbpedia50-diamond": 31,
-    "dbpedia50-normal": 24624
+    "dbpedia50-single": 24624
 }
 
 
@@ -36,7 +37,7 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 #    r - number of records to test, usually 1000 or -1 (all the records)
 #    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
 #    s - score function. one of "avg", "kl", "nn"
-#    subgraph_type - "star", "diamond" or "normal" (normal subgraphs do not run kl and nn tests)
+#    subgraph_type - "star", "diamond" or "single" (tests on single entities do not use kl and nn score calculations)
 #    max_time - maximum permitted time per task in format "hh:mm:ss"
 # Note: all arguments must be given as strings
 #
@@ -44,7 +45,7 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 #    proc - the process that has finished running an experiment. It should be later handled with process_results() function
 # In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
 def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00"):
-    if subgraph_type == "normal" and (s == "kl" or s == "nn"):
+    if subgraph_type == "single" and ((s == "kl" or s == "nn") or (k == "-1" or k == "-2")):
         proc = subprocess.Popen(["sleep 0"], stdout = subprocess.PIPE, shell = True)
         return proc
     # process k = 10% case
@@ -52,7 +53,10 @@ def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", m
         k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
         k = str(math.floor(k))  # format k value
 
-    proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + test_file_path + " -m " + model + " -d " + database + " -type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
+    if subgraph_type == "single":
+        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH_SINGLE + " " + database + " " + model + " " + k + " " + r, stdout = subprocess.PIPE, shell = True)
+    else:
+        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " -type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
     return proc
 
 # Processes the result output and extracts the recall and reduction metrics
@@ -108,6 +112,7 @@ def construct_model_cell_results(database, model, r, k, subgraph_type):
 # Generates a portion of results with a particular subgraph type
 def construct_model_subgraph_type_results(database, model, r, subgraph_type):
     experiment_results = {
+        "5": construct_model_cell_results(database, model, r, "5", subgraph_type),
         "10": construct_model_cell_results(database, model, r, "10", subgraph_type),
         "10%": construct_model_cell_results(database, model, r, "10%", subgraph_type),
         "-1": construct_model_cell_results(database, model, r, "-1", subgraph_type),
@@ -119,9 +124,9 @@ def construct_model_subgraph_type_results(database, model, r, subgraph_type):
 def construct_model_results(database, model, r):
     r = str(r)
     experiment_results = dict()
+    experiment_results["single"] = construct_model_subgraph_type_results(database, model, r, "single")
     experiment_results["star"] = construct_model_subgraph_type_results(database, model, r, "star")
     experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, "diamond")
-    experiment_results["normal"] = construct_model_subgraph_type_results(database, model, r, "normal")
     return experiment_results
 
 # Generates experiment results for a particular database
