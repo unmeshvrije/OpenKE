@@ -10,12 +10,12 @@ def parse_args():
 DATABASES = ["fb15k237", "lubm", "yago2", "dbpedia50"]
 MODELS = ["transe", "rotate", "complex", "distmult", "hole"]
 METRICS = ["Recall", "Reduction", "Runtime"]
-SUBGRAPH_TYPES = ["normal", "star", "diamond"]
+SUBGRAPH_TYPES = ["single", "star", "diamond"]
 END_TYPES = ["H", "T"]
-K_VALUES = ["10", "10%", "-1", "-2"]
-K_VALUE_TRANSLATIONS = {"10": "10", "10%": "10\%", "-1": "$Dyn$", "-2": "$Dyn^T$"}
+K_VALUES = ["5", "10", "10%"]
+K_VALUE_TRANSLATIONS = {"5": "5", "10": "10", "10%": "10\%", "-1": "$Dyn$", "-2": "$Dyn^T$"}
 SCORE = "avg"
-SUBGRAPH_SYMBOLS = {"normal": "\\bullet", "star": "\star", "diamond": "\diamond"}
+SUBGRAPH_SYMBOLS = {"single": "\\bullet", "star": "\star", "diamond": "\diamond"}
 
 DATA_DIR_PATH = "results/data/"
 TABLE_DIR_PATH = "results/tables/"
@@ -39,7 +39,7 @@ def generate_latex_table(r):
     table = "\\begingroup\n"
     table += "\\setlength{\\tabcolsep}{6pt} % Default value: 6pt\n"
     table += "\\footnotesize\n"
-    table += "\\begin{tabular}{p{0.3em} p{6em} || cccc | cccc | cccc | cccc}\n"
+    table += "\\begin{tabular}{p{0.3em} p{6em} || ccc | ccc | ccc | ccc}\n"
 
     # line for databases
     table += "& \\em Database" 
@@ -49,23 +49,23 @@ def generate_latex_table(r):
 
     # line for k values
     table += "& \em K"
-    for i in range(len(K_VALUES)):
+    for i in range(len(DATABASES)):
         for k in K_VALUES:
             table += "& " + K_VALUE_TRANSLATIONS[k] + " "
     table += "\\\\\n"
 
     for model in MODELS:
-        table += "\\cline{2-18}\n"
+        table += "\\cline{2-14}\n"
         table += "\\multirow{15}{*}{\\rotatebox{90}{\\" + model + "}}\n"
         for metric in METRICS:
             for subgraph_type in SUBGRAPH_TYPES:
                 if metric == "Runtime":
                     table += generate_line(data, model, metric, subgraph_type, "") + "\n"
-                    table += "\\cline{2-18}\n"
+                    table += "\\cline{2-14}\n"
                 else:    
                     for end_type in END_TYPES:
                         table += generate_line(data, model, metric, subgraph_type, end_type) + "\n"
-                        table += "\\cline{2-18}\n"
+                        table += "\\cline{2-14}\n"
         table += "\\\\[-5pt]"
 
     table += "\\end{tabular}\n"
