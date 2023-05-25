@@ -210,11 +210,9 @@ class Tester(object):
         hitsHead = 0
         hitsTail = 0
         for data in test_data:
-            print(data['head_predictions_raw']['correctness'])
-            print(data['tail_predictions_raw']['correctness'])
-            if 1 in data['head_predictions_raw']['correctness']:
+            if 1 in data['head_predictions_fil']['correctness']:
                 hitsHead += 1
-            if 1 in data['tail_predictions_raw']['correctness']:
+            if 1 in data['tail_predictions_fil']['correctness']:
                 hitsTail += 1
 
         print()
