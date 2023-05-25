@@ -19,8 +19,6 @@ import os
 
 from util import timer
 
-save_dir = '/var/scratch/dvs254/OpenKE-results/'
-
 class SubgraphPredictor():
 
     def __init__(self, db, subgraph_type, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
@@ -424,7 +422,7 @@ class SubgraphPredictor():
         return kl_scores
 
 
-    def predict(self):
+    def predict(self, kl_scores_dir):
         hitsHead = 0
         hitsTail = 0
         hits_head_scann = 0
@@ -473,7 +471,7 @@ class SubgraphPredictor():
             return
         
         if self.score_func == "kl":
-            scores_file = save_dir + self.db + '/scores/' + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
+            scores_file = kl_scores_dir + self.db + '/scores/' + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
             if os.path.isfile(scores_file):
                 with open(scores_file, 'rb') as fin:
                     kl_scores = pickle.load(fin)

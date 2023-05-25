@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
     parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
     parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('--kldict', dest ='kl_scores_dir', type = str, default = '/var/scratch/dvs254/OpenKE-results/', help = 'dictionary with precomputed kl score files')
     parser.add_argument('-rd', '--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--topk', dest = 'topk', required = True, type = int, default = 10)
     parser.add_argument('--testonly', dest = 'num_test_queries', required = False, type = int, default = -1) # -1 means all
@@ -39,6 +40,7 @@ queries_file_path = args.test_file
 emb_file = args.emb_file
 sub_file = args.sub_file
 subemb_dir = args.subemb_dir
+kl_scores_dir = args.kl_scores_dir
 db_path = "./benchmarks/" + args.db + "/"
 print("Initializing Subgraph predictor")
 mys = SubgraphPredictor(args.db, args.type, args.topk, emb_file, sub_file, subemb_dir, args.model, args.train_file, db_path, args.sub_threshold, args.score_func)
@@ -53,7 +55,7 @@ logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 
 start_time = time.time()
-mys.predict()
+mys.predict(kl_scores_dir)
 
 runtime = time.time() - start_time
 print("Runtime :", runtime, "s")
