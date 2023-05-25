@@ -3,6 +3,18 @@ import math
 import pickle
 import subprocess
 
+"""
+Runs tests with diferent parameters for a given database and the number of records to test (given as arguments to the script)
+
+The results are stored in a pickle file with format "DATABASE-rRECORDS_TO_TEST-results.pkl"
+
+Different parameters:
+subgraph_type: single (no subgraphs), star, diamond
+model: transe, rotate, complex, distmult, hole
+k: 5, 10, 10%, -1 (dynamic k), -2 (dynamic threshold)
+score function: avg, kl, nn
+"""
+
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Run the experiments and extract the results in a format suitable for constructing latex tables.')
     parser.add_argument('-db', dest = 'db', type = str, default = 'fb15k237')
@@ -28,23 +40,27 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 }
 
 
-# Runs an experiment with particular parameters
-#
-# Arguments:
-#    test_file_path - location of python script running a single experiment, usually test_subgraphs.py
-#    database - one of databases "fb15k237", "lubm", "yago2", "dbpedia50"
-#    model - one of models "transe", "rotate", "complex", "distmult", "hole"
-#    r - number of records to test, usually 1000 or -1 (all the records)
-#    k - threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
-#    s - score function. one of "avg", "kl", "nn"
-#    subgraph_type - "star", "diamond" or "single" (tests on single entities do not use kl and nn score calculations)
-#    max_time - maximum permitted time per task in format "hh:mm:ss"
-# Note: all arguments must be given as strings
-#
-# Results:
-#    proc - the process that has finished running an experiment. It should be later handled with process_results() function
-# In a case of unexpected behavior or a time limit the returned tuple is (-1, -1)
 def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00"):
+    """
+    Runs an experiment with particular parameters
+
+    Arguments
+    ---------
+    test_file_path: location of python script running a single experiment, usually test_subgraphs.py or test-model.sh
+    database: one of databases "fb15k237", "lubm", "yago2", "dbpedia50"
+    model: one of models "transe", "rotate", "complex", "distmult", "hole"
+    r: number of records to test, usually 100, 1000 or -1 (all the records)
+    k: threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
+    s: score function, one of "avg", "kl", "nn"
+    subgraph_type: "star", "diamond" or "single" (tests on single entities do not use kl and nn score calculations)
+    max_time: maximum permitted time per task in format "hh:mm:ss"
+    
+    Note: all arguments must be given as strings
+
+    Return values
+    -------
+    proc - the process that has finished running an experiment. It should be later handled with process_results() function
+    """
     if subgraph_type == "single" and ((s == "kl" or s == "nn") or (k == "-1" or k == "-2")):
         proc = subprocess.Popen(["sleep 0"], stdout = subprocess.PIPE, shell = True)
         return proc
@@ -59,15 +75,19 @@ def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", m
         proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " -type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
     return proc
 
-# Processes the result output and extracts the recall and reduction metrics
-#
-# Arguments:
-#    proc - process that run the test in run_test() function
-#
-# Results:
-#    result dictionary consisting of recall_H, recall_T, red_H, red_T, runtime
-# In a case of unexpected behavior or a time limit the returned tuple is (-1, -1, -1, -1, -1)
 def process_results(result_proc):
+    """
+    Processes the result output and extracts the recall and reduction metrics
+
+    Arguments
+    ---------
+    proc - process that run the test in run_test() function
+
+    Return values
+    -------
+    results: dictionary consisting of recall_H, recall_T, red_H, red_T, runtime
+        In a case of unexpected behavior or a time limit the returned dictionary tuple is (-1, -1, -1, -1, -1)
+    """
     output = result_proc.stdout.readlines()
 
     recall_H = recall_T = red_H = red_T = runtime = 0
@@ -98,8 +118,8 @@ def process_results(result_proc):
     results["runtime"] = str(round(float(runtime)))
     return results
 
-# Generates a small portions of results with particular subgraph type and k value
 def construct_model_cell_results(database, model, r, k, subgraph_type):
+    """Generates a small portions of results with particular subgraph type and k value"""
     result_avg_proc = run_test(TEST_FILE_PATH, database, model, r, k, "avg", subgraph_type)
     result_kl_proc = run_test(TEST_FILE_PATH, database, model, r, k, "kl", subgraph_type)
     result_nn_proc = run_test(TEST_FILE_PATH, database, model, r, k, "nn", subgraph_type)
@@ -109,8 +129,8 @@ def construct_model_cell_results(database, model, r, k, subgraph_type):
     experiment_results["nn"] = process_results(result_nn_proc)
     return experiment_results
 
-# Generates a portion of results with a particular subgraph type
 def construct_model_subgraph_type_results(database, model, r, subgraph_type):
+    """Generates a portion of results with a particular subgraph type"""
     experiment_results = {
         "5": construct_model_cell_results(database, model, r, "5", subgraph_type),
         "10": construct_model_cell_results(database, model, r, "10", subgraph_type),
@@ -120,8 +140,8 @@ def construct_model_subgraph_type_results(database, model, r, subgraph_type):
     }
     return experiment_results
 
-# Generates experiment results for a particular database and its model
 def construct_model_results(database, model, r):
+    """Generates experiment results for a particular database and its model"""
     r = str(r)
     experiment_results = dict()
     experiment_results["single"] = construct_model_subgraph_type_results(database, model, r, "single")
@@ -129,8 +149,8 @@ def construct_model_results(database, model, r):
     experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, "diamond")
     return experiment_results
 
-# Generates experiment results for a particular database
 def construct_results(database, r):
+    """Generates experiment results for a particular database"""
     experiment_results = dict()
     experiment_results["transe"] = construct_model_results(database, "transe", r)
     experiment_results["hole"] = construct_model_results(database, "hole", r)
