@@ -90,7 +90,7 @@ def process_results(result_proc):
     """
     output = result_proc.stdout.readlines()
 
-    recall_H = recall_T = red_H = red_T = runtime = 0
+    recall_H = recall_T = precision_H = precision_T = red_H = red_T = runtime = 0
     # extract recall and reduction values from the output
 
     for line in output:
@@ -99,6 +99,10 @@ def process_results(result_proc):
             recall_H = line[13:-1]    # ignore starting text "Recall (H) :" and the ending "\n" character
         elif line.startswith('Recall (T)'):
             recall_T = line[13:-1]
+        elif line.startswith('Precision (H)'):
+            precision_H = line[16:-1]
+        elif line.startswith('Precision (T)'):
+            precision_T = line[16:-1]
         elif line.startswith('%Red (H)'):
             red_H = line[14:-1]
         elif line.startswith('%Red (T)'):
@@ -108,11 +112,13 @@ def process_results(result_proc):
 
     # Check for undefined behavior
     if len(output) < 2:
-        recall_H = recall_T = red_H = red_T = runtime = -1
+        recall_H = recall_T = precision_H = precision_T = red_H = red_T = runtime = -1
 
     results = dict()
     results["recall_H"] = str(round(float(recall_H), 2))
     results["recall_T"] = str(round(float(recall_T), 2))
+    results["precision_H"] = str(round(float(precision_H), 3))
+    results["precision_T"] = str(round(float(precision_T), 3))
     results["red_H"] = str(round(float(red_H), 2))
     results["red_T"] = str(round(float(red_T), 2))
     results["runtime"] = str(round(float(runtime)))
