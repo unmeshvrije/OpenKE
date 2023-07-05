@@ -6,7 +6,7 @@ from openke.module.model import TransE, RotatE, ComplEx, DistMult, HolE
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from numpy import linalg as LA
-from subgraphs import read_triples
+from subgraphs import read_triples, make_adjacency_dict, update_adjacency_dict
 from openke.data import TrainDataLoader
 import torch
 import time
@@ -44,6 +44,8 @@ class SubgraphPredictor():
         self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-" + self.subgraph_type + "-varemb-tau-10.pkl"
 
         self.training_file_path = training_file_path
+        self.training_triples = read_triples(training_file_path)
+        self.adj_list_out, self.adj_list_in = make_adjacency_dict(self.training_triples)
         self.subgraph_threshold_percentage = subgraph_threshold_percentage
         self.score_func = score_func
 
@@ -65,8 +67,7 @@ class SubgraphPredictor():
 
     def set_test_triples(self, queries_file_path, num_test_queries):
         self.test_triples = read_triples(queries_file_path)[:num_test_queries]
-        random.seed(0)
-        random.shuffle(self.test_triples)
+        self.adj_list_out, self.adj_list_in = update_adjacency_dict(self.adj_list_out, self.adj_list_in, self.test_triples)
 
     def set_logfile(self, logfile):
         self.logfile = logfile
@@ -509,6 +510,9 @@ class SubgraphPredictor():
             tail = int(self.test_triples[index][1])
             rel  = int(self.test_triples[index][2])
 
+            head_answers = self.adj_list_in[tail][rel]
+            tail_answers = self.adj_list_out[head][rel]
+
             #time_start = timeit.default_timer()
             new_H = self.E[head]
             new_R = self.R[rel]
@@ -625,6 +629,8 @@ class SubgraphPredictor():
         print()
         print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
         print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
+        print("Precision (H) :", 0)
+        print("Precision (T) :", 0)
         head_normal_comparisons = self.entity_total * hitsHead
         if head_normal_comparisons != 0:
             print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/

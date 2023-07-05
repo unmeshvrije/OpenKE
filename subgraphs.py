@@ -16,6 +16,8 @@ def read_triples(filename):
         t = int(line.split()[1])
         r = int(line.split()[2])
         triples.append((h,t,r))
+    random.seed(0)
+    random.shuffle(triples)
 
     return triples
 
@@ -37,6 +39,44 @@ def make_adjacency_lists(triples):
 
     return adj_list_out, adj_list_in
 
+def make_adjacency_dict(triples):
+    adj_list_out_dict = dict()
+    adj_list_in_dict = dict()
+
+    for triple in triples:
+        h = triple[0]
+        t = triple[1]
+        r = triple[2]
+        if h not in adj_list_out_dict:
+            adj_list_out_dict[h] = dict()
+        if r not in adj_list_out_dict[h]:
+            adj_list_out_dict[h][r] = []
+        if t not in adj_list_in_dict:
+            adj_list_in_dict[t] = dict()
+        if r not in adj_list_in_dict[t]:
+            adj_list_in_dict[t][r] = []
+        adj_list_out_dict[h][r].append(t)
+        adj_list_in_dict[t][r].append(h)
+
+    return adj_list_out_dict, adj_list_in_dict
+
+def update_adjacency_dict(adj_list_out_dict, adj_list_in_dict, triples):
+    for triple in triples:
+        h = triple[0]
+        t = triple[1]
+        r = triple[2]
+        if h not in adj_list_out_dict:
+            adj_list_out_dict[h] = dict()
+        if r not in adj_list_out_dict[h]:
+            adj_list_out_dict[h][r] = []
+        if t not in adj_list_in_dict:
+            adj_list_in_dict[t] = dict()
+        if r not in adj_list_in_dict[t]:
+            adj_list_in_dict[t][r] = []
+        adj_list_out_dict[h][r].append(t)
+        adj_list_in_dict[t][r].append(h)
+
+    return adj_list_out_dict, adj_list_in_dict
 
 def load_pickle(filename):
     with open(filename, 'rb') as fin:
