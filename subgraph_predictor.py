@@ -16,6 +16,7 @@ import kge.model
 import torch.nn.functional as F
 import nanopq
 import os
+import random
 
 from util import timer
 
@@ -64,6 +65,8 @@ class SubgraphPredictor():
 
     def set_test_triples(self, queries_file_path, num_test_queries):
         self.test_triples = read_triples(queries_file_path)[:num_test_queries]
+        random.seed(0)
+        random.shuffle(self.test_triples)
 
     def set_logfile(self, logfile):
         self.logfile = logfile
