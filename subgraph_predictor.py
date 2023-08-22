@@ -431,6 +431,8 @@ class SubgraphPredictor():
         hitsTail = 0
         precision_sum_head = 0
         precision_sum_tail = 0
+        precision_value_count_head = 0
+        precision_value_count_tail = 0
         hits_head_scann = 0
         hits_tail_scann = 0
         head_subgraph_comparisons = 0
@@ -599,7 +601,9 @@ class SubgraphPredictor():
             for prediction in subset_head_predictions:
                 if prediction in head_answers:
                     true_positives_head += 1
-            precision_sum_head += float(true_positives_head)/float(len(head_answers))
+            if true_positives_head != 0:
+                precision_sum_head += float(true_positives_head)/float(len(head_answers))
+                precision_value_count_head += 1
             #print("head total sub comparisons {} ({})".format(len(subset_head_predictions), head_subgraph_comparisons))
             #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
 
@@ -627,7 +631,9 @@ class SubgraphPredictor():
             for prediction in subset_tail_predictions:
                 if prediction in tail_answers:
                     true_positives_tail += 1
-            precision_sum_tail += float(true_positives_tail)/float(len(tail_answers))
+            if true_positives_tail != 0:
+                precision_sum_tail += float(true_positives_tail)/float(len(tail_answers))
+                precision_value_count_tail += 1
             #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
             #topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
             #if topk_subgraphs_scann == 1000:
@@ -643,8 +649,10 @@ class SubgraphPredictor():
         print()
         print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
         print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
-        print("Precision (H) :", float(precision_sum_head)/float(len(self.test_triples)))
-        print("Precision (T) :", float(precision_sum_tail)/float(len(self.test_triples)))
+        if precision_value_count_head != 0:
+            print("Precision (H) :", float(precision_sum_head)/float(precision_value_count_head))
+        if precision_value_count_tail != 0:
+            print("Precision (T) :", float(precision_sum_tail)/float(precision_value_count_tail))
         head_normal_comparisons = self.entity_total * hitsHead
         if head_normal_comparisons != 0:
             print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
