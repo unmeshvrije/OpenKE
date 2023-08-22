@@ -16,6 +16,7 @@ END_TYPES = ["H", "T"]
 K_VALUES = ["10", "10%", "-1", "-2"]
 SCORE_TYPES = ["avg", "kl", "nn"]
 METRIC_TO_TYPE_STR_TRANSLATIONS = {"recall": "recall", "red": "red", "prec": "precision"}
+HIGHLIGHT_LATEX_TEXT = {"prefix": "\\textbf{", "suffix": "}"}
 
 DATA_DIR_PATH = "results/data/"
 TABLE_DIR_PATH = "results/tables/"
@@ -26,6 +27,18 @@ def parse_args():
     parser.add_argument('-r', dest = 'r', type = int, default = '-1', help = 'Number of records that were tested')
     parser.add_argument('--metric', dest = 'metric', type = str, default = 'recall', help = 'The metric of interest, either "Recall", "Precision" or "Reduction"')
     return parser.parse_args()
+
+def compare_result_values(experiment_results, k, s, type_str):
+    max_value = 0
+    better_subgraph = "neither"
+    for subgraph_type in SUBGRAPH_TYPES:
+        result_value = float(experiment_results[subgraph_type][k][s][type_str])
+        if result_value > max_value:
+            max_value = result_value
+            better_subgraph = subgraph_type
+        elif result_value == max_value:
+            better_subgraph = "neither"
+    return better_subgraph
 
 def generate_latex_line(model, r, metric):
     table_line_dict = dict()
@@ -38,7 +51,10 @@ def generate_latex_line(model, r, metric):
             data_string = ""
             for k in K_VALUES:
                 for s in SCORE_TYPES:
-                    data_string += str(experiment_results[subgraph_type][k][s][type_str]) + " &"
+                    if compare_result_values(experiment_results, k, s, type_str) == subgraph_type:
+                        data_string += HIGHLIGHT_LATEX_TEXT["prefix"] + str(experiment_results[subgraph_type][k][s][type_str]) + HIGHLIGHT_LATEX_TEXT["suffix"] + " &"
+                    else:
+                        data_string += str(experiment_results[subgraph_type][k][s][type_str]) + " &"
             table_line_dict[subgraph_type][end_type] += data_string[:-1] + "\\\\"
 
     return f"""\\multirow{{4}}{{*}}{{\\rotatebox{{90}}{{\\{model}}}}}
