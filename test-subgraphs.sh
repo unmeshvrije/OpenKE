@@ -27,7 +27,7 @@ do
     --db=*)
         DB=${arg#*=}
         ;;
-    -type)
+    --type)
         TYPE=$val
         ((i++))
         ;;
