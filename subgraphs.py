@@ -184,7 +184,7 @@ class SubgraphFactory():
 
     def add_diamond_subgraphs(self, st, sent1, sent2, srel1, srel2, ssize, entities):
         subentities = copy.deepcopy(entities)
-        sub = SubgraphDiamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, entities)
+        sub = SubgraphDiamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, subentities)
         self.subgraphs.append(sub)
 
     def get_Nsubgraphs(self):
@@ -329,6 +329,8 @@ class SubgraphFactory():
             ent2 += 1
 
         print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], self.get_Nsubgraphs()))
+
+    def make_subgraphs(self, sub_type):
 
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)
