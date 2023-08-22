@@ -9,7 +9,7 @@ from subgraph_predictor import SubgraphPredictor
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
     parser.add_argument('--testfile', dest ='test_file', type = str, help = 'File containing test queries.')
-    parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing training triples.')
+    parser.add_argument('--trainfile', dest ='train_file', type = str, default = "/home/dvs254/OpenKE/benchmarks/fb15k237/train2id.txt", help = 'File containing training triples.')
     parser.add_argument('--modelfile', dest ='model_file',type = str, help = 'File containing test data.')
     parser.add_argument('--weightsfile', dest ='weights_file', type = str, help = 'File containing test data.')
     parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
