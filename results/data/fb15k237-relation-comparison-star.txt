@@ -1,0 +1,103 @@
+           |            transe(h)           |            transe(t)           |            rotate(h)           |            rotate(t)           |
+  r | freq | recall | reduction | precision | recall | reduction | precision | recall | reduction | precision | recall | reduction | precision | translation
+ 13   1447     0.78       94.04       0.856     0.72       98.04       0.858     0.77       93.68       0.843     0.74       94.16       0.844   /film/film/release_date_s./film/film_regional_release_date/film_release_region
+ 17   1311     0.78       93.91       0.857     0.73       98.08       0.857     0.77       93.67        0.84     0.75       94.14       0.843   /people/person/profession
+ 19   1067     0.79       94.08       0.859     0.73       98.01       0.856     0.78       93.81       0.845     0.75       94.26       0.842   /award/award_nominee/award_nominations./award/award_nomination/award
+  7    858     0.78       93.96        0.85     0.73       97.93       0.854     0.77       93.75       0.838     0.75       94.17        0.84   /award/award_category/nominees./award/award_nomination/nominated_for
+  6    836     0.78       93.96       0.848     0.73       97.92       0.853     0.77       93.79       0.837     0.75        94.1        0.84   /film/actor/film./film/performance/film
+ 31    722     0.78       93.99       0.846     0.73        97.9       0.845     0.77       93.76       0.836     0.74       94.02       0.836   /film/film/genre
+ 20    664     0.78       93.86       0.848     0.72       97.88       0.847     0.77       93.67       0.838     0.74       93.91       0.837   /music/genre/artists
+ 26    606     0.78       93.98       0.848     0.73       97.91        0.85     0.76       93.81       0.839     0.75       94.17       0.838   /film/film/other_crew./film/film_crew_gig/film_crew_role
+ 48    494     0.77       93.83       0.842     0.72       98.03       0.854     0.76        93.5       0.836     0.75       94.35       0.841   /people/person/nationality
+ 43    436     0.77       93.92       0.842     0.75       97.98       0.857     0.74        93.7       0.833     0.78       94.55       0.845   /people/person/gender
+ 25    402     0.76       93.85        0.84     0.74       97.92        0.86     0.74       93.52        0.83     0.77       94.66        0.85   /common/topic/webpage./common/webpage/category
+ 85    346     0.75       93.88       0.834     0.74       97.95        0.86     0.73       93.74       0.829     0.78       94.88        0.85   /people/person/spouse_s./people/marriage/type_of_union
+ 15    330     0.74       93.79       0.834     0.75        97.9       0.861     0.73       93.71       0.828     0.77        94.9       0.851   /location/location/contains
+ 10    323     0.74       93.82       0.835     0.75       97.88       0.864     0.73        93.7       0.831     0.77       94.91        0.85   /award/award_category/winners./award/award_honor/ceremony
+101    321     0.74       93.78       0.834     0.75       97.88       0.863     0.73       93.65        0.83     0.77       94.89        0.85   /education/educational_institution/students_graduates./education/education/major_field_of_study
+ 27    317     0.74       93.96       0.834     0.76       97.87       0.863     0.73       93.84        0.83     0.78       94.97       0.849   /award/award_ceremony/awards_presented./award/award_honor/award_winner
+ 14    314     0.73       94.02       0.834     0.76       97.86       0.865     0.72       93.85        0.83     0.78       94.95       0.851   /film/film/language
+ 22    311     0.73       94.14       0.836     0.76       97.85       0.865     0.72       93.97       0.831     0.78       94.91        0.85   /education/educational_institution/students_graduates./education/education/student
+ 66    305     0.74       94.08       0.838     0.76       97.84       0.862     0.72       93.92       0.833     0.78       94.84       0.848   /people/person/places_lived./people/place_lived/location
+ 89    287     0.74       94.29       0.842     0.77       97.76       0.861     0.72        94.1       0.837     0.79       94.74       0.846   /education/educational_degree/people_with_this_degree./education/education/institution
+ 76    266     0.73       94.34       0.837     0.76        97.7       0.856     0.72       93.95       0.835     0.79        94.7       0.843   /music/record_label/artist
+ 29    258     0.72       94.47       0.837     0.76       97.67       0.855     0.72       94.06       0.835     0.79       94.62       0.842   /olympics/olympic_sport/athletes./olympics/olympic_athlete_affiliation/country
+ 71    251     0.72       94.37       0.836     0.76       97.65       0.854     0.72       93.95       0.835     0.79       94.67       0.842   /people/ethnicity/people
+ 21    235     0.73       94.37       0.839     0.76       97.55       0.857     0.72       93.91       0.836      0.8       94.58       0.842   /influence/influence_node/influenced_by
+ 47    217     0.72       94.39        0.84     0.76       97.53       0.857     0.71       93.95       0.835     0.79       94.27       0.839   /award/award_category/winners./award/award_honor/award_winner
+  8    214     0.71       94.29       0.837     0.76       97.55       0.856     0.71       93.84       0.833     0.79       94.23       0.839   /award/award_nominee/award_nominations./award/award_nomination/award_nominee
+ 24    170     0.72        94.6       0.838     0.75        97.4       0.846     0.71       93.92       0.827     0.77       93.96        0.83   /people/person/place_of_birth
+ 92    167     0.72       94.67       0.837     0.74       97.39       0.846     0.71       94.14       0.825     0.77       94.08       0.831   /music/performance_role/regular_performances./music/group_membership/group
+ 32    160     0.73       94.95        0.84     0.74       97.36       0.849     0.72       94.23       0.831     0.76       94.31       0.831   /film/film_distributor/films_distributed./film/film_film_distributor_relationship/film
+ 11    158     0.73       94.91       0.848     0.75       97.36        0.85     0.72       94.18       0.833     0.77       94.28       0.833   /film/film/release_date_s./film/film_regional_release_date/film_release_distribution_medium
+ 42    153     0.73       94.95       0.845     0.75        97.3       0.849     0.73       94.04       0.838     0.77       94.14       0.832   /music/instrument/instrumentalists
+ 41    152     0.73       94.93       0.844     0.74       97.28       0.848     0.73       94.04       0.838     0.77        94.1       0.831   /music/artist/track_contributions./music/track_contribution/role
+ 34    151     0.74       94.93        0.85     0.75       97.28       0.848     0.74       94.04       0.842     0.77        94.1       0.831   /film/film/estimated_budget./measurement_unit/dated_money_value/currency
+154    137     0.72       94.57       0.843     0.74       97.14       0.846     0.73       93.83       0.836     0.77       93.82        0.83   /location/location/time_zones
+ 38    132     0.72       94.39       0.839     0.73       97.37       0.845     0.73        93.6       0.836     0.77       93.78       0.829   /award/award_nominee/award_nominations./award/award_nomination/nominated_for
+ 28    131     0.72        94.4       0.838     0.73       97.42       0.844     0.73       93.61       0.834     0.76       93.79       0.828   /film/film/country
+ 82    127     0.72       94.28       0.842     0.74       97.39       0.847     0.73       93.57        0.84     0.77       93.69       0.832   /people/person/religion
+  2    124     0.71       94.15       0.842     0.74       97.37       0.851     0.73       93.42       0.839     0.77       93.52       0.836   /media_common/netflix_genre/titles
+103    121     0.71       94.18       0.842     0.74       97.59       0.848     0.72       93.39       0.835     0.77        93.7       0.833   /award/award_ceremony/awards_presented./award/award_honor/honored_for
+ 30    118     0.71       94.22        0.84     0.75       97.55        0.85     0.72       93.41       0.835     0.76       93.55        0.83   /award/award_winning_work/awards_won./award/award_honor/award
+ 35    117     0.71       94.16       0.839     0.75       97.55       0.853     0.72       93.34       0.833     0.77       93.55       0.832   /government/legislative_session/members./government/government_position_held/district_represented
+137    105      0.7       93.91       0.834     0.74       97.45       0.863     0.71       92.73       0.836     0.76       93.59       0.833   /food/food/nutrients./food/nutrition_fact/nutrient
+106    100      0.7       94.04       0.844     0.77       97.43       0.873     0.71       92.79       0.836     0.78       93.84        0.84   /film/film/featured_film_locations
+100     98     0.71       94.04       0.843     0.78        97.4        0.88     0.71       92.86       0.834     0.78       93.71       0.847   /people/person/languages
+ 52     97     0.71       93.96       0.841     0.77       97.39       0.882     0.71       92.76       0.833     0.77       93.65       0.848   /music/genre/parent_genre
+ 23     96     0.72       93.96       0.841     0.77       97.36       0.881     0.72       92.76       0.833     0.77       93.57       0.847   /organization/organization_member/member_of./organization/organization_membership/organization
+107     94     0.71       93.98       0.838     0.77        97.3       0.878     0.71       92.74       0.829     0.77        93.4       0.844   /tv/tv_program/genre
+ 50     94     0.71       93.98       0.838     0.77        97.3       0.878     0.71       92.74       0.829     0.77        93.4       0.844   /people/cause_of_death/people
+116     92     0.72        93.9       0.846     0.77       97.26       0.877     0.72       92.64       0.834     0.77       93.31       0.842   /film/film/music
+  1     91     0.71       94.27       0.844     0.77       97.23       0.875     0.71       92.94       0.833     0.77       93.63        0.84   /tv/tv_program/regular_cast./tv/regular_tv_appearance/actor
+ 37     91     0.71       94.27       0.844     0.77       97.23       0.875     0.71       92.94       0.833     0.77       93.63        0.84   /government/government_office_category/officeholders./government/government_position_held/jurisdiction_of_office
+ 61     90     0.71       94.23       0.844     0.77        97.2       0.874     0.72       92.94       0.836     0.77       93.94       0.838   /education/educational_institution/colors
+ 68     86     0.71       94.46        0.84     0.78       97.16       0.874     0.72        93.3        0.83     0.76       94.53       0.835   /sports/professional_sports_team/draft_picks./sports/sports_league_draft_pick/school
+ 44     85     0.71       94.37       0.838     0.78        97.4       0.874     0.72       93.68       0.828     0.75       94.51        0.84   /business/job_title/people_with_this_title./business/employment_tenure/company
+ 86     84      0.7       94.31       0.839     0.77       97.37       0.873     0.71       93.61       0.828     0.75       94.42       0.838   /film/film/production_companies
+120     84      0.7       94.31       0.839     0.77       97.37       0.873     0.71       93.61       0.828     0.75       94.42       0.838   /location/hud_foreclosure_area/estimated_number_of_mortgages./measurement_unit/dated_integer/source
+124     80     0.69       94.48       0.839     0.76       97.28       0.868      0.7       93.83       0.828     0.74        94.6       0.834   /education/educational_institution/school_type
+ 39     78     0.68       94.36       0.841     0.77       97.25       0.866     0.69       93.68       0.828     0.74       94.52       0.832   /people/deceased_person/place_of_death
+ 95     77     0.68       94.26       0.838     0.77       97.34       0.865     0.69       93.62       0.826     0.74       94.61        0.83   /sports/sports_team/colors
+ 59     77     0.68       94.26       0.838     0.77       97.34       0.865     0.69       93.62       0.826     0.74       94.61        0.83   /film/film_subject/films
+136     73     0.67       94.06       0.839     0.78       97.26       0.871     0.68       93.39       0.829     0.74       94.41       0.832   /film/film/executive_produced_by
+ 63     70     0.67        93.9       0.834     0.77        98.1       0.867      0.7        93.3       0.826     0.73       94.95       0.826   /organization/role/leaders./organization/leadership/organization
+ 69     63     0.67       93.41       0.841     0.75       97.91       0.859      0.7       92.75       0.829      0.7       94.25       0.809   /olympics/olympic_participating_country/medals_won./olympics/olympic_medal_honor/olympics
+112     63     0.67       93.41       0.841     0.75       97.91       0.859      0.7       92.75       0.829      0.7       94.25       0.809   /education/educational_degree/people_with_this_degree./education/education/major_field_of_study
+ 18     60     0.67        93.2        0.85     0.75       97.84       0.854      0.7        92.5       0.831     0.68       93.87       0.802   /location/statistical_region/religions./location/religion_percentage/religion
+ 60     60     0.67        93.2        0.85     0.75       97.84       0.854      0.7        92.5       0.831     0.68       93.87       0.802   /base/schemastaging/person_extra/net_worth./measurement_unit/dated_money_value/currency
+ 84     60     0.67        93.2        0.85     0.75       97.84       0.854      0.7        92.5       0.831     0.68       93.87       0.802   /film/film/produced_by
+148     60     0.67        93.2        0.85     0.75       97.84       0.854      0.7        92.5       0.831     0.68       93.87       0.802   /travel/travel_destination/climate./travel/travel_destination_monthly_climate/month
+ 58     55     0.67       93.46       0.841     0.75        97.9       0.858     0.71       92.07       0.829     0.67       94.19       0.805   /location/location/adjoin_s./location/adjoining_relationship/adjoins
+ 83     55     0.67       93.46       0.841     0.75        97.9       0.858     0.71       92.07       0.829     0.67       94.19       0.805   /organization/organization/headquarters./location/mailing_address/citytown
+161     53     0.68       94.07       0.856     0.77        97.9       0.858     0.72       92.62       0.839      0.7       94.19       0.805   /people/marriage_union_type/unions_of_this_type./people/marriage/location_of_ceremony
+ 80     53     0.68       94.07       0.856     0.77        97.9       0.858     0.72       92.62       0.839      0.7       94.19       0.805   /sports/sports_team/sport
+ 75     53     0.68       94.07       0.856     0.77        97.9       0.858     0.72       92.62       0.839      0.7       94.19       0.805   /music/performance_role/track_performances./music/track_contribution/role
+ 94     53     0.68       94.07       0.856     0.77        97.9       0.858     0.72       92.62       0.839      0.7       94.19       0.805   /sports/sports_team_location/teams
+118     50     0.68       94.68       0.853     0.76       97.83       0.849     0.72       92.43       0.848      0.7       93.97       0.797   /user/tsegaran/random/taxonomy_subject/entry./user/tsegaran/random/taxonomy_entry/taxonomy
+ 56     48     0.67       94.37       0.846     0.75       97.79        0.85     0.71       92.86       0.841     0.69       93.64       0.804   /location/hud_county_place/place
+172     48     0.67       94.37       0.846     0.75       97.79        0.85     0.71       92.86       0.841     0.69       93.64       0.804   /award/ranked_item/appears_in_ranked_lists./award/ranking/list
+ 87     46     0.65       95.02       0.841     0.74       97.73       0.844      0.7       92.79       0.839     0.67       94.17       0.799   /location/country/second_level_divisions
+ 33     46     0.65       95.02       0.841     0.74       97.73       0.844      0.7       92.79       0.839     0.67       94.17       0.799   /location/statistical_region/rent50_2./measurement_unit/dated_money_value/currency
+ 96     43     0.63       94.59       0.831     0.74       97.67       0.836     0.67       92.15       0.829     0.72       94.17       0.808   /sports/professional_sports_team/draft_picks./sports/sports_league_draft_pick/draft
+  0     43     0.63       94.59       0.831     0.74       97.67       0.836     0.67       92.15       0.829     0.72       94.17       0.808   /location/country/form_of_government
+ 79     42     0.64       94.59       0.831     0.76       97.67       0.835     0.67       91.88       0.825     0.74       94.17       0.806   /sports/sports_league_draft/picks./sports/sports_league_draft_pick/school
+176     41     0.66       94.59        0.84     0.76       97.66       0.831     0.66       92.63        0.82     0.73       94.05       0.801   /base/marchmadness/ncaa_basketball_tournament/seeds./base/marchmadness/ncaa_tournament_seed/team
+  3     41     0.66       94.59        0.84     0.76       97.66       0.831     0.66       92.63        0.82     0.73       94.05       0.801   /award/award_winner/awards_won./award/award_honor/award_winner
+ 46     41     0.66       94.59        0.84     0.76       97.66       0.831     0.66       92.63        0.82     0.73       94.05       0.801   /business/business_operation/industry
+  9     40     0.65       94.52       0.845     0.78       97.66       0.833     0.65       92.58       0.818     0.75       94.05       0.802   /music/performance_role/regular_performances./music/group_membership/role
+143     39     0.64       94.31       0.841     0.77       97.59       0.833     0.67       92.58       0.815     0.77       94.05       0.804   /organization/organization/headquarters./location/mailing_address/state_province_region
+115     39     0.64       94.31       0.841     0.77       97.59       0.833     0.67       92.58       0.815     0.77       94.05       0.804   /film/film/film_format
+ 73     38     0.63       94.14       0.837     0.76       97.54       0.837     0.66       92.33        0.81     0.76       93.95       0.807   /olympics/olympic_participating_country/medals_won./olympics/olympic_medal_honor/medal
+150     38     0.63       94.14       0.837     0.76       97.54       0.837     0.66       92.33        0.81     0.76       93.95       0.807   /base/schemastaging/organization_extra/phone_number./base/schemastaging/phone_sandbox/service_location
+ 90     38     0.63       94.14       0.837     0.76       97.54       0.837     0.66       92.33        0.81     0.76       93.95       0.807   /film/film/distributors./film/film_film_distributor_relationship/film_distribution_medium
+224     35     0.66        93.9       0.828     0.74       98.42       0.832     0.69       92.03       0.801      0.8       93.74       0.812   /people/person/spouse_s./people/marriage/location_of_ceremony
+140     34     0.65       93.65       0.822     0.74        98.4       0.826     0.68       91.72       0.794     0.79       93.54       0.811   /education/field_of_study/students_majoring./education/education/student
+163     34     0.65       93.65       0.822     0.74        98.4       0.826     0.68       91.72       0.794     0.79       93.54       0.811   /time/event/locations
+160     34     0.65       93.65       0.822     0.74        98.4       0.826     0.68       91.72       0.794     0.79       93.54       0.811   /music/artist/origin
+131     34     0.65       93.65       0.822     0.74        98.4       0.826     0.68       91.72       0.794     0.79       93.54       0.811   /military/military_conflict/combatants./military/military_combatant_group/combatants
+ 45     32     0.66       93.37        0.82     0.75       98.52       0.822     0.69       91.36         0.8     0.84       93.54       0.816   /base/popstra/celebrity/friendship./base/popstra/friendship/participant
+185     32     0.66       93.37        0.82     0.75       98.52       0.822     0.69       91.36         0.8     0.84       93.54       0.816   /tv/tv_program/country_of_origin
+216     31     0.65       93.08       0.813     0.74       98.49       0.816     0.68       90.97       0.794     0.84       93.31        0.81   /medicine/symptom/symptom_of
+122     31     0.65       93.08       0.813     0.74       98.49       0.816     0.68       90.97       0.794     0.84       93.31        0.81   /base/popstra/location/vacationers./base/popstra/vacation_choice/vacationer
+
