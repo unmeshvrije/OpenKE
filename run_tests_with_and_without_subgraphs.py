@@ -72,7 +72,7 @@ def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", m
     if subgraph_type == "single":
         proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH_SINGLE + " " + database + " " + model + " " + k + " " + r, stdout = subprocess.PIPE, shell = True)
     else:
-        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " -type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
+        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " --type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
     return proc
 
 def process_results(result_proc):
@@ -165,7 +165,8 @@ def construct_results(database, r):
     experiment_results["complex"] = construct_model_results(database, "complex", r)
     return experiment_results
 
-args = parse_args()
+if __name__ == "__main__":
+    args = parse_args()
 
-with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'wb') as fout:
-    pickle.dump(construct_results(args.db, args.r), fout, protocol = pickle.HIGHEST_PROTOCOL)
+    with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'wb') as fout:
+        pickle.dump(construct_results(args.db, args.r), fout, protocol = pickle.HIGHEST_PROTOCOL)
