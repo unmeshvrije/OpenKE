@@ -31,6 +31,10 @@ do
         TYPE=$val
         ((i++))
         ;;
+    --testfile)
+        TESTFILE=$val
+        ((i++))
+        ;;
     -r)
         R=$val
         ((i++))
@@ -76,7 +80,11 @@ RD="/var/scratch/dvs254/OpenKE-results/"
     emb_file=$RDE"$DB-$E.json"
     sub_file=$RDS"$DB-$E-$TYPE-subgraphs-tau-10.pkl"
     sub_emb_dir=$RDS
-    test_file="./benchmarks/$DB/test2id.txt"
+    if  [ -z "$TESTFILE" ]; then
+        test_file="./benchmarks/$DB/test2id.txt"
+    else
+        test_file=$TESTFILE
+    fi
     train_file="./benchmarks/$DB/train2id.txt"
     edict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
     rdict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"

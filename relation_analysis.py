@@ -40,8 +40,8 @@ def print_relation_statistics(triples, minN, k, created_dict, dataset, result_di
         experiment_results_diamond[r] = {}
         for model in MODELS:
             relation_file = created_dict + dataset + "/" + "r-" + str(r) + ".txt"
-            experiment_results_star[r][model] = process_results(run_test(relation_file, dataset, model, str(sorted_relation_frequency[i][1]), K, "avg", "star"))
-            experiment_results_diamond[r][model] = process_results(run_test(relation_file, dataset, model, str(sorted_relation_frequency[i][1]), K, "avg", "diamond"))
+            experiment_results_star[r][model] = process_results(run_test(dataset, model, str(sorted_relation_frequency[i][1]), K, "avg", "star", "0:30:00", relation_file))
+            experiment_results_diamond[r][model] = process_results(run_test(dataset, model, str(sorted_relation_frequency[i][1]), K, "avg", "diamond", "0:30:00", relation_file))
     print_statistics_per_type("star", sorted_relation_frequency, k, minN, experiment_results_star, dataset, result_dict)
     print_statistics_per_type("diamond", sorted_relation_frequency, k, minN, experiment_results_diamond, dataset, result_dict)
 

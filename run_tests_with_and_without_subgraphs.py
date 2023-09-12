@@ -40,13 +40,12 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 }
 
 
-def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00"):
+def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00", test_triples_file_path = ""):
     """
     Runs an experiment with particular parameters
 
     Arguments
     ---------
-    test_file_path: location of python script running a single experiment, usually test_subgraphs.py or test-model.sh
     database: one of databases "fb15k237", "lubm", "yago2", "dbpedia50"
     model: one of models "transe", "rotate", "complex", "distmult", "hole"
     r: number of records to test, usually 100, 1000 or -1 (all the records)
@@ -54,6 +53,7 @@ def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", m
     s: score function, one of "avg", "kl", "nn"
     subgraph_type: "star", "diamond" or "single" (tests on single entities do not use kl and nn score calculations)
     max_time: maximum permitted time per task in format "hh:mm:ss"
+    test_triples_file_path: file in which test triples are located
     
     Note: all arguments must be given as strings
 
@@ -68,11 +68,14 @@ def run_test(test_file_path, database, model, r, k, s, subgraph_type = "star", m
     if k.endswith('%'):
         k = SUBGRAPH_COUNT[database + "-" + subgraph_type] * int(k[:-1]) / 100
         k = str(math.floor(k))  # format k value
+    test_triples_file_text = ""
+    if (test_triples_file_path != ""):
+        test_triples_file_text = "--testfile " + test_triples_file_path
 
     if subgraph_type == "single":
-        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH_SINGLE + " " + database + " " + model + " " + k + " " + r, stdout = subprocess.PIPE, shell = True)
+        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH_SINGLE + " " + database + " " + model + " " + k + " " + r + " " + test_triples_file_text, stdout = subprocess.PIPE, shell = True)
     else:
-        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " --type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s, stdout = subprocess.PIPE, shell = True)
+        proc = subprocess.Popen("prun -v -np 1 -t " + max_time + " -native '-C gpunode --gres=gpu:1' " + TEST_FILE_PATH + " -m " + model + " -d " + database + " --type " + subgraph_type + " -r " + r + " -k " + k + " -s " + s + " " + test_triples_file_text, stdout = subprocess.PIPE, shell = True)
     return proc
 
 def process_results(result_proc):
@@ -126,9 +129,9 @@ def process_results(result_proc):
 
 def construct_model_cell_results(database, model, r, k, subgraph_type):
     """Generates a small portions of results with particular subgraph type and k value"""
-    result_avg_proc = run_test(TEST_FILE_PATH, database, model, r, k, "avg", subgraph_type)
-    result_kl_proc = run_test(TEST_FILE_PATH, database, model, r, k, "kl", subgraph_type)
-    result_nn_proc = run_test(TEST_FILE_PATH, database, model, r, k, "nn", subgraph_type)
+    result_avg_proc = run_test(database, model, r, k, "avg", subgraph_type)
+    result_kl_proc = run_test(database, model, r, k, "kl", subgraph_type)
+    result_nn_proc = run_test(database, model, r, k, "nn", subgraph_type)
     experiment_results = dict()
     experiment_results["avg"] = process_results(result_avg_proc)
     experiment_results["kl"] = process_results(result_kl_proc)
