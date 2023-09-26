@@ -334,9 +334,8 @@ class SubgraphFactory():
 
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)
-        #sample_star_subgraph_entities(self.subgraphs, self.db)
 
-        if sub_type == "diamond":
+        if sub_type in ["diamond", "all"]:
             adj_list_out, adj_list_in = make_adjacency_lists(self.triples)
             self.make_diamond_subgraphs(SUBTYPE.OO, adj_list_in, adj_list_out)
             self.make_diamond_subgraphs(SUBTYPE.OI, adj_list_in, adj_list_out)
@@ -346,8 +345,7 @@ class SubgraphFactory():
                 if self.subgraphs[i].data['subType'] != SUBTYPE.SPO and self.subgraphs[i].data['subType'] != SUBTYPE.POS:
                     first_dia_graph_index = i
                     break
-            self.subgraphs = self.subgraphs[first_dia_graph_index:]
-            self.avg_embeddings = self.avg_embeddings[first_dia_graph_index:]
-            self.var_embeddings = self.var_embeddings[first_dia_graph_index:]
-            #for i in range(8):
-                #sample_diamond_subgraph_entities(self.subgraphs, self.db)
+            if sub_type == "diamond":
+                self.subgraphs = self.subgraphs[first_dia_graph_index:]
+                self.avg_embeddings = self.avg_embeddings[first_dia_graph_index:]
+                self.var_embeddings = self.var_embeddings[first_dia_graph_index:]

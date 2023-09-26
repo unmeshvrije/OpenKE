@@ -211,10 +211,6 @@ class SubgraphPredictor():
     def init_subgraphs(self):
         with open(self.sub_file_path, 'rb') as fin:
             self.subgraphs = pickle.load(fin)
-        if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
-            self.subgraph_type = "star"
-        else:
-            self.subgraph_type = "diamond"
 
     @timer
     def init_sub_embeddings(self):
@@ -450,29 +446,33 @@ class SubgraphPredictor():
         X_code = []
 
         subgraph_center_dict = dict()
-        if self.subgraph_type == "star":
+        if self.subgraph_type in ["star", "all"]:
             for index, se in enumerate(self.SA):
-                ent = self.subgraphs[index].data['ent']
-                rel = self.subgraphs[index].data['rel']
-                if ent not in subgraph_center_dict:
-                    subgraph_center_dict[ent] = dict()
-                subgraph_center_dict[ent][rel] = index
-        elif self.subgraph_type == "diamond":
+                if (self.subgraphs[index].data['subType'] in [SUBTYPE.SPO, SUBTYPE.POS]):
+                    ent = self.subgraphs[index].data['ent']
+                    rel = self.subgraphs[index].data['rel']
+                    if ent not in subgraph_center_dict:
+                        subgraph_center_dict[ent] = dict()
+                    if rel not in subgraph_center_dict[ent]:
+                        subgraph_center_dict[ent][rel] = []
+                    subgraph_center_dict[ent][rel].append(index)
+        if self.subgraph_type in ["diamond", "all"]:
             for index, se in enumerate(self.SA):
-                ent1 = self.subgraphs[index].data['ent1']
-                ent2 = self.subgraphs[index].data['ent2']
-                rel1 = self.subgraphs[index].data['rel1']
-                rel2 = self.subgraphs[index].data['rel2']
-                if ent1 not in subgraph_center_dict:
-                    subgraph_center_dict[ent1] = dict()
-                if rel1 not in subgraph_center_dict[ent1]:
-                    subgraph_center_dict[ent1][rel1] = []
-                if ent2 not in subgraph_center_dict:
-                    subgraph_center_dict[ent2] = dict()
-                if rel2 not in subgraph_center_dict[ent2]:
-                    subgraph_center_dict[ent2][rel2] = []
-                subgraph_center_dict[ent1][rel1].append(index)
-                subgraph_center_dict[ent2][rel2].append(index)
+                if (self.subgraphs[index].data['subType'] not in [SUBTYPE.SPO, SUBTYPE.POS]):
+                    ent1 = self.subgraphs[index].data['ent1']
+                    ent2 = self.subgraphs[index].data['ent2']
+                    rel1 = self.subgraphs[index].data['rel1']
+                    rel2 = self.subgraphs[index].data['rel2']
+                    if ent1 not in subgraph_center_dict:
+                        subgraph_center_dict[ent1] = dict()
+                    if rel1 not in subgraph_center_dict[ent1]:
+                        subgraph_center_dict[ent1][rel1] = []
+                    if ent2 not in subgraph_center_dict:
+                        subgraph_center_dict[ent2] = dict()
+                    if rel2 not in subgraph_center_dict[ent2]:
+                        subgraph_center_dict[ent2][rel2] = []
+                    subgraph_center_dict[ent1][rel1].append(index)
+                    subgraph_center_dict[ent2][rel2].append(index)
         
         if self.test_triples is None:
             print("ERROR: set_test_triples() is not called.")
@@ -549,18 +549,13 @@ class SubgraphPredictor():
                     subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
 
 
-            if self.subgraph_type == "star":
-                if head in subgraph_center_dict and rel in subgraph_center_dict[head]:
-                    subgraph_scores_tail_prediction[subgraph_center_dict[head][rel]] = np.inf
-                if tail in subgraph_center_dict and rel in subgraph_center_dict[tail]:
-                    subgraph_scores_head_prediction[subgraph_center_dict[tail][rel]] = np.inf
-            elif self.subgraph_type == "diamond":
-                if head in subgraph_center_dict and rel in subgraph_center_dict[head]:
-                    for index in subgraph_center_dict[head][rel]:
-                        subgraph_scores_tail_prediction[index] = np.inf
-                if tail in subgraph_center_dict and rel in subgraph_center_dict[tail]:
-                    for index in subgraph_center_dict[tail][rel]:
-                        subgraph_scores_head_prediction[index] = np.inf
+
+            if head in subgraph_center_dict and rel in subgraph_center_dict[head]:
+                for index in subgraph_center_dict[head][rel]:
+                    subgraph_scores_tail_prediction[index] = np.inf
+            if tail in subgraph_center_dict and rel in subgraph_center_dict[tail]:
+                for index in subgraph_center_dict[tail][rel]:
+                    subgraph_scores_head_prediction[index] = np.inf
 
 
             sub_indexes_head_prediction = torch.argsort(subgraph_scores_head_prediction)
