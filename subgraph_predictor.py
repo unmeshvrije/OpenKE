@@ -420,19 +420,22 @@ class SubgraphPredictor():
             kl_scores['head'][tail][rel] = subgraph_scores_head_prediction
             kl_scores['tail'][head][rel] = subgraph_scores_tail_prediction
         return kl_scores
+    
+    def subgraph_of_right_type(self, index, expected_type):
+        return (expected_type == "star" and self.subgraphs[index].data['subType'] in [SUBTYPE.SPO, SUBTYPE.POS]) or (expected_type == "diamond" and self.subgraphs[index].data['subType'] not in [SUBTYPE.SPO, SUBTYPE.POS])
 
 
     def predict(self, kl_scores_dir):
-        hitsHead = 0
-        hitsTail = 0
+        self.hitsHead = 0
+        self.hitsTail = 0
         precision_sum_head = 0
         precision_sum_tail = 0
         precision_value_count_head = 0
         precision_value_count_tail = 0
         hits_head_scann = 0
         hits_tail_scann = 0
-        head_subgraph_comparisons = 0
-        tail_subgraph_comparisons = 0
+        self.head_subgraph_comparisons = 0
+        self.tail_subgraph_comparisons = 0
         max_subset_size_head = 0
         max_subset_size_tail = 0
         dim = self.E.size()[1]
@@ -586,11 +589,37 @@ class SubgraphPredictor():
 
             time_start = timeit.default_timer()
             subset_head_predictions = set()
-            for sub_index in sub_indexes_head_prediction[:topk_subgraphs_head]:
-                subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
-            if head in subset_head_predictions:
-                hitsHead += 1
-                head_subgraph_comparisons += len(subset_head_predictions)
+
+            def update_predictions_head(subgraph_type):
+                if self.subgraph_type == "all":
+                    k_to_consider = topk_subgraphs_head
+                    for sub_index in sub_indexes_head_prediction:
+                        if self.subgraph_of_right_type(sub_index, subgraph_type):
+                            k_to_consider -= 1
+                            subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
+                            if k_to_consider == 0:
+                                break
+                else:
+                    for sub_index in sub_indexes_head_prediction[:topk_subgraphs_head]:
+                        subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
+
+            def check_hit_head():
+                if head in subset_head_predictions:
+                    self.hitsHead += 1
+                    self.head_subgraph_comparisons = len(subset_head_predictions)
+                    return True
+                return False
+            relevant_subgraph_type = self.subgraph_type
+            if self.subgraph_type == "all":
+                relevant_subgraph_type = "star"
+            update_predictions_head(relevant_subgraph_type)
+            hit_found = check_hit_head()
+            if hit_found == False and self.subgraph_type == "all":
+                subset_head_predictions = set()
+                update_predictions_head("diamond")
+                check_hit_head()
+
+
 
             true_positives_head = 0
             for prediction in subset_head_predictions:
@@ -616,11 +645,35 @@ class SubgraphPredictor():
             #    hits_head_scann += 1
 
             subset_tail_predictions = set()
-            for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
-                subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
-            if tail in subset_tail_predictions:
-                hitsTail += 1
-                tail_subgraph_comparisons += len(subset_tail_predictions)
+            def update_predictions_tail(subgraph_type):
+                if self.subgraph_type == "all":
+                    k_to_consider = topk_subgraphs_head
+                    for sub_index in sub_indexes_tail_prediction:
+                        if self.subgraph_of_right_type(sub_index, subgraph_type):
+                            k_to_consider -= 1
+                            subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
+                            if k_to_consider == 0:
+                                break
+                else:
+                    for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
+                        subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
+
+            def check_hit_tail():
+                if tail in subset_tail_predictions:
+                    self.hitsTail += 1
+                    self.tail_subgraph_comparisons += len(subset_tail_predictions)
+                    return True
+                return False
+
+            relevant_subgraph_type = self.subgraph_type
+            if self.subgraph_type == "all":
+                relevant_subgraph_type = "star"
+            update_predictions_tail(relevant_subgraph_type)
+            hit_found = check_hit_tail()
+            if hit_found == False and self.subgraph_type == "all":
+                subset_head_predictions = set()
+                update_predictions_tail("diamond")
+                check_hit_tail()
 
             true_positives_tail = 0
             for prediction in subset_tail_predictions:
@@ -642,19 +695,19 @@ class SubgraphPredictor():
 
         # calculate recall
         print()
-        print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
-        print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
+        print("Recall (H) :", float(self.hitsHead)/float((len(self.test_triples))))
+        print("Recall (T) :", float(self.hitsTail)/float((len(self.test_triples))))
         if precision_value_count_head != 0:
             print("Precision (H) :", float(precision_sum_head)/float(precision_value_count_head))
         if precision_value_count_tail != 0:
             print("Precision (T) :", float(precision_sum_tail)/float(precision_value_count_tail))
-        head_normal_comparisons = self.entity_total * hitsHead
+        head_normal_comparisons = self.entity_total * self.hitsHead
         if head_normal_comparisons != 0:
-            print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
+            print("%Red (H)    :", float(head_normal_comparisons - self.head_subgraph_comparisons)/
             float(head_normal_comparisons)*100)
-        tail_normal_comparisons = self.entity_total * hitsTail
+        tail_normal_comparisons = self.entity_total * self.hitsTail
         if tail_normal_comparisons != 0:
-            print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
+            print("%Red (T)    :", float(tail_normal_comparisons - self.tail_subgraph_comparisons)/
             float(tail_normal_comparisons)*100)
 
         #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
