@@ -10,7 +10,6 @@ from subgraphs import read_triples, make_adjacency_dict, update_adjacency_dict
 from openke.data import TrainDataLoader
 import torch
 import time
-import scann
 import timeit
 import kge.model
 import torch.nn.functional as F
