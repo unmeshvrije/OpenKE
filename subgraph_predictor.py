@@ -606,9 +606,10 @@ class SubgraphPredictor():
             def check_hit_head():
                 if head in subset_head_predictions:
                     self.hitsHead += 1
-                    self.head_subgraph_comparisons = len(subset_head_predictions)
+                    self.head_subgraph_comparisons += len(subset_head_predictions)
                     return True
                 return False
+            
             relevant_subgraph_type = self.subgraph_type
             if self.subgraph_type == "all":
                 relevant_subgraph_type = "star"
@@ -618,8 +619,6 @@ class SubgraphPredictor():
                 subset_head_predictions = set()
                 update_predictions_head("diamond")
                 check_hit_head()
-
-
 
             true_positives_head = 0
             for prediction in subset_head_predictions:
