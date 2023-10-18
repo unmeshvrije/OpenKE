@@ -6,6 +6,9 @@ echo "usage: $0 -m model -d db -type [star, diamond] -r RecordsToTest -k [-1, -2
 exit
 fi
 
+# Result Directory
+RD="/var/scratch/dvs254/OpenKE-results/"
+
 for (( i=1; i<=$#; i++ ))
 do
     arg=${@:$i:1}   # Gets the string i
@@ -42,6 +45,13 @@ do
     --record-test=*)
         R=${arg#*=}
         ;;
+    -o)
+        RD=$val
+        ((i++))
+        ;;
+    --outdir=*)
+        RD=${arg#*=}
+        ;;
     -k)
         K=$val
         ((i++))
@@ -60,9 +70,7 @@ do
 done
 
 
-
-# Result Directory
-RD="/var/scratch/dvs254/OpenKE-results/"
+echo $RD
 
 #for E in "transe" "rotate" "complex"
 #do
@@ -86,7 +94,7 @@ RD="/var/scratch/dvs254/OpenKE-results/"
         test_file=$TESTFILE
     fi
     train_file="./benchmarks/$DB/train2id.txt"
-    edict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
-    rdict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"
+    edict_file="$RDB/misc/$DB-id-to-entity.pkl"
+    rdict_file="$RDB/misc/$DB-id-to-relation.pkl"
     echo "Calling Python script"
-    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S
+    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S --kldict $RD
