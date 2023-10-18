@@ -4,8 +4,8 @@ import copy
 import numpy as np
 import random
 from enum import Enum
-SUBTYPE = Enum('SUBTYPE', 'SPO POS OO OI IO II')
-sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos", SUBTYPE.OO: "oo", SUBTYPE.OI: "oi", SUBTYPE.IO: "io", SUBTYPE.II: "ii"}
+SUBTYPE = Enum('SUBTYPE', 'SPO POS OO OI IO II OTHER')
+sub_type_to_string = {SUBTYPE.SPO: "spo", SUBTYPE.POS: "pos", SUBTYPE.OO: "oo", SUBTYPE.OI: "oi", SUBTYPE.IO: "io", SUBTYPE.II: "ii", SUBTYPE.OTHER: "ot"}
 
 def read_triples(filename):
     triples = []
@@ -176,16 +176,54 @@ class SubgraphFactory():
         self.subgraphs = []
         self.avg_embeddings = []
         self.var_embeddings = []
+        self.entity_list = self.get_entity_list(self.triples)
+        self.included_entities = set()
+
+    def get_entity_list(self, triples):
+        entity_list = set()
+        for triple in triples:
+            h = triple[0]
+            t = triple[1]
+            if h not in entity_list:
+                entity_list.add(h)
+            if t not in entity_list:
+                entity_list.add(t)
+        return entity_list
 
     def add_subgraphs(self, st, sent, srel, ssize, entities):
         subentities = copy.deepcopy(entities)
         sub = Subgraph(len(self.subgraphs), st, sent, srel, ssize, subentities)
         self.subgraphs.append(sub)
+        self.update_included_entities_list(subentities)
 
     def add_diamond_subgraphs(self, st, sent1, sent2, srel1, srel2, ssize, entities):
         subentities = copy.deepcopy(entities)
         sub = SubgraphDiamond(len(self.subgraphs), st, sent1, sent2, srel1, srel2, ssize, subentities)
         self.subgraphs.append(sub)
+        self.update_included_entities_list(subentities)
+
+    def update_included_entities_list(self, entities):
+        for entity in entities:
+            if entity not in self.included_entities:
+                self.included_entities.add(entity)
+
+    def clear_included_entities_info(self):
+        self.included_entities = set()
+
+    def combine_remaining_entities(self, subgraph_type):
+        remaining_entities = []
+        current = np.zeros(len(self.E[0]), dtype = np.float64)
+        for entity in self.entity_list:
+            if entity not in self.included_entities:
+                current += self.E[entity]
+                remaining_entities.append(entity)
+        mean = current / len(remaining_entities)
+        self.avg_embeddings.append(mean)
+        self.var_embeddings.append(self.calculate_var_embeddings(len(remaining_entities), mean, remaining_entities))
+        if subgraph_type == "star":
+            self.add_subgraphs(SUBTYPE.OTHER, -1, -1, len(remaining_entities), remaining_entities)
+        elif subgraph_type == "diamond":
+            self.add_diamond_subgraphs(SUBTYPE.OTHER, -1, -1, -1, -1, len(remaining_entities), remaining_entities)
 
     def get_Nsubgraphs(self):
         return len(self.subgraphs)
@@ -273,13 +311,13 @@ class SubgraphFactory():
             mean = current / count
             self.avg_embeddings.append(mean)
             self.var_embeddings.append(self.calculate_var_embeddings(count, mean, similar_entities))
-            self.add_subgraphs(subType, prevo, prevp, count, similar_entities)
+            self.add_subgraphs(sub_type, prevo, prevp, count, similar_entities)
 
         print ("# of subgraphs ({}) : {}".format(sub_type_to_string[sub_type], self.get_Nsubgraphs()))
 
     def make_diamond_subgraphs(self, sub_type, adj_list_in, adj_list_out):
         E = self.E
-        diamond_tuple_dicts = []    # change name
+        diamond_tuple_dicts = []
         valid_diamond_tuples = []
         if sub_type == SUBTYPE.OI or sub_type == SUBTYPE.II:
             adj_list = adj_list_out
@@ -295,7 +333,7 @@ class SubgraphFactory():
             if (sub_type == SUBTYPE.II or sub_type == SUBTYPE.IO) and subgraph.data['subType'] != SUBTYPE.POS:
                 continue
             for entity in subgraph.data['entities']:
-                for adj_entity in adj_list[entity]: # change depending on type
+                for adj_entity in adj_list[entity]:
                     ent2 = adj_entity[0]
                     rel2 = adj_entity[1]
                     if ent1 == ent2 or rel1 >= rel2:
@@ -313,11 +351,11 @@ class SubgraphFactory():
         for tuple_dict in tqdm(diamond_tuple_dicts):
             for diamond_tuple in tuple_dict:
                 count = len(tuple_dict[diamond_tuple])
-                if count > self.min_subgraph_size:  # or >=
+                if count > self.min_subgraph_size:
                     current = np.zeros(len(E[0]), dtype = np.float64)
                     similar_entities = []
                     for entity in tuple_dict[diamond_tuple]:
-                        current += E[entity]  # change name of current?
+                        current += E[entity]
                         similar_entities.append(entity)
                     mean = current / count
                     self.avg_embeddings.append(mean)
@@ -332,10 +370,14 @@ class SubgraphFactory():
 
     def make_subgraphs(self, sub_type):
 
+        self.clear_included_entities_info()
         self.make_subgraphs_per_type(SUBTYPE.SPO)
         self.make_subgraphs_per_type(SUBTYPE.POS)
+        if sub_type == "star":
+            self.combine_remaining_entities("star")
 
         if sub_type in ["diamond", "all"]:
+            self.clear_included_entities_info()
             adj_list_out, adj_list_in = make_adjacency_lists(self.triples)
             self.make_diamond_subgraphs(SUBTYPE.OO, adj_list_in, adj_list_out)
             self.make_diamond_subgraphs(SUBTYPE.OI, adj_list_in, adj_list_out)
@@ -349,3 +391,4 @@ class SubgraphFactory():
                 self.subgraphs = self.subgraphs[first_dia_graph_index:]
                 self.avg_embeddings = self.avg_embeddings[first_dia_graph_index:]
                 self.var_embeddings = self.var_embeddings[first_dia_graph_index:]
+            self.combine_remaining_entities("diamond")
