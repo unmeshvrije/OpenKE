@@ -9,7 +9,7 @@ Runs tests with diferent parameters for a given database and the number of recor
 The results are stored in a pickle file with format "DATABASE-rRECORDS_TO_TEST-results.pkl"
 
 Different parameters:
-subgraph_type: single (no subgraphs), star, diamond
+subgraph_type: single (no subgraphs), star, diamond, all (both star and diamond)
 model: transe, rotate, complex, distmult, hole
 k: 5, 10, 10%, -1 (dynamic k), -2 (dynamic threshold)
 score function: avg, kl, nn
@@ -18,29 +18,34 @@ score function: avg, kl, nn
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Run the experiments and extract the results in a format suitable for constructing latex tables.')
     parser.add_argument('-db', dest = 'db', type = str, default = 'fb15k237')
-    parser.add_argument('-r', dest = 'r', type = int, default = '-1', help = 'Number of records to test')
+    parser.add_argument('-r', dest = 'r', type = int, default = '1000', help = 'Number of records to test')
+    parser.add_argument('-type', dest = 'subgraph_type', type = str, required = True, help = 'Subgraph type')
     return parser.parse_args()
 
 TEST_FILE_PATH = "test-subgraphs.sh"
 TEST_FILE_PATH_SINGLE = "test-model.sh"
 DATA_DIR_PATH = "results/data/"
 SUBGRAPH_COUNT = {          # used for k = 10% option
-    "fb15k237-star": 7694,
-    "fb15k237-diamond": 116108,
+    "fb15k237-star": 7695,
+    "fb15k237-diamond": 116109,
     "fb15k237-single": 14541,
-    "lubm-star": 1106,
-    "lubm-diamond": 1635,
+    "fb15k237-all": 123803,
+    "lubm-star": 1107,
+    "lubm-diamond": 1636,
     "lubm-single": 17292,
-    "yago2-star": 8789,
-    "yago2-diamond": 284,
+    "lubm-all": 2742,
+    "yago2-star": 8790,
+    "yago2-diamond": 285,
     "yago2-single": 397253,
-    "dbpedia50-star": 326,
-    "dbpedia50-diamond": 31,
-    "dbpedia50-single": 24624
+    "yago2-all": 9074,
+    "dbpedia50-star": 327,
+    "dbpedia50-diamond": 32,
+    "dbpedia50-single": 24624,
+    "dbpedia50-all": 358
 }
 
 
-def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "2:30:00", test_triples_file_path = ""):
+def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "23:30:00", test_triples_file_path = ""):
     """
     Runs an experiment with particular parameters
 
@@ -51,7 +56,7 @@ def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "2:30:
     r: number of records to test, usually 100, 1000 or -1 (all the records)
     k: threshold value, usually 10, -1 (dynamic k) or -2 (dynamic threshold)
     s: score function, one of "avg", "kl", "nn"
-    subgraph_type: "star", "diamond" or "single" (tests on single entities do not use kl and nn score calculations)
+    subgraph_type: "star", "diamond", "single" or "all" (tests on single entities do not use kl and nn score calculations)
     max_time: maximum permitted time per task in format "hh:mm:ss"
     test_triples_file_path: file in which test triples are located
     
@@ -149,27 +154,18 @@ def construct_model_subgraph_type_results(database, model, r, subgraph_type):
     }
     return experiment_results
 
-def construct_model_results(database, model, r):
-    """Generates experiment results for a particular database and its model"""
-    r = str(r)
-    experiment_results = dict()
-    experiment_results["single"] = construct_model_subgraph_type_results(database, model, r, "single")
-    experiment_results["star"] = construct_model_subgraph_type_results(database, model, r, "star")
-    experiment_results["diamond"] = construct_model_subgraph_type_results(database, model, r, "diamond")
-    return experiment_results
-
-def construct_results(database, r):
+def construct_results(database, r, subgraph_type):
     """Generates experiment results for a particular database"""
     experiment_results = dict()
-    experiment_results["transe"] = construct_model_results(database, "transe", r)
-    experiment_results["hole"] = construct_model_results(database, "hole", r)
-    experiment_results["rotate"] = construct_model_results(database, "rotate", r)
-    experiment_results["distmult"] = construct_model_results(database, "distmult", r)
-    experiment_results["complex"] = construct_model_results(database, "complex", r)
+    experiment_results["transe"] = construct_model_subgraph_type_results(database, "transe", r, subgraph_type)
+    experiment_results["hole"] = construct_model_subgraph_type_results(database, "hole", r, subgraph_type)
+    experiment_results["rotate"] = construct_model_subgraph_type_results(database, "rotate", r, subgraph_type)
+    experiment_results["distmult"] = construct_model_subgraph_type_results(database, "distmult", r, subgraph_type)
+    experiment_results["complex"] = construct_model_subgraph_type_results(database, "complex", r, subgraph_type)
     return experiment_results
 
 if __name__ == "__main__":
     args = parse_args()
 
-    with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'wb') as fout:
-        pickle.dump(construct_results(args.db, args.r), fout, protocol = pickle.HIGHEST_PROTOCOL)
+    with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.subgraph_type + '-results.pkl', 'wb') as fout:
+        pickle.dump(construct_results(args.db, str(args.r), args.subgraph_type), fout, protocol = pickle.HIGHEST_PROTOCOL)
