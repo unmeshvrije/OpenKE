@@ -13,12 +13,12 @@ The resulting latex table is saved in a file "results/tables/comparison-rRECORDS
 DATABASES = ["fb15k237", "lubm", "yago2", "dbpedia50"]
 MODELS = ["transe", "rotate", "complex", "distmult", "hole"]
 METRICS = ["Recall", "Reduction", "Runtime"]
-SUBGRAPH_TYPES = ["single", "star", "diamond"]
+SUBGRAPH_TYPES = ["star", "diamond", "all"] # single
 END_TYPES = ["H", "T"]
 K_VALUES = ["5", "10", "10%"]
 K_VALUE_TRANSLATIONS = {"5": "5", "10": "10", "10%": "10\%", "-1": "$Dyn$", "-2": "$Dyn^T$"}
 SCORE = "avg"
-SUBGRAPH_SYMBOLS = {"single": "\\bullet", "star": "\star", "diamond": "\diamond"}
+SUBGRAPH_SYMBOLS = {"all": "+", "star": "\star", "diamond": "\diamond"}
 
 DATA_DIR_PATH = "results/data/"
 TABLE_DIR_PATH = "results/tables/"
@@ -88,5 +88,5 @@ for database in DATABASES:
     with open(DATA_DIR_PATH + database + '-r' + str(args.r) + '-results.pkl', 'rb') as fin:
         data[database] = pickle.load(fin)
 
-with open(TABLE_DIR_PATH + 'comparison-r' + str(args.r) + '-results.tex', 'w') as fout:
+with open(TABLE_DIR_PATH + 'comparison-all-r' + str(args.r) + '-results.tex', 'w') as fout:
     print(generate_latex_table(args.r), file = fout)
