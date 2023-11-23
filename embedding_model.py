@@ -1,6 +1,6 @@
 import openke
 from openke.config import Trainer, Tester
-from openke.module.model import TransE, ComplEx, HolE, RotatE, DistMult
+from openke.module.model import TransE, ComplEx, HolE, RotatE, DistMult, ConvE
 from openke.module.loss import MarginLoss, SigmoidLoss, SoftplusLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
@@ -133,6 +133,18 @@ def choose_model():
             regul_rate = 1.0
             )
         epochs = 2000
+        alpha = 0.5
+    elif args.model == "conve":
+        model = ConvE(ent_tot = train_dataloader.get_ent_tot(),
+                    rel_tot  = train_dataloader.get_rel_tot(),
+                    dim = N_DIM);
+        model_with_loss = NegativeSampling(
+                    model = model,
+                    loss = SoftplusLoss(),
+                    batch_size = train_dataloader.get_batch_size(),
+                    regul_rate = 1.0
+                    )
+        epochs = 1000
         alpha = 0.5
 
     return model, model_with_loss, epochs, alpha

@@ -14,6 +14,7 @@ from .Analogy import Analogy
 from .SimplE import SimplE
 from .RotatE import RotatE
 from .HolE import HolE
+from .ConvE import ConvE
 
 __all__ = [
     'Model',
@@ -28,4 +29,5 @@ __all__ = [
     'SimplE',
     'RotatE',
     'HolE'
+    'ConvE'
 ]
