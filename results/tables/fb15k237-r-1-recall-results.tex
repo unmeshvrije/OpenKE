@@ -1,0 +1,42 @@
+\begingroup
+\setlength{\tabcolsep}{6pt} % Default value: 6pt
+\begin{tabular}{p{0.3em} p{4.5em} || ccc | ccc | ccc | ccc}
+& \multirow{2}{*}{\em K} & \multicolumn{3}{c}{10} & \multicolumn{3}{c}{10\%} & \multicolumn{3}{c}{$Dyn$} & \multicolumn{3}{c} {$Dyn^T$}\\
+& & a & d & n & a & d & n & a & d & n & a & d & n \\
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\transe}}
+          & Recall(H)$\star$ & \textbf{0.78} &\textbf{0.01} &\textbf{0.45} &\textbf{0.97} &\textbf{0.42} &0.95 &\textbf{0.82} &\textbf{0.54} &\textbf{0.55} &\textbf{0.92} &0.0 &\textbf{0.08} \\
+          & Recall(T)$\star$ & \textbf{0.7} &\textbf{0.01} &\textbf{0.54} &\textbf{0.92} &\textbf{0.25} &\textbf{0.9} &\textbf{0.78} &\textbf{0.45} &\textbf{0.68} &\textbf{0.84} &0.0 &\textbf{0.16} \\
+          & Recall(H)$\diamond$ & 0.52 &0.0 &0.27 &0.94 &0.0 &0.95 &0.62 &0.0 &0.45 &0.79 &0.0 &0.06 \\
+          & Recall(T)$\diamond$ & 0.42 &0.0 &0.27 &0.85 &0.0 &0.87 &0.61 &0.0 &0.56 &0.65 &0.0 &0.11 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\rotate}}
+          & Recall(H)$\star$ & \textbf{0.8} &\textbf{0.02} &\textbf{0.67} &0.99 &\textbf{0.52} &0.99 &\textbf{0.83} &\textbf{0.58} &\textbf{0.74} &\textbf{0.82} &\textbf{0.09} &\textbf{0.08} \\
+          & Recall(T)$\star$ & \textbf{0.83} &\textbf{0.01} &\textbf{0.75} &\textbf{1.0} &\textbf{0.31} &\textbf{1.0} &\textbf{0.86} &\textbf{0.49} &\textbf{0.83} &\textbf{0.83} &\textbf{0.16} &\textbf{0.16} \\
+          & Recall(H)$\diamond$ & 0.6 &0.0 &0.49 &0.99 &0.0 &0.99 &0.64 &0.0 &0.58 &0.69 &0.0 &0.06 \\
+          & Recall(T)$\diamond$ & 0.66 &0.0 &0.64 &0.99 &0.0 &0.99 &0.72 &0.0 &0.73 &0.63 &0.0 &0.11 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\complex}}
+          & Recall(H)$\star$ & \textbf{0.02} &\textbf{0.02} &\textbf{0.37} &0.43 &\textbf{0.43} &0.87 &\textbf{0.47} &\textbf{0.53} &\textbf{0.75} &\textbf{0.91} &\textbf{0.43} &\textbf{0.96} \\
+          & Recall(T)$\star$ & 0.02 &\textbf{0.03} &\textbf{0.22} &0.41 &\textbf{0.32} &0.82 &\textbf{0.5} &\textbf{0.49} &0.76 &\textbf{0.8} &\textbf{0.35} &\textbf{0.87} \\
+          & Recall(H)$\diamond$ & 0.01 &0.0 &0.2 &\textbf{0.59} &0.0 &\textbf{0.92} &0.46 &0.0 &0.68 &0.0 &0.0 &0.84 \\
+          & Recall(T)$\diamond$ & 0.02 &0.0 &0.17 &\textbf{0.49} &0.0 &\textbf{0.93} &0.45 &0.0 &\textbf{0.8} &0.0 &0.0 &0.66 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\distmult}}
+          & Recall(H)$\star$ & 0.01 &\textbf{0.01} &\textbf{0.44} &0.41 &\textbf{0.48} &0.82 &\textbf{0.5} &\textbf{0.61} &\textbf{0.71} &\textbf{0.91} &\textbf{0.4} &\textbf{0.96} \\
+          & Recall(T)$\star$ & 0.01 &\textbf{0.04} &0.23 &0.4 &\textbf{0.31} &0.8 &\textbf{0.52} &\textbf{0.51} &0.71 &\textbf{0.8} &\textbf{0.35} &\textbf{0.87} \\
+          & Recall(H)$\diamond$ & 0.01 &0.0 &0.28 &\textbf{0.59} &0.0 &\textbf{0.88} &0.46 &0.0 &0.69 &0.81 &0.0 &0.84 \\
+          & Recall(T)$\diamond$ & \textbf{0.02} &0.0 &\textbf{0.34} &\textbf{0.5} &0.0 &\textbf{0.91} &0.46 &0.0 &\textbf{0.8} &0.64 &0.0 &0.66 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\hole}}
+          & Recall(H)$\star$ & 0.0 &\textbf{0.02} &\textbf{0.02} &0.0 &\textbf{0.48} &0.17 &0.56 &\textbf{0.53} &\textbf{0.43} &\textbf{0.89} &\textbf{0.1} &\textbf{0.96} \\
+          & Recall(T)$\star$ & 0.0 &\textbf{0.02} &\textbf{0.1} &0.0 &\textbf{0.32} &\textbf{0.38} &\textbf{0.39} &\textbf{0.48} &\textbf{0.48} &\textbf{0.74} &\textbf{0.07} &\textbf{0.86} \\
+          & Recall(H)$\diamond$ & 0.0 &0.0 &0.01 &0.0 &0.0 &\textbf{0.21} &0.56 &0.0 &0.4 &0.8 &0.0 &0.83 \\
+          & Recall(T)$\diamond$ & 0.0 &0.0 &0.05 &0.0 &0.0 &0.27 &0.34 &0.0 &0.32 &0.62 &0.0 &0.66 \\
+          
+\end{tabular}
+\endgroup
