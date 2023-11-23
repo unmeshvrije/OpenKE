@@ -42,7 +42,10 @@ def compare_result_values(experiment_results, k, s, type_str):
 
 def generate_latex_line(model, r, metric):
     table_line_dict = dict()
-    experiment_results = data[model]
+    experiment_results = dict()
+    for subgraph_type in SUBGRAPH_TYPES:
+        experiment_results[subgraph_type] = data[subgraph_type][model]
+    #experiment_results = data[model]
     for subgraph_type in SUBGRAPH_TYPES:
         table_line_dict[subgraph_type] = dict()
         for end_type in END_TYPES:
@@ -85,8 +88,10 @@ if args.metric == "reduction":
 if args.metric == "precision":
     args.metric = "prec"
 
-with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-results.pkl', 'rb') as fin:
-    data = pickle.load(fin)
+data = dict()
+for subgraph_type in SUBGRAPH_TYPES:
+    with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + str(subgraph_type) + '-results.pkl', 'rb') as fin:
+        data[subgraph_type] = pickle.load(fin)
 
 with open(TABLE_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.metric + '-results.tex', 'w') as fout:
     generate_latex_table(args.r, args.metric, fout)
