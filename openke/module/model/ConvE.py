@@ -30,10 +30,13 @@ class ConvE(Model):
         self.fc = torch.nn.Linear(self.dim_w * 2 * self.dim_h * hidden_dim, self.dim)
 
     def _calc(self, h, t, r, mode):
+        r_reshaped = r.view(-1, 1, self.dim_w, self.dim_h)
         if mode == "tail_batch":
-            stacked_inputs = torch.cat([h, r], 2)
+            h_reshaped = h.view(-1, 1, self.dim_w, self.dim_h)
+            stacked_inputs = torch.cat([h_reshaped, r_reshaped], 2)
         else:
-            stacked_inputs = torch.cat([t, r] 2)
+            t_reshaped = t.view(-1, 1, self.dim_w, self.dim_h)
+            stacked_inputs = torch.cat([t_reshaped, r_reshaped], 2)
         stacked_inputs = self.bn0(stacked_inputs)
         x = self.inp_drop(stacked_inputs)
         x = self.conv(x)
