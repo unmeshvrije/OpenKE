@@ -2,6 +2,7 @@ import argparse
 import math
 import pickle
 import subprocess
+import os
 
 """
 Runs tests with diferent parameters for a given database and the number of records to test (given as arguments to the script)
@@ -20,11 +21,16 @@ def parse_args():
     parser.add_argument('-db', dest = 'db', type = str, default = 'fb15k237')
     parser.add_argument('-r', dest = 'r', type = int, default = '1000', help = 'Number of records to test')
     parser.add_argument('-type', dest = 'subgraph_type', type = str, required = True, help = 'Subgraph type')
+    parser.add_argument('-rerun_test', dest = 'rerun_test', action = 'store_true')
+    parser.add_argument('-model', dest = 'model', type = str, default = 'all', help = 'Use to test only specific model, e.g. transe')
+    parser.add_argument('-k', dest = 'k', type = str, default = 'all', help = 'Use to test only specific k count, e.g. 10')
+    parser.add_argument('-s', dest = 's', type = str, default = 'all', help = 'Use to test only specific score type, e.g. avg')
     return parser.parse_args()
 
 TEST_FILE_PATH = "test-subgraphs.sh"
 TEST_FILE_PATH_SINGLE = "test-model.sh"
 DATA_DIR_PATH = "results/data/"
+MODELS = ["transe", "hole", "rotate", "distmult", "complex"]
 SUBGRAPH_COUNT = {          # used for k = 10% option
     "fb15k237-star": 7695,
     "fb15k237-diamond": 116109,
@@ -45,7 +51,7 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 }
 
 
-def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "23:30:00", test_triples_file_path = ""):
+def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "06:00:00", test_triples_file_path = ""):
     """
     Runs an experiment with particular parameters
 
@@ -166,6 +172,15 @@ def construct_results(database, r, subgraph_type):
 
 if __name__ == "__main__":
     args = parse_args()
+    file_name = DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.subgraph_type + '-results.pkl'
 
-    with open(DATA_DIR_PATH + args.db + '-r' + str(args.r) + '-' + args.subgraph_type + '-results.pkl', 'wb') as fout:
-        pickle.dump(construct_results(args.db, str(args.r), args.subgraph_type), fout, protocol = pickle.HIGHEST_PROTOCOL)
+    experiment_results = dict()
+    if os.path.exists(file_name):
+        with open(file_name, 'rb') as fin:
+            experiment_results = pickle.load(fin)
+    if (args.rerun_test):
+        experiment_results[args.model][args.k][args.s] = process_results(run_test(args.db, args.model, str(args.r), args.k, args.s, args.subgraph_type))
+    else:
+        experiment_results = construct_results(args.db, str(args.r))
+    with open(file_name, 'wb') as fout:
+        pickle.dump(experiment_results, fout, protocol = pickle.HIGHEST_PROTOCOL)
