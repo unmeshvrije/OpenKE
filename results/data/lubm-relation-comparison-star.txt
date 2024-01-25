@@ -1,0 +1,15 @@
+           |            transe(h)           |            transe(t)           |            rotate(h)           |            rotate(t)           |
+  r | freq | recall | reduction | precision | recall | reduction | precision | recall | reduction | precision | recall | reduction | precision | translation
+ 20   2196     0.93       80.29       0.965      0.8       91.25       0.823     0.88       94.36       0.944      0.8       59.02       0.823   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#takesCourse>
+  0   1899     0.13       93.43        0.16     0.93       96.07         1.0     0.23       70.33       0.284     0.57       56.99         1.0   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+ 22   1143     0.84       71.11       0.867     0.67       91.41       0.797     0.85       67.29        0.87      0.8       84.02       0.907   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#publicationAuthor>
+ 19    822     0.22       99.03       0.324     0.86       98.27         1.0     0.26       99.03       0.327     0.86       59.64         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#memberOf>
+ 21    320     0.88       91.08       0.937     0.99       97.28         1.0     0.88        87.4       0.948     0.99        87.8         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#advisor>
+ 14    230     0.83       87.98       0.912     0.83       93.78         1.0     0.89       79.17        0.93     0.83       37.92         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#undergraduateDegreeFrom>
+ 13    179     0.98       97.15         1.0     0.79       91.64       0.804     0.94       77.62         1.0     0.79       43.17       0.804   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#teacherOf>
+ 16     55     0.89       97.19       0.967      0.8       94.27         1.0     0.91       90.21         1.0      0.8       40.23         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#doctoralDegreeFrom>
+ 15     51     0.94       97.19         1.0     0.84        94.5         1.0      0.9       89.65       0.989     0.84       28.45         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#mastersDegreeFrom>
+ 17     49     0.86        95.8       0.843     0.94       98.49         1.0     0.86       92.39       0.843     0.94       62.09         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#worksFor>
+ 12     36     0.81       98.83       0.799     0.61       98.24         1.0     0.81       62.16       0.799     0.69       84.39         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#subOrganizationOf>
+ 23     27     0.96       88.36         1.0     0.74        93.4         1.0     0.85       78.11         1.0     0.74       46.78         1.0   <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#teachingAssistantOf>
+

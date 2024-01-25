@@ -19,7 +19,7 @@ RDS=$RDB"subgraphs/" # contains files in the name format fb15k237-transe-{subgra
 emb_file=$RDE"$DB-$E.json"
 in_file="./benchmarks/$DB/train2id.txt"
 
-SUB_FILE_PATH="$RDS""$DB-$E-subgraphs-tau-10.pkl"
+SUB_FILE_PATH="$RDS""$DB-$E-$TYPE-subgraphs-tau-10.pkl"
 if [ ! -f $SUB_FILE_PATH ];
 then
     echo "$SUB_FILE_PATH : NOT FOUND. Generating..."

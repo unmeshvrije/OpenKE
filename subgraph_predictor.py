@@ -6,23 +6,25 @@ from openke.module.model import TransE, RotatE, ComplEx, DistMult, HolE
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from numpy import linalg as LA
-from subgraphs import read_triples
+from subgraphs import read_triples, make_adjacency_dict, update_adjacency_dict
 from openke.data import TrainDataLoader
 import torch
 import time
-import scann
 import timeit
 import kge.model
 import torch.nn.functional as F
 import nanopq
+import os
+import random
 
 from util import timer
 
 class SubgraphPredictor():
 
-    def __init__(self, db, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
+    def __init__(self, db, subgraph_type, topk_subgraphs, embeddings_file_path, subgraphs_file_path, sub_emb_dir_path, emb_model, training_file_path, db_path, subgraph_threshold_percentage = 0.1, score_func = "avg"):
 
         self.db = db
+        self.subgraph_type = subgraph_type
         self.topk_subgraphs = topk_subgraphs
         self.dynamic_topk = False
         self.dynamic_threshold = False
@@ -37,10 +39,12 @@ class SubgraphPredictor():
         # fb15k237-rotate-avgemb-tau-10.pkl
         if not sub_emb_dir_path.endswith("/"):
             sub_emb_dir_path += "/"
-        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-avgemb-tau-10.pkl"
-        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-varemb-tau-10.pkl"
+        self.sub_avgemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-" + self.subgraph_type + "-avgemb-tau-10.pkl"
+        self.sub_varemb_file_path = sub_emb_dir_path + self.db + "-" + emb_model + "-" + self.subgraph_type + "-varemb-tau-10.pkl"
 
         self.training_file_path = training_file_path
+        self.training_triples = read_triples(training_file_path)
+        self.adj_list_out, self.adj_list_in = make_adjacency_dict(self.training_triples)
         self.subgraph_threshold_percentage = subgraph_threshold_percentage
         self.score_func = score_func
 
@@ -62,6 +66,7 @@ class SubgraphPredictor():
 
     def set_test_triples(self, queries_file_path, num_test_queries):
         self.test_triples = read_triples(queries_file_path)[:num_test_queries]
+        self.adj_list_out, self.adj_list_in = update_adjacency_dict(self.adj_list_out, self.adj_list_in, self.test_triples)
 
     def set_logfile(self, logfile):
         self.logfile = logfile
@@ -205,10 +210,6 @@ class SubgraphPredictor():
     def init_subgraphs(self):
         with open(self.sub_file_path, 'rb') as fin:
             self.subgraphs = pickle.load(fin)
-        if self.subgraphs[0].data['subType'] == SUBTYPE.SPO or self.subgraphs[0].data['subType'] == SUBTYPE.POS:
-            self.subgraph_type = "star"
-        else:
-            self.subgraph_type = "diamond"
 
     @timer
     def init_sub_embeddings(self):
@@ -326,23 +327,23 @@ class SubgraphPredictor():
     def get_matching_entities(self, sub_type, e, r):
         entities = []
         for triple in self.triples:
-            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[1] == r:
-                entities.append(triple[2])
+            if sub_type == SUBTYPE.SPO and triple[0] == e and triple[2] == r:
+                entities.append(triple[1])
                 if len(entities) == 10:
                     return entities
-            elif triple[2] == e and triple[1] == r:
+            elif triple[1] == e and triple[2] == r:
                 entities.append(triple[0])
                 if len(entities) == 10:
                     return entities
         return entities
 
-    def get_kl_divergence_scores(self, ent, rel, sub_type):
+    def get_kl_divergence_scores(self, ent, rel, sub_type, db, model, sub_type_str):
         '''
         Get the entities with this ent and rel from db.
         sample some entities for trueAvg and trueVar embeddings
         now find KL divergence with these trueAvg and trueVar embeddings
         with all other subgraphs
-        '''
+        '''           
         dim = self.E.size()[1]
         me = self.get_matching_entities(sub_type, ent, rel)
         count = len(me)
@@ -356,7 +357,7 @@ class SubgraphPredictor():
         for e in me:
             columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
         if count > 2:
-                columnsSquareDiff /= (count - 1)
+            columnsSquareDiff /= (count - 1)
         else:
             columnsSquareDiff = mean
 
@@ -377,17 +378,63 @@ class SubgraphPredictor():
 
         #TODO: Ensure this evaluation is correct
         # return calc_kl(self.SA, self.SV, true_avg_emb, true_var_emb)
-        return [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+        #print("Get_kl_divergence_scores - END", flush = True)
+        #print(n_subgraphs, flush = True)
+        #print(self.SA[0], flush = True)
+        #print(summation, flush = True)
+        #for i in range(n_subgraphs):
+            #F.kl_div(self.SA[i], summation, reduction='batchmean')
+            #print(i, flush = True)
+        kl_scores = [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
+
+        #with open(scores_file, 'wb') as fout:
+        #    all_kl_scores[ent][rel] = kl_scores
+        #    pickle.dump(all_kl_scores, fout, protocol = pickle.HIGHEST_PROTOCOL)
+
+        return kl_scores
         # return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
 
+    def precalculate_kl_divergence_scores(self):
+        print("Precomputing kl divergence scores...")
+        kl_scores = dict()
+        kl_scores['head'] = dict()
+        kl_scores['tail'] = dict()
+        for index in tqdm(range(0, len(self.test_triples))):
+            head = int(self.test_triples[index][0])
+            tail = int(self.test_triples[index][1])
+            rel  = int(self.test_triples[index][2])
 
-    def predict(self):
-        hitsHead = 0
-        hitsTail = 0
+            if tail not in kl_scores['head']:
+                kl_scores['head'][tail] = dict()
+            if head not in kl_scores['tail']:
+                kl_scores['tail'][head] = dict()
+
+            #time_start = timeit.default_timer()
+            new_H = self.E[head]
+            new_R = self.R[rel]
+            new_T = self.E[tail]
+            new_S = self.SA
+            subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS, self.db, self.model_name, self.subgraph_type))
+            subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO, self.db, self.model_name, self.subgraph_type))
+            kl_scores['head'][tail][rel] = subgraph_scores_head_prediction
+            kl_scores['tail'][head][rel] = subgraph_scores_tail_prediction
+        return kl_scores
+    
+    def subgraph_of_right_type(self, index, expected_type):
+        return (expected_type == "star" and self.subgraphs[index].data['subType'] in [SUBTYPE.SPO, SUBTYPE.POS]) or (expected_type == "diamond" and self.subgraphs[index].data['subType'] not in [SUBTYPE.SPO, SUBTYPE.POS])
+
+
+    def predict(self, kl_scores_dir):
+        self.hitsHead = 0
+        self.hitsTail = 0
+        precision_sum_head = 0
+        precision_sum_tail = 0
+        precision_value_count_head = 0
+        precision_value_count_tail = 0
         hits_head_scann = 0
         hits_tail_scann = 0
-        head_subgraph_comparisons = 0
-        tail_subgraph_comparisons = 0
+        self.head_subgraph_comparisons = 0
+        self.tail_subgraph_comparisons = 0
         max_subset_size_head = 0
         max_subset_size_tail = 0
         dim = self.E.size()[1]
@@ -399,6 +446,51 @@ class SubgraphPredictor():
 
         product_quantizator = nanopq.PQ(M = 10) #Instantiate quantizator with 10 subspaces
         X_code = []
+
+        subgraph_center_dict = dict()
+        if self.subgraph_type in ["star", "all"]:
+            for index, se in enumerate(self.SA):
+                if (self.subgraphs[index].data['subType'] in [SUBTYPE.SPO, SUBTYPE.POS]):
+                    ent = self.subgraphs[index].data['ent']
+                    rel = self.subgraphs[index].data['rel']
+                    if ent not in subgraph_center_dict:
+                        subgraph_center_dict[ent] = dict()
+                    if rel not in subgraph_center_dict[ent]:
+                        subgraph_center_dict[ent][rel] = []
+                    subgraph_center_dict[ent][rel].append(index)
+        if self.subgraph_type in ["diamond", "all"]:
+            for index, se in enumerate(self.SA):
+                if (self.subgraphs[index].data['subType'] not in [SUBTYPE.SPO, SUBTYPE.POS]):
+                    ent1 = self.subgraphs[index].data['ent1']
+                    ent2 = self.subgraphs[index].data['ent2']
+                    rel1 = self.subgraphs[index].data['rel1']
+                    rel2 = self.subgraphs[index].data['rel2']
+                    if ent1 not in subgraph_center_dict:
+                        subgraph_center_dict[ent1] = dict()
+                    if rel1 not in subgraph_center_dict[ent1]:
+                        subgraph_center_dict[ent1][rel1] = []
+                    if ent2 not in subgraph_center_dict:
+                        subgraph_center_dict[ent2] = dict()
+                    if rel2 not in subgraph_center_dict[ent2]:
+                        subgraph_center_dict[ent2][rel2] = []
+                    subgraph_center_dict[ent1][rel1].append(index)
+                    subgraph_center_dict[ent2][rel2].append(index)
+        
+        if self.test_triples is None:
+            print("ERROR: set_test_triples() is not called.")
+            return
+        
+        if self.score_func == "kl":
+            scores_file = kl_scores_dir + self.db + '/scores/' + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
+            if os.path.isfile(scores_file):
+                with open(scores_file, 'rb') as fin:
+                    kl_scores = pickle.load(fin)
+            else:
+                with open(scores_file, 'wb') as fout:
+                    kl_scores = self.precalculate_kl_divergence_scores()
+                    pickle.dump(kl_scores, fout, protocol = pickle.HIGHEST_PROTOCOL)
+
+
         if self.score_func == "nn":
             max_training_vector_count = 5000
             dim = 200
@@ -418,14 +510,14 @@ class SubgraphPredictor():
 
         #searcher = scann.ScannBuilder(normalized_dataset, 7000, "dot_product").tree(3000, 300, training_sample_size = 14541).score_ah(2, anisotropic_quantization_threshold = 0.2).reorder(4000).create_pybind()
 
-        if self.test_triples is None:
-            print("ERROR: set_test_triples() is not called.")
-            return
 
         for index in tqdm(range(0, len(self.test_triples))):
             head = int(self.test_triples[index][0])
             tail = int(self.test_triples[index][1])
             rel  = int(self.test_triples[index][2])
+
+            head_answers = self.adj_list_in[tail][rel]
+            tail_answers = self.adj_list_out[head][rel]
 
             #time_start = timeit.default_timer()
             new_H = self.E[head]
@@ -434,8 +526,8 @@ class SubgraphPredictor():
             new_S = self.SA
             if self.score_func == "kl":
                 # Compute KL divergence scores
-                subgraph_scores_head_prediction = torch.Tensor(self.get_kl_divergence_scores(tail, rel, SUBTYPE.POS))
-                subgraph_scores_tail_prediction = torch.Tensor(self.get_kl_divergence_scores(head, rel, SUBTYPE.SPO))
+                subgraph_scores_head_prediction = kl_scores['head'][tail][rel]
+                subgraph_scores_tail_prediction = kl_scores['tail'][head][rel]
                 new_R.unsqueeze_(0)
             elif self.score_func == "nn":
                 query_head_prediction = self.model._vector_op(new_T, new_R, 'head_pred')
@@ -458,17 +550,14 @@ class SubgraphPredictor():
                     subgraph_scores_head_prediction = self.model._calc(new_S, new_T, new_R, 'head_batch')
                     subgraph_scores_tail_prediction = self.model._calc(new_H, new_S, new_R, 'tail_batch')
 
-            for index, se in enumerate(self.SA):
-                if self.subgraph_type == "star":
-                    if self.subgraphs[index].data['ent'] == head and self.subgraphs[index].data['rel'] == rel:
-                        subgraph_scores_tail_prediction[index] = np.inf
-                    if self.subgraphs[index].data['ent'] == tail and self.subgraphs[index].data['rel'] == rel:
-                        subgraph_scores_head_prediction[index] = np.inf
-                else: # self.subgraph_type = "diamond"
-                    if (self.subgraphs[index].data['ent1'] == head and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == head and self.subgraphs[index].data['rel2'] == rel):
-                        subgraph_scores_tail_prediction[index] = np.inf
-                    if (self.subgraphs[index].data['ent1'] == tail and self.subgraphs[index].data['rel1'] == rel) or (self.subgraphs[index].data['ent2'] == tail and self.subgraphs[index].data['rel2'] == rel):
-                        subgraph_scores_head_prediction[index] = np.inf
+
+
+            if head in subgraph_center_dict and rel in subgraph_center_dict[head]:
+                for index in subgraph_center_dict[head][rel]:
+                    subgraph_scores_tail_prediction[index] = np.inf
+            if tail in subgraph_center_dict and rel in subgraph_center_dict[tail]:
+                for index in subgraph_center_dict[tail][rel]:
+                    subgraph_scores_head_prediction[index] = np.inf
 
 
             sub_indexes_head_prediction = torch.argsort(subgraph_scores_head_prediction)
@@ -499,11 +588,44 @@ class SubgraphPredictor():
 
             time_start = timeit.default_timer()
             subset_head_predictions = set()
-            for sub_index in sub_indexes_head_prediction[:topk_subgraphs_head]:
-                subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
-            if head in subset_head_predictions:
-                hitsHead += 1
-                head_subgraph_comparisons += len(subset_head_predictions)
+
+            def update_predictions_head(subgraph_type):
+                if self.subgraph_type == "all":
+                    k_to_consider = topk_subgraphs_head
+                    for sub_index in sub_indexes_head_prediction:
+                        if self.subgraph_of_right_type(sub_index, subgraph_type):
+                            k_to_consider -= 1
+                            subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
+                            if k_to_consider == 0:
+                                break
+                else:
+                    for sub_index in sub_indexes_head_prediction[:topk_subgraphs_head]:
+                        subset_head_predictions.update(self.subgraphs[sub_index].data['entities'])
+
+            def check_hit_head():
+                if head in subset_head_predictions:
+                    self.hitsHead += 1
+                    self.head_subgraph_comparisons += len(subset_head_predictions)
+                    return True
+                return False
+            
+            relevant_subgraph_type = self.subgraph_type
+            if self.subgraph_type == "all":
+                relevant_subgraph_type = "star"
+            update_predictions_head(relevant_subgraph_type)
+            hit_found = check_hit_head()
+            if hit_found == False and self.subgraph_type == "all":
+                subset_head_predictions = set()
+                update_predictions_head("diamond")
+                check_hit_head()
+
+            true_positives_head = 0
+            for prediction in subset_head_predictions:
+                if prediction in head_answers:
+                    true_positives_head += 1
+            if true_positives_head != 0:
+                precision_sum_head += float(true_positives_head)/float(len(head_answers))
+                precision_value_count_head += 1
             #print("head total sub comparisons {} ({})".format(len(subset_head_predictions), head_subgraph_comparisons))
             #max_subset_size_head = max(len(subset_head_predictions), max_subset_size_head)
 
@@ -521,11 +643,43 @@ class SubgraphPredictor():
             #    hits_head_scann += 1
 
             subset_tail_predictions = set()
-            for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
-                subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
-            if tail in subset_tail_predictions:
-                hitsTail += 1
-                tail_subgraph_comparisons += len(subset_tail_predictions)
+            def update_predictions_tail(subgraph_type):
+                if self.subgraph_type == "all":
+                    k_to_consider = topk_subgraphs_head
+                    for sub_index in sub_indexes_tail_prediction:
+                        if self.subgraph_of_right_type(sub_index, subgraph_type):
+                            k_to_consider -= 1
+                            subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
+                            if k_to_consider == 0:
+                                break
+                else:
+                    for sub_index in sub_indexes_tail_prediction[:topk_subgraphs_tail]:
+                        subset_tail_predictions.update(self.subgraphs[sub_index].data['entities'])
+
+            def check_hit_tail():
+                if tail in subset_tail_predictions:
+                    self.hitsTail += 1
+                    self.tail_subgraph_comparisons += len(subset_tail_predictions)
+                    return True
+                return False
+
+            relevant_subgraph_type = self.subgraph_type
+            if self.subgraph_type == "all":
+                relevant_subgraph_type = "star"
+            update_predictions_tail(relevant_subgraph_type)
+            hit_found = check_hit_tail()
+            if hit_found == False and self.subgraph_type == "all":
+                subset_head_predictions = set()
+                update_predictions_tail("diamond")
+                check_hit_tail()
+
+            true_positives_tail = 0
+            for prediction in subset_tail_predictions:
+                if prediction in tail_answers:
+                    true_positives_tail += 1
+            if true_positives_tail != 0:
+                precision_sum_tail += float(true_positives_tail)/float(len(tail_answers))
+                precision_value_count_tail += 1
             #max_subset_size_tail = max(len(subset_tail_predictions), max_subset_size_tail)
             #topk_subgraphs_scann = min(100000, len(subset_tail_predictions))
             #if topk_subgraphs_scann == 1000:
@@ -539,15 +693,19 @@ class SubgraphPredictor():
 
         # calculate recall
         print()
-        print("Recall (H) :", float(hitsHead)/float((len(self.test_triples))))
-        print("Recall (T) :", float(hitsTail)/float((len(self.test_triples))))
-        head_normal_comparisons = self.entity_total * hitsHead
+        print("Recall (H) :", float(self.hitsHead)/float((len(self.test_triples))))
+        print("Recall (T) :", float(self.hitsTail)/float((len(self.test_triples))))
+        if precision_value_count_head != 0:
+            print("Precision (H) :", float(precision_sum_head)/float(precision_value_count_head))
+        if precision_value_count_tail != 0:
+            print("Precision (T) :", float(precision_sum_tail)/float(precision_value_count_tail))
+        head_normal_comparisons = self.entity_total * self.hitsHead
         if head_normal_comparisons != 0:
-            print("%Red (H)    :", float(head_normal_comparisons - head_subgraph_comparisons)/
+            print("%Red (H)    :", float(head_normal_comparisons - self.head_subgraph_comparisons)/
             float(head_normal_comparisons)*100)
-        tail_normal_comparisons = self.entity_total * hitsTail
+        tail_normal_comparisons = self.entity_total * self.hitsTail
         if tail_normal_comparisons != 0:
-            print("%Red (T)    :", float(tail_normal_comparisons - tail_subgraph_comparisons)/
+            print("%Red (T)    :", float(tail_normal_comparisons - self.tail_subgraph_comparisons)/
             float(tail_normal_comparisons)*100)
 
         #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))

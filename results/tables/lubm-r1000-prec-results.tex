@@ -1,0 +1,42 @@
+\begingroup
+\setlength{\tabcolsep}{6pt} % Default value: 6pt
+\begin{tabular}{p{0.3em} p{4.5em} || ccc | ccc | ccc | ccc}
+& \multirow{2}{*}{\em K} & \multicolumn{3}{c}{10} & \multicolumn{3}{c}{10\%} & \multicolumn{3}{c}{$Dyn$} & \multicolumn{3}{c} {$Dyn^T$}\\
+& & a & d & n & a & d & n & a & d & n & a & d & n \\
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\transe}}
+          & Prec(H)$\star$ & \textbf{0.681} &0.048 &\textbf{0.522} &\textbf{0.862} &\textbf{0.494} &\textbf{0.791} &\textbf{0.682} &\textbf{0.655} &\textbf{0.582} &\textbf{0.988} &0.0 &\textbf{1.0} \\
+          & Prec(T)$\star$ & \textbf{0.913} &\textbf{0.5} &\textbf{0.89} &\textbf{0.94} &\textbf{0.633} &\textbf{0.937} &\textbf{0.925} &\textbf{0.619} &\textbf{0.917} &\textbf{0.939} &0.0 &1.0 \\
+          & Prec(H)$\diamond$ & 0.535 &\textbf{0.062} &0.371 &0.715 &0.348 &0.709 &0.524 &0.575 &0.4 &0.824 &\textbf{0.787} &0.791 \\
+          & Prec(T)$\diamond$ & 0.59 &0.396 &0.603 &0.594 &0.531 &0.594 &0.594 &0.529 &0.59 &0.594 &0.0 &1.0 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\rotate}}
+          & Prec(H)$\star$ & \textbf{0.709} &\textbf{0.052} &\textbf{0.56} &\textbf{0.894} &\textbf{0.265} &\textbf{0.797} &\textbf{0.711} &0.603 &\textbf{0.578} &\textbf{0.985} &\textbf{0.988} &\textbf{1.0} \\
+          & Prec(T)$\star$ & \textbf{0.921} &0.0 &\textbf{0.924} &\textbf{0.94} &0.292 &\textbf{0.939} &\textbf{0.933} &0.292 &\textbf{0.934} &\textbf{0.94} &\textbf{0.75} &1.0 \\
+          & Prec(H)$\diamond$ & 0.533 &0.03 &0.423 &0.712 &0.253 &0.673 &0.523 &\textbf{0.609} &0.432 &0.822 &0.802 &0.791 \\
+          & Prec(T)$\diamond$ & 0.59 &0.0 &0.586 &0.594 &\textbf{0.606} &0.594 &0.594 &\textbf{0.55} &0.594 &0.594 &0.0 &1.0 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\complex}}
+          & Prec(H)$\star$ & 0.031 &0.031 &\textbf{0.767} &0.149 &0.212 &\textbf{0.836} &0.538 &0.598 &\textbf{0.77} &\textbf{0.983} &\textbf{0.989} &\textbf{0.988} \\
+          & Prec(T)$\star$ & \textbf{1.0} &0.0 &\textbf{0.713} &\textbf{0.852} &0.333 &\textbf{0.927} &\textbf{0.859} &0.0 &\textbf{0.923} &\textbf{0.919} &\textbf{0.872} &\textbf{0.94} \\
+          & Prec(H)$\diamond$ & \textbf{0.032} &\textbf{0.033} &0.307 &\textbf{0.176} &\textbf{0.245} &0.537 &\textbf{0.561} &\textbf{0.632} &0.616 &0.823 &0.819 &0.826 \\
+          & Prec(T)$\diamond$ & 0.0 &0.0 &0.562 &0.417 &\textbf{0.602} &0.576 &0.417 &\textbf{0.602} &0.571 &0.612 &0.605 &0.594 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\distmult}}
+          & Prec(H)$\star$ & \textbf{0.032} &0.035 &\textbf{0.723} &0.13 &0.193 &\textbf{0.842} &0.583 &0.582 &\textbf{0.757} &\textbf{0.987} &\textbf{0.989} &\textbf{0.988} \\
+          & Prec(T)$\star$ & 0.0 &\textbf{0.333} &\textbf{0.699} &\textbf{0.867} &0.369 &\textbf{0.927} &\textbf{0.873} &0.385 &\textbf{0.928} &\textbf{0.918} &\textbf{0.853} &\textbf{0.94} \\
+          & Prec(H)$\diamond$ & 0.029 &\textbf{0.048} &0.389 &\textbf{0.165} &\textbf{0.229} &0.541 &\textbf{0.618} &\textbf{0.637} &0.66 &0.826 &0.809 &0.826 \\
+          & Prec(T)$\diamond$ & 0.0 &0.0 &0.0 &0.528 &\textbf{0.551} &0.578 &0.528 &\textbf{0.551} &0.582 &0.591 &0.571 &0.594 \\
+          
+\cline{2-14}
+\multirow{4}{*}{\rotatebox{90}{\hole}}
+          & Prec(H)$\star$ & \textbf{0.568} &0.037 &\textbf{0.284} &\textbf{0.489} &0.242 &\textbf{0.51} &\textbf{0.803} &0.62 &\textbf{0.636} &\textbf{0.968} &\textbf{1.0} &\textbf{0.988} \\
+          & Prec(T)$\star$ & \textbf{0.955} &\textbf{0.333} &\textbf{0.858} &\textbf{0.961} &0.483 &\textbf{0.904} &\textbf{0.961} &0.483 &\textbf{0.882} &\textbf{0.924} &\textbf{0.631} &\textbf{0.94} \\
+          & Prec(H)$\diamond$ & 0.357 &\textbf{0.042} &0.175 &0.302 &\textbf{0.252} &0.352 &0.685 &\textbf{0.625} &0.597 &0.841 &0.787 &0.826 \\
+          & Prec(T)$\diamond$ & 0.0 &0.0 &0.58 &0.0 &\textbf{0.55} &0.594 &0.0 &\textbf{0.537} &0.59 &0.602 &0.0 &0.594 \\
+          
+\end{tabular}
+\endgroup

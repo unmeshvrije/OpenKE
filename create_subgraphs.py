@@ -65,4 +65,4 @@ else:
 #print(type(R))
 sub_factory = SubgraphFactory(args.db, int(args.ms), triples, E)
 sub_factory.make_subgraphs(args.subtype)
-sub_factory.save(result_dir, args.model)
+sub_factory.save(result_dir, args.model, args.subtype)

@@ -1,10 +1,13 @@
 #!/bin/sh
 
-if [ "$#" -lt 4 ];
+if [ "$#" -lt 6 ];
 then
-echo "usage: $0 -m model -d db -r RecordsToTest -k [-1, -2, 10]. Found $#"
+echo "usage: $0 -m model -d db -type [star, diamond] -r RecordsToTest -k [-1, -2, 10] -s [avg, kl, nn]. Found $#"
 exit
 fi
+
+# Result Directory
+RD="/var/scratch/dvs254/OpenKE-results/"
 
 for (( i=1; i<=$#; i++ ))
 do
@@ -27,12 +30,27 @@ do
     --db=*)
         DB=${arg#*=}
         ;;
+    --type)
+        TYPE=$val
+        ((i++))
+        ;;
+    --testfile)
+        TESTFILE=$val
+        ((i++))
+        ;;
     -r)
         R=$val
         ((i++))
         ;;
     --record-test=*)
         R=${arg#*=}
+        ;;
+    -o)
+        RD=$val
+        ((i++))
+        ;;
+    --outdir=*)
+        RD=${arg#*=}
         ;;
     -k)
         K=$val
@@ -52,9 +70,7 @@ do
 done
 
 
-
-# Result Directory
-RD="/var/scratch/dvs254/OpenKE-results/"
+echo $RD
 
 #for E in "transe" "rotate" "complex"
 #do
@@ -70,11 +86,15 @@ RD="/var/scratch/dvs254/OpenKE-results/"
 #for K in -2 #10 -1 # is for dynamic K, -2 is for dynamic threshold
 #do
     emb_file=$RDE"$DB-$E.json"
-    sub_file=$RDS"$DB-$E-subgraphs-tau-10.pkl"
+    sub_file=$RDS"$DB-$E-$TYPE-subgraphs-tau-10.pkl"
     sub_emb_dir=$RDS
-    test_file="./benchmarks/$DB/test2id.txt"
+    if  [ -z "$TESTFILE" ]; then
+        test_file="./benchmarks/$DB/test2id.txt"
+    else
+        test_file=$TESTFILE
+    fi
     train_file="./benchmarks/$DB/train2id.txt"
-    edict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-entity.pkl"
-    rdict_file="/var/scratch/dvs254/OpenKE-results/$DB/misc/$DB-id-to-relation.pkl"
+    edict_file="$RDB/misc/$DB-id-to-entity.pkl"
+    rdict_file="$RDB/misc/$DB-id-to-relation.pkl"
     echo "Calling Python script"
-    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S
+    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S --kldict $RD

@@ -1,6 +1,6 @@
 import openke
 from openke.config import Trainer, Tester
-from openke.module.model import TransE, ComplEx, HolE, RotatE, DistMult
+from openke.module.model import TransE, ComplEx, HolE, RotatE, DistMult, ConvE
 from openke.module.loss import MarginLoss, SigmoidLoss, SoftplusLoss
 from openke.module.strategy import NegativeSampling
 from openke.data import TrainDataLoader, TestDataLoader, TrainingAsTestDataLoader
@@ -13,24 +13,24 @@ import pickle
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from dynamic_topk import DynamicTopk
-from subgraph_predictor import SubgraphPredictor
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
     parser.add_argument('--gpu', dest ='gpu', help = 'Whether to use gpu or not', action = 'store_true')
-    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch/dvs254/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest', 'subtest'], \
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
     parser.add_argument('--model', dest = 'model', type = str, default = 'transe')
-    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
-    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
+    parser.add_argument('--dyntopk-spo', dest = 'dyntopk_spo', type = str, default = "/var/scratch/dvs254/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-tail.pkl")
+    parser.add_argument('--dyntopk-pos', dest = 'dyntopk_pos', type = str, default = "/var/scratch/dvs254/OpenKE-results/fb15k237/misc/fb15k237-dynamic-topk-head.pkl")
     parser.add_argument('--topk', dest = 'topk', type = int, default = 10, help = "-1 means dynamic topk")
+    parser.add_argument('-r', dest = 'r', type = int, default = 10, help = "Triples to test in test mode, -1 means all")
     parser.add_argument('--subfile', dest ='sub_file', type = str, help = 'File containing subgraphs metadata.')
     parser.add_argument('--subembfile', dest ='subemb_file', type = str, help = 'File containing subgraphs embeddings.')
     #parser.add_argument('--embfile', dest ='emb_file', type = str, help = 'File containing entity embeddings.')
-    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
-    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch2/uji300/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
+    parser.add_argument('--entdict', dest ='ent_dict', type = str, default = '/var/scratch/dvs254/OpenKE-results/fb15k237/misc/fb15k237-id-to-entity.pkl',help = 'entity id dictionary.')
+    parser.add_argument('--reldict', dest ='rel_dict', type = str, default = '/var/scratch/dvs254/OpenKE-results/fb15k237/misc/fb15k237-id-to-relation.pkl',help = 'relation id dictionary.')
     parser.add_argument('--trainfile', dest ='train_file', type = str, help = 'File containing training triples.')
     parser.add_argument('-stp', '--subgraph-threshold-percentage', dest ='sub_threshold', default = 0.1, type = float, help = '% of top subgraphs to check the correctness of answers.')
     return parser.parse_args()
@@ -134,6 +134,18 @@ def choose_model():
             )
         epochs = 2000
         alpha = 0.5
+    elif args.model == "conve":
+        model = ConvE(ent_tot = train_dataloader.get_ent_tot(),
+                    rel_tot  = train_dataloader.get_rel_tot(),
+                    dim = N_DIM);
+        model_with_loss = NegativeSampling(
+                    model = model,
+                    loss = SoftplusLoss(),
+                    batch_size = train_dataloader.get_batch_size(),
+                    regul_rate = 1.0
+                    )
+        epochs = 1000
+        alpha = 0.5
 
     return model, model_with_loss, epochs, alpha
 
@@ -165,7 +177,7 @@ elif args.mode == "test":
         dyntopk = DynamicTopk()
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
     #tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
-    tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode)
+    tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode, args.r)
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss, epochs, alpha = choose_model()
