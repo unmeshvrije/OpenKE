@@ -578,7 +578,7 @@ class SubgraphPredictor():
                     self.head_subgraph_comparisons += len(subset_head_predictions)
                     return True
                 return False
-            
+
             relevant_subgraph_type = self.subgraph_type
             if self.subgraph_type == "all":
                 relevant_subgraph_type = "star"
@@ -677,69 +677,3 @@ class SubgraphPredictor():
         if tail_normal_comparisons != 0:
             print("%Red (T)    :", float(tail_normal_comparisons - self.tail_subgraph_comparisons)/
             float(tail_normal_comparisons)*100)
-
-        #print("Recall (H) ScaNN :", float(hits_head_scann)/float((len(self.test_triples))))
-        #print("Recall (T) ScaNN :", float(hits_tail_scann)/float((len(self.test_triples))))
-        #print("Time: ", end - start)
-
-
-
-    #def predict_internal(self, ent, rel, ans, tester):
-    #    # call get_subgraph_scores only once and get all scores
-    #    new_E = torch.Tensor(self.E[ent])[np.newaxis, :]
-    #    new_R = torch.Tensor(self.R[rel])[np.newaxis, :]
-    #    new_S = torch.Tensor(self.S)
-    #    if self.model_name == "complex":
-    #        s_re, s_im = torch.chunk(new_S, 2, dim = -1)
-    #        e_re, e_im = torch.chunk(new_E, 2, dim = -1)
-    #        r_re, r_im = torch.chunk(new_R, 2, dim = -1)
-    #        subgraph_scores = self.model._calc(s_re, s_im, e_re, e_im, r_re, r_im)
-    #    else:
-    #        #subgraph_scores = self.model._calc(torch.Tensor(self.S), new_E, new_R, self.type_prediction+'_batch')
-    #        # this won't work:
-    #        #TODO: here we need to pass only indices of Entities and relations
-    #        # def forward() from the models will then find embeddings based on them
-    #        subgraph_scores = self.model.predict({
-    #        'batch_h': tester.to_var(np.array(self.E[ent]), tester.use_gpu),
-    #        'batch_t': tester.to_var(np.array(self.S), tester.use_gpu),
-    #        'batch_r': tester.to_var(np.array(self.R[rel]), tester.use_gpu),
-    #        'mode': "tail_batch" # or head_batch
-    #        })
-
-    #    print("sub scores     = ", len(subgraph_scores))
-    #    print("sub embeddings = ", len(self.S))
-
-    #    # Set scores of known subgraph(s) to infinity.
-    #    for index, se in enumerate(self.S):
-    #        if self.subgraphs[index].data['ent'] == ent and self.subgraphs[index].data['rel'] == rel:
-    #            subgraph_scores[index] = np.inf
-
-    #    sub_indexes = np.argsort(subgraph_scores)
-    #    topk_subgraphs = 5#self.get_dynamic_topk(ent, rel, sub_indexes)
-
-    #    # Check topk_subgraphs and if it is > 10
-    #    #threshold_subgraphs = int(self.subgraph_threshold_percentage * topk_subgraphs)
-
-    #    #threshold_subgraphs = min(len(sub_indexes)*0.1, threshold_subgraphs)
-    #    # working
-    #    '''
-    #    for i, answer in enumerate(topk_ans_entities):
-    #        cnt_presence_in_sub = 0;
-    #        # Check in only topK subgraphs
-    #        for j, sub_index in enumerate(sub_indexes[:topk_subgraphs]):
-    #            if answer in self.subgraphs[sub_index].data['entities']:
-    #                cnt_presence_in_sub += 1
-    #                #print("{} FOUND in subgraph # {}". format(answer, j))
-    #        #if cnt_presence_in_sub != 0:
-    #        self.cnt_subgraphs_dict[setting].append(str(cnt_presence_in_sub) + " / " + str(threshold_subgraphs))
-    #        if cnt_presence_in_sub > threshold_subgraphs: #topk_subgraphs/2:
-    #            y_predicted.append(1)
-    #        else:
-    #            y_predicted.append(0)
-    #    '''
-    #    found_answer = False
-    #    for sub_index in sub_indexes[:topk_subgraphs]:
-    #        if ans in self.subgraphs[sub_index].data['entities']:
-    #            print("Found in sub: ")#, self.subgraphs[sub_index].data)
-    #            return True
-

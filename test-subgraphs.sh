@@ -7,7 +7,7 @@ exit
 fi
 
 # Result Directory
-RD="/var/scratch/dvs254/OpenKE-results/"
+RD="/var/scratch2/uji300/OpenKE-results/"
 
 for (( i=1; i<=$#; i++ ))
 do
