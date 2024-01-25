@@ -22,9 +22,9 @@ def parse_args():
     parser.add_argument('-r', dest = 'r', type = int, default = '1000', help = 'Number of records to test')
     parser.add_argument('-type', dest = 'subgraph_type', type = str, required = True, help = 'Subgraph type')
     parser.add_argument('-rerun_test', dest = 'rerun_test', action = 'store_true')
-    parser.add_argument('-model', dest = 'model', type = str, default = 'all', help = 'Use to test only specific model, e.g. transe')
-    parser.add_argument('-k', dest = 'k', type = str, default = 'all', help = 'Use to test only specific k count, e.g. 10')
-    parser.add_argument('-s', dest = 's', type = str, default = 'all', help = 'Use to test only specific score type, e.g. avg')
+    parser.add_argument('-model', dest = 'model', type = str, default = 'transe', help = 'Use to test only specific model, e.g. transe')
+    parser.add_argument('-k', dest = 'k', type = str, default = '10', help = 'Use to test only specific k count, e.g. 10')
+    parser.add_argument('-s', dest = 's', type = str, default = 'avg', help = 'Use to test only specific score type, e.g. avg')
     return parser.parse_args()
 
 TEST_FILE_PATH = "test-subgraphs.sh"
@@ -176,11 +176,12 @@ if __name__ == "__main__":
 
     experiment_results = dict()
     if os.path.exists(file_name):
+        print("Loading existing file...")
         with open(file_name, 'rb') as fin:
             experiment_results = pickle.load(fin)
     if (args.rerun_test):
         experiment_results[args.model][args.k][args.s] = process_results(run_test(args.db, args.model, str(args.r), args.k, args.s, args.subgraph_type))
     else:
-        experiment_results = construct_results(args.db, str(args.r))
+        experiment_results = construct_results(args.db, str(args.r), args.subgraph_type)
     with open(file_name, 'wb') as fout:
         pickle.dump(experiment_results, fout, protocol = pickle.HIGHEST_PROTOCOL)
