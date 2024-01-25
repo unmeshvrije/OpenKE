@@ -343,7 +343,7 @@ class SubgraphPredictor():
         sample some entities for trueAvg and trueVar embeddings
         now find KL divergence with these trueAvg and trueVar embeddings
         with all other subgraphs
-        '''           
+        '''
         dim = self.E.size()[1]
         me = self.get_matching_entities(sub_type, ent, rel)
         count = len(me)
@@ -351,40 +351,11 @@ class SubgraphPredictor():
         if count == 0:
             return [0.0] * n_subgraphs
         summation = torch.sum(self.E[me])
+        # TODO: check if we should pass mean to the kl_div() function
         mean = summation / count if count > 0 else summation
 
-        columnsSquareDiff = torch.zeros(dim).to('cuda')
-        for e in me:
-            columnsSquareDiff += (self.E[e] - mean) * (self.E[e] - mean)
-        if count > 2:
-            columnsSquareDiff /= (count - 1)
-        else:
-            columnsSquareDiff = mean
-
-        true_avg_emb = mean
-        true_var_emb = columnsSquareDiff
-
         # Calculate kl scores with all subgraphs
-
-        print(f"{self.SA.shape}, {self.SA[0].shape} , {true_avg_emb.shape}")
-        def calc_kl(sa, sv, qa, qv):
-            temp = ((qa - sa)**2 + qv**2 / (2*sv*sv))
-            sv[sv<0] = sv[sv<0]*-1
-            qv[qv<0] = qv[qv<0]*-1
-            temp2 = torch.log(torch.sqrt(sv)/qv)
-            temp3 = 0.5
-            ans = torch.sum(temp + temp2 - temp3)
-            return ans
-
-        #TODO: Ensure this evaluation is correct
-        # return calc_kl(self.SA, self.SV, true_avg_emb, true_var_emb)
-        #print("Get_kl_divergence_scores - END", flush = True)
-        #print(n_subgraphs, flush = True)
-        #print(self.SA[0], flush = True)
-        #print(summation, flush = True)
-        #for i in range(n_subgraphs):
-            #F.kl_div(self.SA[i], summation, reduction='batchmean')
-            #print(i, flush = True)
+        # https://pytorch.org/docs/stable/generated/torch.nn.functional.kl_div.html
         kl_scores = [F.kl_div(self.SA[i], summation, reduction='batchmean') for i in range(n_subgraphs)]
 
         #with open(scores_file, 'wb') as fout:
@@ -392,7 +363,6 @@ class SubgraphPredictor():
         #    pickle.dump(all_kl_scores, fout, protocol = pickle.HIGHEST_PROTOCOL)
 
         return kl_scores
-        # return [calc_kl(self.SA[i], self.SV[i], true_avg_emb, true_var_emb) for i in range(len(self.subgraphs))]
 
     def precalculate_kl_divergence_scores(self):
         print("Precomputing kl divergence scores...")
