@@ -2,6 +2,7 @@ import numpy as np
 import json
 import pickle5 as pickle
 from tqdm import tqdm
+from collections import defaultdict
 from openke.module.model import TransE, RotatE, ComplEx, DistMult, HolE
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
@@ -125,6 +126,14 @@ class SubgraphPredictor():
         # For type_prediction : head, we sort by tail
         self.training_triples_head_predictions = sorted(self.triples, key = lambda l : (l[2], l[1]))
         self.training_triples_tail_predictions = sorted(self.triples, key = lambda l : (l[2], l[0]))
+
+        self.spo_dict = defaultdict(list) # key (h,r) -> value (list of t1, t2, ...)
+        self.pos_dict = defaultdict(list) # key (t,r) -> value (list of h1, h2, ...)
+
+        for head, tail, relation in self.triples:
+            self.spo_dict[(head, relation)].append(tail)
+            self.pos_dict[(tail, relation)].append(head)
+
         '''
         self.training_triples_head_predictions = {}
         self.training_triples_tail_predictions = {}
@@ -324,6 +333,7 @@ class SubgraphPredictor():
 
         return found_index if found_index > 0 else int(0.1 * len(sub_indexes))
 
+    '''
     def get_matching_entities(self, sub_type, e, r):
         entities = []
         for triple in self.triples:
@@ -336,6 +346,18 @@ class SubgraphPredictor():
                 if len(entities) == 10:
                     return entities
         return entities
+    '''
+
+    def get_matching_entities(self, sub_type, e, r):
+        entities = []
+        # TODO: return subgraphs with (e,r) or make dictionaries with 'r' as key and list of e's that are present in training set
+        if sub_type == SUBTYPE.SPO:
+            entities = self.spo_dict.get((e, r), [])[:10] # [triple[1] for triple in self.triples if triple[0] == e and triple[2] == r][:10]
+        else:
+            entities = self.pos_dict.get((e, r), [])[:10] # [triple[0] for triple in self.triples if triple[1] == e and triple[2] == r][:10]
+
+        return entities
+
 
     def get_kl_divergence_scores(self, ent, rel, sub_type, db, model, sub_type_str):
         '''
@@ -414,7 +436,7 @@ class SubgraphPredictor():
         dataset = self.E.cpu().numpy()
         normalized_dataset = dataset / np.linalg.norm(dataset, axis = 1)[:, np.newaxis]
 
-        product_quantizator = nanopq.PQ(M = 10) #Instantiate quantizator with 10 subspaces
+        product_quantizator = nanopq.PQ(M = 8, Ks=128, verbose=True) #Instantiate quantizator with 10 subspaces
         X_code = []
 
         subgraph_center_dict = dict()
@@ -451,8 +473,8 @@ class SubgraphPredictor():
             return
         
         if self.score_func == "kl":
-            scores_file = kl_scores_dir + self.db + '/scores/' + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
-            if os.path.isfile(scores_file):
+            scores_file = kl_scores_dir + self.db + '-' + self.model_name + '-' + self.subgraph_type + '-' + str(len(self.test_triples)) + '-kl-scores.pkl'
+            if os.path.isfile(scores_file) and os.stat(scores_file).st_size != 0:
                 with open(scores_file, 'rb') as fin:
                     kl_scores = pickle.load(fin)
             else:

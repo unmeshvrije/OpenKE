@@ -51,7 +51,7 @@ SUBGRAPH_COUNT = {          # used for k = 10% option
 }
 
 
-def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "06:00:00", test_triples_file_path = ""):
+def run_test(database, model, r, k, s, subgraph_type = "star", max_time = "12:00:00", test_triples_file_path = ""):
     """
     Runs an experiment with particular parameters
 
@@ -164,10 +164,10 @@ def construct_results(database, r, subgraph_type):
     """Generates experiment results for a particular database"""
     experiment_results = dict()
     experiment_results["transe"] = construct_model_subgraph_type_results(database, "transe", r, subgraph_type)
-    experiment_results["hole"] = construct_model_subgraph_type_results(database, "hole", r, subgraph_type)
+    #experiment_results["hole"] = construct_model_subgraph_type_results(database, "hole", r, subgraph_type)
     experiment_results["rotate"] = construct_model_subgraph_type_results(database, "rotate", r, subgraph_type)
     experiment_results["distmult"] = construct_model_subgraph_type_results(database, "distmult", r, subgraph_type)
-    experiment_results["complex"] = construct_model_subgraph_type_results(database, "complex", r, subgraph_type)
+    #experiment_results["complex"] = construct_model_subgraph_type_results(database, "complex", r, subgraph_type)
     return experiment_results
 
 if __name__ == "__main__":

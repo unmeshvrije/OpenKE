@@ -97,4 +97,4 @@ echo $RD
     edict_file="$RDB/misc/$DB-id-to-entity.pkl"
     rdict_file="$RDB/misc/$DB-id-to-relation.pkl"
     echo "Calling Python script"
-    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S --kldict $RD
+    python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S

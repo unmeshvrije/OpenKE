@@ -21,7 +21,7 @@ EMB_MODEL_PATH="$RDE""$DB-$E.json"
 echo "$EMB_MODEL_PATH"
 if [ ! -f $EMB_MODEL_PATH ];
 then
-    python embedding_model.py --gpu --db $DB --mode "train" --model $E
+    python embedding_model.py --gpu --db $DB --mode "train" --model $E -result-dir $RD
 fi
 
 echo "Model $EMB_MODEL_PATH is found. Generating test answers..."
