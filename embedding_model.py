@@ -10,14 +10,12 @@ import json
 import argparse
 import pickle
 
-from subgraphs import Subgraph
-from subgraphs import SUBTYPE
 from dynamic_topk import DynamicTopk
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Train embeddings of the KG with a given model')
     parser.add_argument('--gpu', dest ='gpu', help = 'Whether to use gpu or not', action = 'store_true')
-    parser.add_argument('-result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
+    parser.add_argument('--result-dir', dest ='result_dir', type = str, default = "/var/scratch2/uji300/OpenKE-results/",help = 'Output dir.')
     parser.add_argument('--mode', dest = 'mode', type = str, choices = ['train', 'test', 'trainAsTest', 'subtest'], \
     help = 'Choice of the mode: train and test are intuitive. trainAsTest uses training data as test', default = None)
     parser.add_argument('--db', required = True, dest = 'db', type = str, default = None)
@@ -41,7 +39,7 @@ args = parse_args()
 N_DIM = 200 # Number of dimensions for embeddings
 
 # Paths
-db_path = "./benchmarks/" + args.db + "/"
+db_path = args.result_dir + "db/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(result_dir + "embeddings/", exist_ok = True)
@@ -204,6 +202,6 @@ elif args.mode == "subtest":
         params = json.loads(fin.read())
     outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
 
-    db_path = "./benchmarks/" + args.db + "/"
+    db_path = args.result_dir + "db/" + args.db + "/"
     tester.run_link_prediction_subgraphs(args.db, args.topk, embeddings_file_path, args.sub_file,
     args.subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
