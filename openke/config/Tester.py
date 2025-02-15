@@ -215,9 +215,12 @@ class Tester(object):
             if 1 in data['tail_predictions_fil']['correctness']:
                 hitsTail += 1
 
+        head_recall = float(hitsHead) / float(r)
+        tail_recall = float(hitsTail) / float(r)
+
         print()
-        print("Recall (H) :", float(hitsHead) / float(r))
-        print("Recall (T) :", float(hitsTail) / float(r))
+        print("Recall (H) :", head_recall)
+        print("Recall (T) :", tail_recall)
         print("%Red (H)    : 0") # No reduction when there are no subgraphs
         print("%Red (T)    : 0")
         print("Runtime :", runtime, "s")
@@ -225,6 +228,12 @@ class Tester(object):
         # Write all the records to the scores file
         with open(outfile_name, "w") as fout:
             fout.write(json.dumps(test_data))
+
+        return dict(
+            head_recall=head_recall,
+            tail_recall=tail_recall,
+            runtime=runtime
+        )
 
     def run_link_prediction(self, type_constrain = False):
         self.lib.initTest()

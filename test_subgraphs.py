@@ -1,10 +1,12 @@
 import os
+import json
 import pickle
 import argparse
 import time
 from subgraphs import Subgraph
 from subgraphs import SUBTYPE
 from subgraph_predictor import SubgraphPredictor
+from util import write_dict_to_json_file
 
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Read training/test file and run LSTM training or test.')
@@ -30,10 +32,10 @@ def parse_args():
 
 args = parse_args()
 
-result_dir =  args.result_dir + args.db + "/out/"
+final_result_dir =  args.result_dir + args.db + "/results/"
 log_dir =  args.result_dir + args.db + "/logs/"
 kl_scores_dir = args.result_dir + args.db + "/scores/"
-os.makedirs(result_dir, exist_ok = True)
+os.makedirs(final_result_dir, exist_ok = True)
 os.makedirs(log_dir, exist_ok = True)
 os.makedirs(kl_scores_dir, exist_ok = True)
 queries_file_path = args.test_file
@@ -55,18 +57,10 @@ logfile = log_dir + base_name + ".log"
 mys.set_logfile(logfile)
 
 start_time = time.time()
-mys.predict(kl_scores_dir)
+result_dict = mys.predict(kl_scores_dir)
+
+final_result_file = final_result_dir + base_name + ".final.json"
+write_dict_to_json_file(result_dict, final_result_file)
 
 runtime = time.time() - start_time
 print("Runtime :", runtime, "s")
-'''
-raw_result, fil_result = mys.results()
-
-# Pickle the output
-output_file = result_dir + base_name + ".out"
-result_dict = {}
-result_dict['raw'] = raw_result
-result_dict['fil'] = fil_result
-with open(output_file, 'wb') as fout:
-    pickle.dump(result_dict, fout, protocol = pickle.HIGHEST_PROTOCOL)
-'''

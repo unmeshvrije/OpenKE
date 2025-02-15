@@ -83,61 +83,6 @@ def load_pickle(filename):
         data = pickle.load(fin)
     return data
 
-def sample_star_subgraph_entities(subgraphs, db):
-    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-relation.pkl')
-    subgraph_index = random.randint(0, len(subgraphs) - 1)
-    subgraph = subgraphs[subgraph_index]
-    size = subgraph.data['size']
-    rid = subgraph.data['rel']
-    center_id = subgraph.data['ent']
-    entity_ids = []
-    while len(entity_ids) < 10:
-        eid = random.randint(0, size - 1)
-        if eid not in entity_ids:
-            entity_ids.append(eid)
-    print('\nSubgraph ' + str(subgraph_index) + ':')
-    print('Size: ' + str(size))
-    print('Center: ' + str(id_to_entity_data[center_id]))
-    print('Relation: ' + str(id_to_relation_data[rid]) + '\n')
-    print("Entities:")
-    for eid in entity_ids:
-        print('  ' + str(id_to_entity_data[subgraph.data['entities'][eid]]))
-    print()
-    return
-
-
-def sample_diamond_subgraph_entities(subgraphs, db):
-    id_to_entity_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-entity.pkl')
-    id_to_relation_data = load_pickle('/var/scratch/dvs254/kbs/' + db + '-id-to-relation.pkl')
-    subgraph_index = random.randint(0, len(subgraphs) - 1)
-    subgraph = subgraphs[subgraph_index]
-    while subgraph.data['subType'] == SUBTYPE.SPO or subgraph.data['subType'] == SUBTYPE.POS:
-        subgraph_index = random.randint(0, len(subgraphs) - 1)
-        subgraph = subgraphs[subgraph_index]
-    size = subgraph.data['size']
-    rid1 = subgraph.data['rel1']
-    rid2 = subgraph.data['rel2']
-    center_id1 = subgraph.data['ent1']
-    center_id2 = subgraph.data['ent2']
-    entity_ids = []
-    while len(entity_ids) < 10:
-        eid = random.randint(0, size - 1)
-        if eid not in entity_ids:
-            entity_ids.append(eid)
-    print('\nSubgraph ' + str(subgraph_index) + ':')
-    print('Size: ' + str(size))
-    print('Centers:')
-    print('  ' + str(id_to_entity_data[center_id1]))
-    print('  ' + str(id_to_entity_data[center_id2]))
-    print('Relations:')
-    print('  ' + str(id_to_relation_data[rid1]))
-    print('  ' + str(id_to_relation_data[rid2]) + '\n')
-    print("Entities:")
-    for eid in entity_ids:
-        print('  ' + str(id_to_entity_data[subgraph.data['entities'][eid]]))
-    return
-
 class Subgraph():
     def __init__(self, sid, st, sent, srel, ssize, entities):
         self.data = {}

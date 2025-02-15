@@ -134,21 +134,6 @@ class SubgraphPredictor():
             self.spo_dict[(head, relation)].append(tail)
             self.pos_dict[(tail, relation)].append(head)
 
-        '''
-        self.training_triples_head_predictions = {}
-        self.training_triples_tail_predictions = {}
-        print("HERE " *50, flush=True)
-        for i in tqdm(range(0, len(triples))):
-            print("{}, {}, {}".format(triples[i][0], triples[i][1], triples[i][2]), flush=True)
-            h = triples[i][0]
-            r = triples[i][1]
-            t = triples[i][2]
-            heads = self.training_triples_head_predictions.get((r,t), [])
-            heads.append(h)
-            tails = self.training_triples_tail_predictions.get((r,h), [])
-            tails.append(t)
-        '''
-
     @timer
     def init_model_score_function(self, emb_model):
         if emb_model == "transe":
@@ -683,19 +668,45 @@ class SubgraphPredictor():
             #    hits_tail_scann += 1
             time_end = timeit.default_timer()
 
+
         # calculate recall
-        print()
-        print("Recall (H) :", float(self.hitsHead)/float((len(self.test_triples))))
-        print("Recall (T) :", float(self.hitsTail)/float((len(self.test_triples))))
+        head_recall = float(self.hitsHead)/float((len(self.test_triples)))
+        tail_recall = float(self.hitsTail)/float((len(self.test_triples)))
+
+        # calculate precision
+        head_precision = 0
         if precision_value_count_head != 0:
-            print("Precision (H) :", float(precision_sum_head)/float(precision_value_count_head))
+            head_precision = float(precision_sum_head)/float(precision_value_count_head)
+
+        tail_precision = 0
         if precision_value_count_tail != 0:
-            print("Precision (T) :", float(precision_sum_tail)/float(precision_value_count_tail))
+            tail_precision = float(precision_sum_tail)/float(precision_value_count_tail)
+
+        # calculate percent reduction
         head_normal_comparisons = self.entity_total * self.hitsHead
+        head_percent_reduction = 0
         if head_normal_comparisons != 0:
-            print("%Red (H)    :", float(head_normal_comparisons - self.head_subgraph_comparisons)/
-            float(head_normal_comparisons)*100)
+            head_percent_reduction = float(head_normal_comparisons - self.head_subgraph_comparisons)/ float(head_normal_comparisons)*100
+
         tail_normal_comparisons = self.entity_total * self.hitsTail
+        tail_percent_reduction = 0
         if tail_normal_comparisons != 0:
-            print("%Red (T)    :", float(tail_normal_comparisons - self.tail_subgraph_comparisons)/
-            float(tail_normal_comparisons)*100)
+            tail_percent_reduction = float(tail_normal_comparisons - self.tail_subgraph_comparisons) / float(tail_normal_comparisons)*100
+
+
+        print()
+        print("Recall (H) :", head_recall)
+        print("Recall (T) :", tail_recall)
+        print("Precision (H) :", head_precision)
+        print("Precision (T) :", tail_precision)
+        print("%Red (H)    :", head_percent_reduction)
+        print("%Red (T)    :", tail_percent_reduction)
+
+        return dict(
+            head_recall=head_recall,
+            tail_recall=tail_recall,
+            head_precision=head_precision,
+            tail_precision=tail_precision,
+            head_percent_reduction=head_percent_reduction,
+            tail_percent_reduction=tail_percent_reduction
+        )

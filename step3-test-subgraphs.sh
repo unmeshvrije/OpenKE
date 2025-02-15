@@ -87,6 +87,12 @@ echo $RD
 #do
     emb_file=$RDE"$DB-$E.json"
     sub_file=$RDS"$DB-$E-$TYPE-subgraphs-tau-10.pkl"
+
+    if [ ! -f $sub_file ];
+    then
+        echo "$sub_file does not exist!"
+        exit
+    fi
     sub_emb_dir=$RDS
     if  [ -z "$TESTFILE" ]; then
         test_file="./benchmarks/$DB/test2id.txt"
@@ -96,5 +102,4 @@ echo $RD
     train_file="./benchmarks/$DB/train2id.txt"
     edict_file="$RDB/misc/$DB-id-to-entity.pkl"
     rdict_file="$RDB/misc/$DB-id-to-relation.pkl"
-    echo "Calling Python script"
     python test_subgraphs.py --testfile $test_file --embfile $emb_file --subfile $sub_file --subembdir $sub_emb_dir --topk $K --db $DB --type $TYPE --trainfile $train_file --model $E -stp 0.01 --entdict $edict_file --reldict $rdict_file --testonly $R --score $S

@@ -10,6 +10,7 @@ import json
 import argparse
 import pickle
 
+from util import write_dict_to_json_file
 from dynamic_topk import DynamicTopk
 
 def parse_args():
@@ -39,10 +40,11 @@ args = parse_args()
 N_DIM = 200 # Number of dimensions for embeddings
 
 # Paths
-db_path = args.result_dir + "db/" + args.db + "/"
+db_path = "./benchmarks/" + args.db + "/"
 result_dir = args.result_dir + args.db + "/"
 os.makedirs(result_dir, exist_ok = True)
 os.makedirs(result_dir + "embeddings/", exist_ok = True)
+os.makedirs(result_dir + "results/", exist_ok = True)
 os.makedirs(result_dir + "data/", exist_ok = True)
 os.makedirs(result_dir + "models", exist_ok = True)
 os.makedirs(result_dir + "subgraphs/", exist_ok = True)
@@ -59,6 +61,7 @@ train_dataloader = TrainDataLoader(
     neg_ent = 25,
     neg_rel = 0
     )
+
 
 def choose_model():
     model = None
@@ -175,7 +178,13 @@ elif args.mode == "test":
         dyntopk = DynamicTopk()
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
     #tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
-    tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode, args.r)
+    final_result_dict = tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode, args.r)
+    final_result_file_name = result_dir + "results/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".final.json"
+    write_dict_to_json_file(
+        final_result_dict,
+        final_result_file_name
+    )
+
 elif args.mode == "trainAsTest":
     new_train_dataloader = TrainingAsTestDataLoader(db_path, "link")
     model, model_with_loss, epochs, alpha = choose_model()
@@ -191,17 +200,3 @@ elif args.mode == "trainAsTest":
         dyntopk.load(args.dyntopk_pos, args.dyntopk_spo)
     #tester.run_ans_prediction(params['ent_embeddings.weight'], args.topk, outfile_name, dyntopk, args.mode)
     tester.run_ans_prediction(args.topk, outfile_name, dyntopk, args.mode)
-elif args.mode == "subtest":
-    test_dataloader = TestDataLoader(db_path, "link")
-    model, model_with_loss, epochs, alpha = choose_model()
-    model.load_checkpoint(checkpoint_path)
-    model.load_parameters(embeddings_file_path)
-    model.load_subgraphs_embeddings(args.subemb_file)
-    tester = Tester(args.db, model = model, model_name = args.model, data_loader = test_dataloader, use_gpu = args.gpu)
-    with open (embeddings_file_path, 'r') as fin:
-        params = json.loads(fin.read())
-    outfile_name = result_dir + "data/" + args.db + "-"+ args.model +"-"+args.mode+"-topk-"+str(args.topk)+".json"
-
-    db_path = args.result_dir + "db/" + args.db + "/"
-    tester.run_link_prediction_subgraphs(args.db, args.topk, embeddings_file_path, args.sub_file,
-    args.subemb_file, args.model, args.train_file, db_path, args.sub_threshold)
